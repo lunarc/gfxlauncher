@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>525</width>
+    <height>381</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QHBoxLayout" name="horizontalLayout_3">
+    <item>
+     <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,0,0,0">
+      <item>
+       <layout class="QGridLayout" name="gridLayout">
+        <item row="0" column="0">
+         <widget class="QLabel" name="label">
+          <property name="text">
+           <string>Walltime (h)</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QLineEdit" name="memoryEdit"/>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="label_3">
+          <property name="text">
+           <string>Memory (mb)</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="1">
+         <widget class="QLineEdit" name="accountEdit"/>
+        </item>
+        <item row="4" column="2">
+         <widget class="QLabel" name="label_6">
+          <property name="text">
+           <string>Partition</string>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="1" colspan="3">
+         <widget class="QLineEdit" name="executableEdit"/>
+        </item>
+        <item row="4" column="3">
+         <widget class="QComboBox" name="partitionCombo"/>
+        </item>
+        <item row="3" column="0">
+         <widget class="QLabel" name="label_4">
+          <property name="text">
+           <string>Node attributes</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QSpinBox" name="cpuCountSpin"/>
+        </item>
+        <item row="5" column="0">
+         <widget class="QLabel" name="label_8">
+          <property name="text">
+           <string>Executable</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="0">
+         <widget class="QLabel" name="label_5">
+          <property name="text">
+           <string>Account</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_2">
+          <property name="text">
+           <string>CPU Count</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QLineEdit" name="wallTimeEdit"/>
+        </item>
+        <item row="3" column="1">
+         <layout class="QHBoxLayout" name="horizontalLayout_2">
+          <item>
+           <widget class="QCheckBox" name="exclusiveCheck">
+            <property name="text">
+             <string>Exclusive</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="openGLCheck">
+            <property name="text">
+             <string>OpenGL</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="Line" name="line">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout">
+        <item>
+         <spacer name="horizontalSpacer">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="QPushButton" name="startButton">
+          <property name="text">
+           <string>Start</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="closeButton">
+          <property name="text">
+           <string>Close</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="horizontalSpacer_2">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="Line" name="line_2">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QTextBrowser" name="statusText">
+        <property name="font">
+         <font>
+          <family>DejaVu Sans Mono</family>
+          <pointsize>8</pointsize>
+         </font>
+        </property>
+        <property name="lineWrapMode">
+         <enum>QTextEdit::NoWrap</enum>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
