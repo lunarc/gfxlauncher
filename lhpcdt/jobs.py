@@ -1,4 +1,5 @@
 #!/bin/env python
+"""Base job classes"""
 
 import os
 import sys

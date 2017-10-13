@@ -1,5 +1,6 @@
 #!/bin/env python
 
+
 class Singleton:
     """
     A non-thread-safe helper class to ease implementing singletons.
@@ -38,9 +39,10 @@ class Singleton:
 
     def __instancecheck__(self, inst):
         return isinstance(inst, self._decorated)
-        
+
+
 @Singleton
 class LaunchSettings:
+
     def __init__(self):
         self.args = None
-        

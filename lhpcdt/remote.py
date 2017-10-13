@@ -1,4 +1,5 @@
 #!/bin/env python
+"""Module for implementing remote execution methods"""
 
 import os
 import sys
@@ -8,6 +9,7 @@ from subprocess import Popen, PIPE, STDOUT
 
 
 class SSH(object):
+    """Implements a SSH connection"""
 
     def __init__(self):
         self.tty = True
@@ -21,6 +23,7 @@ class SSH(object):
         self._update_options()
 
     def _update_options(self):
+        """Update SSH options"""
         self._options = ""
         if self.tty:
             self._options += " -t"
@@ -34,24 +37,27 @@ class SSH(object):
             self._options += " -oStrictHostKeyChecking=no"
 
     def terminate(self):
+        """Terminate SSH connection process"""
         if self.process != None:
             self.process.terminate()
 
     def is_active(self):
+        """Return SSH connection status"""
         self.process.poll()
         return self.process.returncode == None
 
     def execute(self, node, command):
+        """Execut command on a node/host"""
         self._update_options()
         self.process = Popen("ssh %s %s '%s'" %
                              (self._options, node, command), shell=self.shell)
-        # return subprocess.call("ssh %s %s '%s'" % (self._options, node,
-        # command), shell=self.shell)
 
 
 class VGLConnect(object):
+    """Implements a remote connecting supporting VirtualGL"""
 
     def __init__(self):
+        """Initialise class property defaults"""
         self.tty = False
         self.tunnelX11 = False
         self.shell = True
@@ -59,6 +65,7 @@ class VGLConnect(object):
         self.compression = False
         self.process = None
         self.display = ""
+        self.vglrun = True
         self.vgl_path = "/sw/pkg/rviz/vgl/bin/latest"
 
         self._options = ""
@@ -67,6 +74,7 @@ class VGLConnect(object):
         self.vgl_cmd = ""
 
     def _update_options(self):
+        """Update command line options"""
         self._options = ""
         if self.tty:
             self._options += " -t"
@@ -76,28 +84,37 @@ class VGLConnect(object):
             self._options += " -Y"
         if self.compression:
             self._options += " -C"
-        if self.display!="":
+        if self.display != "":
             self._options += " -display %s" % (self.display)
 
     def terminate(self):
+        """Terminate connection process"""
         if self.process != None:
             self.process.terminate()
 
     def is_active(self):
+        """Return status of VGL connection"""
         self.process.poll()
         return self.process.returncode == None
 
     def execute(self, node, command):
+        """Execute a command on a host"""
         print("VGLConnect.execute:")
         self._update_options()
 
-        if self.vgl_path!="":
+        if self.vgl_path != "":
             self._vgl_cmd = os.path.join(self.vgl_path, 'vglconnect')
 
-        print("vglconnect %s %s '%s'" % (self._options, node, "vglrun %s" % (command)))
-        self.process = Popen("%s %s %s '%s'" %
-                             (self._vgl_cmd, self._options, node, "vglrun %s" % (command)), shell=self.shell)
+        if self.vglrun:
+            print("vglconnect %s %s '%s'" %
+                (self._options, node, "vglrun %s" % (command)))
+            self.process = Popen("%s %s %s '%s'" %
+                                (self._vgl_cmd, self._options, node, "vglrun %s" % (command)), shell=self.shell)
+        else:
+            print("vglconnect %s %s '%s'" %
+                (self._options, node, command))
+            self.process = Popen("%s %s %s '%s'" %
+                                (self._vgl_cmd, self._options, node, command), shell=self.shell)
+            
 
         print("Popen completed")
-        # return subprocess.call("vglconnect %s %s '%s'" % (self._options,
-        # node, command), shell=self.shell)

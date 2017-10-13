@@ -1,4 +1,5 @@
 #!/bin/env python
+"""Base classes for interacting with resource management systems."""
 
 import os
 import sys
@@ -52,7 +53,7 @@ class Queue(object):
             parts = line.split(";")
             if len(parts) > 2:
                 id = parts[0].strip()
-                if not self.jobs.has_key(id):
+                if not (id in self.jobs):
                     self.jobs[id] = {}
                     job = {"jobid": id}
                 for i in range(1, 10):
@@ -61,7 +62,9 @@ class Queue(object):
 
                 self.jobList.append(job)
 
-                if not self.userJobs.has_key(self.jobs[id]["user"]):
+                # if not self.userJobs.has_key(self.jobs[id]["user"]):
+
+                if not (self.jobs[id]["user"] in self.userJobs):
                     self.userJobs[self.jobs[id]["user"]] = {}
 
                 self.userJobs[self.jobs[id]["user"]][id] = self.jobs[id]
