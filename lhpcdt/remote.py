@@ -46,6 +46,9 @@ class SSH(object):
         self.process.poll()
         return self.process.returncode == None
 
+    def wait(self):
+        self.process.wait()        
+
     def execute(self, node, command):
         """Execut command on a node/host"""
         self._update_options()
@@ -97,9 +100,11 @@ class VGLConnect(object):
         self.process.poll()
         return self.process.returncode == None
 
+    def wait(self):
+        self.process.wait()
+
     def execute(self, node, command):
         """Execute a command on a host"""
-        print("VGLConnect.execute:")
         self._update_options()
 
         if self.vgl_path != "":
@@ -115,6 +120,3 @@ class VGLConnect(object):
                 (self._options, node, command))
             self.process = Popen("%s %s %s '%s'" %
                                 (self._vgl_cmd, self._options, node, command), shell=self.shell)
-            
-
-        print("Popen completed")

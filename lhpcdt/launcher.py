@@ -54,36 +54,36 @@ class SubmitThread(QtCore.QThread):
         self.vgl = remote.VGLConnect()
         self.vgl.vglrun = vglrun
         self.slurm = lrms.Slurm()
-
         self.error_status = SubmitThread.NO_ERROR
+        self.active_connection = None
 
     def run(self):
         """Main thread method"""
 
-        print("Submitting job...")
+        print("Starting session...")
 
         if not self.slurm.submit(self.job):
-            print("Failed to submit job.")
+            print("Failed to start session.")
             self.error_status = SubmitThread.SUBMIT_FAILED
             return
         else:
-            print("Job %d submitted." % self.job.id)
+            print("Session %d submitted." % self.job.id)
 
-        print("Waiting for job to start...")
+        print("Waiting for session to start...")
         self.slurm.wait_for_start(self.job)
         self.slurm.job_status(self.job)
-        print("Job has started on node %s." % self.job.nodes)
+        print("Session has started on node %s." % self.job.nodes)
 
         print("Starting graphical application on node.")
 
         if self.opengl:
             print("Executing command on node (OpenGL)...")
             self.vgl.execute(self.job.nodes, self.cmd)
-            print("Completed.")
+            self.active_connection = self.vgl
         else:
             print("Executing command on node...")
             self.ssh.execute(self.job.nodes, self.cmd)
-            print("Completed.")
+            self.active_connection = self.ssh
 
 
 class SessionWindow(QtGui.QWidget):
@@ -335,6 +335,14 @@ class GfxLaunchWindow(QtGui.QMainWindow):
         self.running = True
         self.statusTimer.start(5000)
         self.update_controls()
+        self.active_connection = self.submitThread.active_connection
+
+        if self.submitThread.error_status == SubmitThread.SUBMIT_FAILED:
+            QtGui.QMessageBox.about(self, self.title, "Session start failed.")
+            self.running = False
+            self.statusTimer.stop()
+            self.update_controls()
+            self.active_connection = None
 
     def on_status_timeout(self):
         """Status timer callback. Updates job status."""
@@ -344,7 +352,18 @@ class GfxLaunchWindow(QtGui.QMainWindow):
                 timeLimit = self.time_to_decimal(self.job.timeLimit)
                 percent = 100 * timeRunning / timeLimit
                 self.usageBar.setValue(int(percent))
+
+                if not self.active_connection.is_active():
+                    print("Active connection closed. Terminating session.")
+                    self.running = False
+                    self.statusTimer.stop()
+                    self.usageBar.setValue(0)
+                    self.update_controls()
+                    if self.job is not None:
+                        self.slurm.cancel_job(self.job)
+                    
             else:
+                print("Session completed.")
                 self.running = False
                 self.statusTimer.stop()
                 self.usageBar.setValue(0)
@@ -394,8 +413,12 @@ class GfxLaunchWindow(QtGui.QMainWindow):
     @QtCore.pyqtSlot(str)
     def on_append_text(self, text):
         """Callback for to update status output from standard output"""
+        now = datetime.now()        
         self.statusText.moveCursor(QtGui.QTextCursor.End)
-        self.statusText.insertPlainText(text)
+        if text!="\n":
+            self.statusText.insertPlainText(now.strftime("[%H:%M:%S] ") + text)
+        else:
+            self.statusText.insertPlainText(text)
 
     @QtCore.pyqtSlot()
     def on_oneHourRadio_clicked(self):
