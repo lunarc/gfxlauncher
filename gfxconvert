@@ -1,0 +1,70 @@
+#!/bin/env python
+
+import os, sys, gettext, argparse
+
+# --- Version information
+
+gfxconvert_version = "0.1"
+
+# --- Fix search path for tool
+
+tool_path = os.path.dirname(os.path.abspath(sys.argv[0]))
+sys.path.append(tool_path)
+
+# --- Configuration settings
+
+gfx_script_dir = "/sw/pkg/rviz/sbin/run"
+gfx_default_part = "erik"
+gfx_default_account = "erik-test"
+gfx_client_script_dir = "/home/bmjl/Development/gfxlauncher/scripts/client"
+
+# --- Templates
+
+slurm_gfx_simple_template = 'gfxlaunch --vgl --title "%s" --partition %s --account %s --exclusive --cmd %s --simplified'
+slurm_gfx_adv_template = 'gfxlaunch --vgl --title "%s" --partition %s --account %s --exclusive --cmd %s'
+
+# --- Functions
+
+def create_slurm_script(server_fname, slurm_fname, descr):
+
+    client_script_filename = os.path.join(gfx_client_script_dir, slurm_fname)
+    server_script_filename = os.path.join(gfx_script_dir, server_fname)
+
+    print(client_script_filename)
+
+    client_file = open(client_script_filename, "w")
+    client_file.write(slurm_gfx_simple_template % (descr, gfx_default_part, gfx_default_account, server_script_filename))
+    client_file.close()
+
+    os.chmod(client_script_filename, 0755)
+
+def parse_script_dir(script_dir):
+
+    for file in os.listdir(script_dir):
+        if file.endswith(".sh") and file.startswith("run_") and file.find("rviz-server")!=-1:
+            fname = os.path.join(script_dir, file)
+            app_name = fname.split("_")[1]
+
+            server_fname = os.path.basename(fname)
+
+            direct_client_fname = "run_%s_rviz-direct.sh" % app_name
+            direct_client_descr = app_name.title()
+            slurm_client_fname = "run_%s_rviz-slurm.sh" % app_name
+            slurm_client_descr = app_name.title() + " (SLURM)"
+
+            create_slurm_script(server_fname, slurm_client_fname, slurm_client_descr)
+
+
+#from lhpcdt import *
+
+if __name__ == '__main__':
+
+    # Show version information
+
+    #print("LUNARC HPC Desktop - Wrapper script  - Version %s" % gfxconvert_version)
+    #print("Written by Jonas Lindemann (jonas.lindemann@lunarc.lu.se)")
+    #print("Copyright (C) 2017 LUNARC, Lund University")
+
+    parse_script_dir(gfx_script_dir)
+
+    

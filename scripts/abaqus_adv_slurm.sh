@@ -1,0 +1,1 @@
+gfxlaunch --vgl --title "Abaqus" --partition erik --account erik-test --exclusive --cmd /sw/pkg/rviz/sbin/run/run_abaqus-V6R2017x_rviz-server.sh

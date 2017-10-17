@@ -77,6 +77,10 @@ class Job(object):
         self.add_script('echo "Running on hosts: $SLURM_NODELIST"')
         self.add_script('echo "Running on $SLURM_NNODES nodes."')
         self.add_script('echo "Running on $SLURM_NPROCS processors."')
+        self.add_script('echo "SLURM JobID $SLURM_JOB_ID processors."')
+        self.add_script('echo "Node has $SLURM_CPUS_ON_NODE processors."')
+        self.add_script('echo "Node has $SLURM_MEM_PER_NODE total memory."')
+        self.add_script('echo "Node has $SLURM_MEM_PER_CPU memory per cpu."')
         self.add_script('echo "Current working directory is `pwd`"')
         self.add_script('')
 

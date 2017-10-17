@@ -196,7 +196,7 @@ class GfxLaunchWindow(QtGui.QMainWindow):
         if self.simplified:
             uic.loadUi(os.path.join(ui_path, "mainwindow_simplified.ui"), self)
         else:
-            uic.loadUi(os.path.join(ui_path, "mainwindow.ui"), self)
+            uic.loadUi(os.path.join(ui_path, "mainwindow_advanced.ui"), self)
 
         # Update controls to reflect parameters
 
@@ -252,17 +252,17 @@ class GfxLaunchWindow(QtGui.QMainWindow):
 
     def update_properties(self):
         """Get properties from user interface"""
+        self.time = self.wallTimeEdit.text()
+
         if not self.simplified:
-            self.time = self.wallTimeEdit.text()
             self.memory = self.memoryEdit.text()
             self.count = self.cpuCountSpin.value()
             self.exclusive = self.exclusiveCheck.isChecked()
-            self.vgl = self.openGLCheck.isChecked()
             self.account = self.accountEdit.text()
-            self.cmd = self.executableEdit.text()
             self.part = self.partitionCombo.currentText()
-        else:
-            self.time = self.wallTimeEdit.text()
+
+        #self.vgl = self.openGLCheck.isChecked()
+        #self.cmd = self.executableEdit.text()
 
     def update_controls(self):
         """Update user interface from properties"""
@@ -277,11 +277,19 @@ class GfxLaunchWindow(QtGui.QMainWindow):
             self.sixHourRadio.setEnabled(False)
             self.twelveHourRadio.setEnabled(False)
             self.twentyFourHourRadio.setEnabled(False)
-            self.wallTimeEdit.setEnabled(False)
             self.usageBar.setEnabled(True)
             p = self.runningFrame.palette()
             p.setColor(self.runningFrame.backgroundRole(), QtCore.Qt.green)
             self.runningFrame.setPalette(p)
+            self.wallTimeEdit.setEnabled(False)
+
+            if not self.simplified:
+                self.cpuCountSpin.setEnabled(False)
+                self.memoryEdit.setEnabled(False)
+                self.exclusiveCheck.setEnabled(False)
+                self.accountEdit.setEnabled(False)
+                self.partitionCombo.setEnabled(False)
+    
         else:
             self.cancelButton.setEnabled(False)
             self.startButton.setEnabled(True)
@@ -290,12 +298,20 @@ class GfxLaunchWindow(QtGui.QMainWindow):
             self.sixHourRadio.setEnabled(True)
             self.twelveHourRadio.setEnabled(True)
             self.twentyFourHourRadio.setEnabled(True)
-            self.wallTimeEdit.setEnabled(True)
             self.usageBar.setEnabled(False)
             self.usageBar.setValue(0)
             p = self.runningFrame.palette()
             p.setColor(self.runningFrame.backgroundRole(), QtCore.Qt.gray)
             self.runningFrame.setPalette(p)
+            self.wallTimeEdit.setEnabled(True)
+
+            if not self.simplified:
+                self.cpuCountSpin.setEnabled(True)
+                self.memoryEdit.setEnabled(True)
+                self.exclusiveCheck.setEnabled(True)
+                self.accountEdit.setEnabled(True)
+                self.partitionCombo.setEnabled(True)
+            
 
         if not self.simplified:
             default_part_idx = -1
@@ -314,9 +330,9 @@ class GfxLaunchWindow(QtGui.QMainWindow):
             self.memoryEdit.setText(str(self.memory))
             self.cpuCountSpin.setValue(int(self.count))
             self.exclusiveCheck.setChecked(self.exclusive)
-            self.openGLCheck.setChecked(self.vgl)
+            #self.openGLCheck.setChecked(self.vgl)
             self.accountEdit.setText(self.account)
-            self.executableEdit.setText(self.cmd)
+            #self.executableEdit.setText(self.cmd)
             self.wallTimeEdit.setText(str(self.time))
         else:
             self.wallTimeEdit.setText(str(self.time))
@@ -377,12 +393,15 @@ class GfxLaunchWindow(QtGui.QMainWindow):
 
         self.job = jobs.PlaceHolderJob()
         self.job.account = str(self.account)
+        self.job.nodeCount = self.count
         self.job.partition = str(self.part)
         self.job.time = str(self.time)
         self.job.memory = int(self.memory)
         self.job.nodeCount = int(self.count)
         self.job.exclusive = self.exclusive
         self.job.update()
+
+        print(self.job)
 
         self.submitThread = SubmitThread(self.job, self.cmd, self.vgl, self.vglrun)
         self.submitThread.finished.connect(self.on_submit_finished)
