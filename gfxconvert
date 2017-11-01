@@ -28,7 +28,7 @@ gfx_backend_node = "gfx0"
 
 # --- Templates
 
-gfx_vgl_connect_template = '%s/vglconnect %s@%s %s/%s'
+gfx_vgl_connect_template = '%s/vglconnect %s %s/%s'
 gfx_simple_slurm_template = 'gfxlaunch --vgl --title "%s" --partition %s --account %s --exclusive --cmd %s --simplified'
 gfx_adv_slumr_template = 'gfxlaunch --vgl --title "%s" --partition %s --account %s --exclusive --cmd %s'
 
@@ -153,7 +153,7 @@ def create_direct_script(server_fname, direct_fname, descr):
 
     # vglconnect_template = '%s/vglconnect %s@%s %s/%s'
 
-    client_file.write(gfx_vgl_connect_template % (gfx_vgl_bin, username, gfx_backend_node, gfx_script_dir, server_fname))
+    client_file.write(gfx_vgl_connect_template % (gfx_vgl_bin, gfx_backend_node, gfx_script_dir, server_fname))
     client_file.close()
 
     os.chmod(client_script_filename, 0755)
