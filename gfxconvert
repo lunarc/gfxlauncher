@@ -182,7 +182,7 @@ def create_desktop_entry(script, descr):
     entry.terminal = False
     entry.icon = ""
     entry.name = descr
-    entry.exec_file = "'%s'" % script_filename
+    entry.exec_file = "%s" % script_filename
     entry.write()
 
     return entry
