@@ -4,7 +4,7 @@ import os, sys, gettext, argparse, getpass, ConfigParser
 
 # --- Version information
 
-gfxconvert_version = "0.2"
+gfxconvert_version = "0.3"
 
 # --- Fix search path for tool
 
@@ -33,6 +33,7 @@ gfx_simple_slurm_template = 'gfxlaunch --vgl --title "%s" --partition %s --accou
 gfx_adv_slumr_template = 'gfxlaunch --vgl --title "%s" --partition %s --account %s --exclusive --cmd %s'
 
 # --- Classes
+
 
 class Menu:
     """XDG Menu class"""
@@ -106,6 +107,7 @@ class Menu:
 
         f.close()
 
+
 class DesktopEntry:
     """Implements a XDG menu entry"""
     def __init__(self):
@@ -139,7 +141,9 @@ class DesktopEntry:
 
         f.close()
 
+
 # --- Functions
+
 
 def create_direct_script(server_fname, direct_fname, descr):
     """Create script for direct vglconnect"""
@@ -158,6 +162,7 @@ def create_direct_script(server_fname, direct_fname, descr):
 
     os.chmod(client_script_filename, 0755)
 
+
 def create_slurm_script(server_fname, slurm_fname, descr):
     """Create script for running through SLURM"""
 
@@ -169,6 +174,7 @@ def create_slurm_script(server_fname, slurm_fname, descr):
     client_file.close()
 
     os.chmod(client_script_filename, 0755)
+
 
 def create_desktop_entry(script, descr):
     """Create desktop entry for script"""
@@ -193,23 +199,23 @@ def parse_script_dir(script_dir):
 
     menu = Menu()
 
-    for file in os.listdir(script_dir):
-        if file.endswith(".sh") and file.startswith("run_") and file.find("rviz-server")!=-1:
-            fname = os.path.join(script_dir, file)
-            app_name = fname.split("_")[1]
+    for script in os.listdir(script_dir):
+        if script.endswith('.sh') and script.startswith('run_') and script.find('rviz-server')!=-1:
+            filename = os.path.join(script_dir, script)
+            app_name = filename.split("_")[1]
 
-            server_fname = os.path.basename(fname)
+            server_filename = os.path.basename(filename)
 
-            direct_client_fname = "run_%s_rviz-direct.sh" % app_name
-            direct_client_descr = app_name.title()
-            slurm_client_fname = "run_%s_rviz-slurm.sh" % app_name
-            slurm_client_descr = app_name.title() + " (SLURM)"
+            direct_client_filename = 'run_%s_rviz-direct.sh' % app_name
+            direct_client_descr = app_name.title() + ' (Shared)'
+            slurm_client_filename = 'run_%s_rviz-slurm.sh' % app_name
+            slurm_client_descr = app_name.title() + ' (SLURM)'
 
-            create_slurm_script(server_fname, slurm_client_fname, slurm_client_descr)
-            create_direct_script(server_fname, direct_client_fname, direct_client_descr)
+            create_slurm_script(server_filename, slurm_client_filename, slurm_client_descr)
+            create_direct_script(server_filename, direct_client_filename, direct_client_descr)
 
-            direct_entry = create_desktop_entry(direct_client_fname, direct_client_descr)
-            slurm_entry = create_desktop_entry(slurm_client_fname, slurm_client_descr)
+            direct_entry = create_desktop_entry(direct_client_filename, direct_client_descr)
+            slurm_entry = create_desktop_entry(slurm_client_filename, slurm_client_descr)
 
             menu.items.append(os.path.basename(direct_entry.filename))
             menu.items.append(os.path.basename(slurm_entry.filename))
@@ -271,6 +277,7 @@ def parse_config_file(config_filename):
         return False
 
     return True
+
 
 if __name__ == '__main__':
 
