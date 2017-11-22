@@ -111,6 +111,7 @@ if __name__ == '__main__':
     print("Copyright (C) 2017 LUNARC, Lund University")
 
     cfg = config.GfxConfig.create()
+    cfg.print_config()
 
     if cfg.is_ok:
         parse_script_dir()

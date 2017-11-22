@@ -50,6 +50,46 @@ class GfxConfig(object):
         self.simple_slurm_template = 'gfxlaunch --vgl --title "%s" --partition %s --account %s --exclusive --cmd %s --simplified'
         self.adv_slurm_template = 'gfxlaunch --vgl --title "%s" --partition %s --account %s --exclusive --cmd %s'
 
+    def print_config(self):
+        """Print configuration"""
+
+        print("")
+        print("-------------------------------")
+        print("Graphics Launcher configuration")
+        print("-------------------------------")
+
+        print("")
+        print("General settings")
+        print("")
+        print("script_dir = %s" % self.script_dir)
+        print("client_script_dir = %s" % self.client_script_dir)
+
+        print("")
+        print("SLURM settings")
+        print("")
+
+        print("default_part = %s" % self.default_part)
+        print("default_account = %s" % self.default_account)
+        print("grantfile = %s" % self.grantfile)
+
+        print("simple_slurm_template = %s" % self.simple_slurm_template)
+        print("adv_slurm_template = %s" % self.adv_slurm_template)
+
+        print("")
+        print("Menu settings")
+        print("")
+
+        print("application_dir = %s" % self.applications_dir)
+        print("menu_dir = %s" % self.menu_dir)
+        print("menu_filename = %s" % self.menu_filename)
+
+        print("")
+        print("VGL settings")
+        print("")
+
+        print("vgl_bin = %s" % self.vgl_bin)
+        print("backend_node = %s" % self.backend_node)
+        print("vgl_connect_template = %s" % self.vgl_connect_template)
 
     def parse_config_file(self):
         """Parse configuration file"""
