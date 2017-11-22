@@ -2,6 +2,8 @@
 
 import os, sys, gettext, argparse, getpass, ConfigParser
 
+from lhpcdt import *
+
 # --- Version information
 
 gfxconvert_version = "0.3"
@@ -194,8 +196,10 @@ def create_desktop_entry(script, descr):
     return entry
 
 
-def parse_script_dir(script_dir):
+def parse_script_dir(cfg):
     """Parse script directory for run-scripts"""
+
+    script_dir = cfg.script_dir
 
     menu = Menu()
 
@@ -287,11 +291,7 @@ if __name__ == '__main__':
     print("Written by Jonas Lindemann (jonas.lindemann@lunarc.lu.se)")
     print("Copyright (C) 2017 LUNARC, Lund University")
 
-    if parse_config_file(gfx_config_file_alt1):
-        print("Using config = %s" % gfx_config_file_alt1)
-        parse_script_dir(gfx_script_dir)
-    elif parse_config_file(gfx_config_file_alt2):
-        print("Using config = %s" % gfx_config_file_alt2)
-        parse_script_dir(gfx_script_dir)
-    else:
-        print_error("Couldn't parse configuration")
+    cfg = config.GfxConfig()    
+
+    if cfg.is_ok:
+        parse_script_dir(cfg)
