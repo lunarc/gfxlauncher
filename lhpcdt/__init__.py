@@ -1,1 +1,1 @@
-__all__ = ['jobs', 'launcher', 'lrms', 'remote', 'settings', 'slurm', 'config']
+__all__ = ['jobs', 'launcher', 'lrms', 'remote', 'settings', 'slurm', 'config', 'desktop']

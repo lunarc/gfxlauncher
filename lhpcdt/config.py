@@ -2,10 +2,14 @@
 
 import os, sys, ConfigParser
 
+from singleton import *
+
 def print_error(msg):
     """Print error message"""
     print("Error: %s" % msg)
 
+
+@Singleton
 class GfxConfig(object):
     """Launcher configuration"""
     def __init__(self, config_filename = ""):
@@ -25,6 +29,10 @@ class GfxConfig(object):
 
         if not self.parse_config_file():
             print_error("Couldn't parse configuration")
+            self.is_ok = False
+        else:
+            self.is_ok = True
+
 
     def _default_props(self):
         """Assign default properties"""

@@ -6,143 +6,12 @@ from lhpcdt import *
 
 # --- Version information
 
-gfxconvert_version = "0.3"
+gfxconvert_version = "0.4"
 
 # --- Fix search path for tool
 
 tool_path = os.path.dirname(os.path.abspath(sys.argv[0]))
 sys.path.append(tool_path)
-
-# --- Configuration settings
-
-gfx_config_file_alt1 = "/etc/gfxlauncher.conf"
-gfx_config_file_alt2 = "/sw/pkg/rviz/etc/gfxlauncher.conf"
-
-gfx_script_dir = "/sw/pkg/rviz/sbin/run"
-gfx_default_part = "erik"
-gfx_default_account = "erik-test"
-gfx_client_script_dir = "/home/bmjl/Development/gfxlauncher/scripts/client"
-gfx_applications_dir = "/home/bmjl/test-menu/share/applications"
-gfx_menu_dir = "/home/bmjl/test-menu/etc/xdg/menus/applications-merged"
-gfx_menu_filename = "Lunarc-On-Demand.menu"
-gfx_vgl_bin = "/sw/pkg/rviz/vgl/bin/latest"
-gfx_backend_node = "gfx0"
-
-# --- Templates
-
-gfx_vgl_connect_template = '%s/vglconnect %s %s/%s'
-gfx_simple_slurm_template = 'gfxlaunch --vgl --title "%s" --partition %s --account %s --exclusive --cmd %s --simplified'
-gfx_adv_slumr_template = 'gfxlaunch --vgl --title "%s" --partition %s --account %s --exclusive --cmd %s'
-
-# --- Classes
-
-
-class Menu:
-    """XDG Menu class"""
-    def __init__(self):
-        """Constructor"""
-        self.name = "Lunarc On-Demand"
-        self.dir_file = "Lunarc-On-Demand.directory"
-        self.items = []
-        self.dest_filename = ""
-        self._indent_level = 0
-        self._tab = "    "
-
-    def _write_header(self, f):
-        """Writes menu header"""
-        f.write('<!DOCTYPE Menu PUBLIC "-//freedesktop//DTD Menu 1.0//EN"\n')
-        f.write('  "http://www.freedesktop.org/standards/menu-spec/menu-1.0.dtd">\n')
-
-    def _indent(self):
-        """Increase indentation level"""
-        self._indent_level += 1
-
-    def _dedent(self):
-        """Decrease indentation level"""
-        if self._indent_level>0:
-            self._indent_level -= 1
-
-    def _tag_value(self, f, name, value):
-        """Write a single line tag value"""
-        f.write(self._tab*self._indent_level + "<%s>%s</%s>\n" % (name, value, name))
-
-    def _tag(self, f, name):
-        """Begin a tag"""
-        f.write(self._tab*self._indent_level + "<%s>\n" % (name))
-        
-    def _close_tag(self, f, name):
-        """End a tag"""
-        f.write(self._tab*self._indent_level + "</%s>\n" % (name))
-
-    def _begin_tag(self, f, name):
-        """Begin a tag and increas indent"""
-        self._tag(f, name)
-        self._indent()
-    
-    def _end_tag(self, f, name):
-        """End a tag and decreas indentation"""
-        self._dedent()
-        self._close_tag(f, name)
-
-    def write(self):
-        """Write menu XML"""
-        if self.dest_filename == "":
-            return
-
-        f = open(self.dest_filename, "w")
-
-        self._write_header(f)
-
-        self._begin_tag(f, "Menu")
-        self._tag_value(f, "Name", "Applications")
-        self._begin_tag(f, "Menu")
-        self._tag_value(f, "Name", self.name)
-        self._tag_value(f, "Directory", self.dir_file)
-        self._begin_tag(f, "Include")
-
-        for item in self.items:
-            self._tag_value(f, "Filename", item)
-
-        self._end_tag(f, "Include")
-        self._end_tag(f, "Menu")
-        self._end_tag(f, "Menu")
-
-        f.close()
-
-
-class DesktopEntry:
-    """Implements a XDG menu entry"""
-    def __init__(self):
-        self._version = "1.0"
-        self._type = "Application"
-        self.terminal = False
-        self.icon = ""
-        self.name = "Entry"
-        self.exec_file = ""
-        self.filename = ""
-
-    def write(self):
-        """Write desktop entry"""
-        if self.filename == "":
-            return
-        
-        f = open(self.filename, "w")
-        f.write("[Desktop Entry]\n")
-        f.write("Name=%s\n" % self.name)
-        f.write("Type=%s\n" % self._type)
-        if self.terminal:
-            f.write("Terminal=true\n")
-        else:
-            f.write("Terminal=false\n")
-        
-        if self.icon != "":
-            f.write("Icon=%s\n" % self.icon)
-
-        if self.exec_file != "":
-            f.write("Exec=%s\n" % self.exec_file)
-
-        f.close()
-
 
 # --- Functions
 
@@ -150,8 +19,10 @@ class DesktopEntry:
 def create_direct_script(server_fname, direct_fname, descr):
     """Create script for direct vglconnect"""
 
-    client_script_filename = os.path.join(gfx_client_script_dir, direct_fname)
-    server_script_filename = os.path.join(gfx_script_dir, server_fname)
+    cfg = config.GfxConfig.create()
+
+    client_script_filename = os.path.join(cfg.client_script_dir, direct_fname)
+    server_script_filename = os.path.join(cfg.script_dir, server_fname)
     
     username = getpass.getuser()
 
@@ -159,7 +30,7 @@ def create_direct_script(server_fname, direct_fname, descr):
 
     # vglconnect_template = '%s/vglconnect %s@%s %s/%s'
 
-    client_file.write(gfx_vgl_connect_template % (gfx_vgl_bin, gfx_backend_node, gfx_script_dir, server_fname))
+    client_file.write(cfg.vgl_connect_template % (cfg.vgl_bin, cfg.backend_node, cfg.script_dir, server_fname))
     client_file.close()
 
     os.chmod(client_script_filename, 0755)
@@ -168,11 +39,13 @@ def create_direct_script(server_fname, direct_fname, descr):
 def create_slurm_script(server_fname, slurm_fname, descr):
     """Create script for running through SLURM"""
 
-    client_script_filename = os.path.join(gfx_client_script_dir, slurm_fname)
-    server_script_filename = os.path.join(gfx_script_dir, server_fname)
+    cfg = config.GfxConfig.create()
+
+    client_script_filename = os.path.join(cfg.client_script_dir, slurm_fname)
+    server_script_filename = os.path.join(cfg.script_dir, server_fname)
 
     client_file = open(client_script_filename, "w")
-    client_file.write(gfx_simple_slurm_template % (descr, gfx_default_part, gfx_default_account, server_script_filename))
+    client_file.write(cfg.simple_slurm_template % (descr, cfg.default_part, cfg.default_account, server_script_filename))
     client_file.close()
 
     os.chmod(client_script_filename, 0755)
@@ -182,10 +55,10 @@ def create_desktop_entry(script, descr):
     """Create desktop entry for script"""
 
     print("Creating desktop entry '%s'" % script)
-    desktop_filename = os.path.join(gfx_applications_dir, "%s.desktop" % descr)
-    script_filename = os.path.join(gfx_client_script_dir, script)
+    desktop_filename = os.path.join(cfg.applications_dir, "%s.desktop" % descr)
+    script_filename = os.path.join(cfg.client_script_dir, script)
 
-    entry = DesktopEntry()
+    entry = desktop.DesktopEntry()
     entry.filename = desktop_filename
     entry.terminal = False
     entry.icon = ""
@@ -196,12 +69,13 @@ def create_desktop_entry(script, descr):
     return entry
 
 
-def parse_script_dir(cfg):
+def parse_script_dir():
     """Parse script directory for run-scripts"""
 
+    cfg = config.GfxConfig.create()
     script_dir = cfg.script_dir
 
-    menu = Menu()
+    menu = desktop.Menu()
 
     for script in os.listdir(script_dir):
         if script.endswith('.sh') and script.startswith('run_') and script.find('rviz-server')!=-1:
@@ -224,63 +98,8 @@ def parse_script_dir(cfg):
             menu.items.append(os.path.basename(direct_entry.filename))
             menu.items.append(os.path.basename(slurm_entry.filename))
 
-    menu.dest_filename = os.path.join(gfx_menu_dir, gfx_menu_filename)
+    menu.dest_filename = os.path.join(cfg.menu_dir, cfg.menu_filename)
     menu.write()
-
-
-def print_error(msg):
-    """Print error message"""
-    print("Error: %s" % msg)
-
-
-def parse_config_file(config_filename):
-    """Parse configuration file"""
-
-    global gfx_script_dir
-    global gfx_client_script_dir
-
-    global gfx_default_part
-    global gfx_default_account
-    global gfx_simple_slurm_template
-    global gfx_adv_slurm_template
-
-    global gfx_applications_dir
-    global gfx_menu_dir
-    global gfx_menu_filename
-
-    global gfx_vgl_bin
-    global gfx_backend_node
-    global gfx_vgl_connect_template
-
-    if not os.path.isfile(config_filename):
-        print_error("Configuration file %s not found" %config_filename)
-        return False
-
-    config = ConfigParser.ConfigParser()
-    config.read(config_filename)
-
-    # Check for correct sections
-
-    try:
-        gfx_script_dir = config.get("general", "script_dir")
-        gfx_client_script_dir = config.get("general", "client_script_dir")
-
-        gfx_default_part = config.get("slurm", "default_part")
-        gfx_default_account = config.get("slurm", "default_account")
-        gfx_simple_slurm_template = config.get("slurm", "simple_slurm_template")
-        gfx_adv_slurm_template = config.get("slurm", "adv_slurm_template")
-
-        gfx_applications_dir = config.get("menus", "applications_dir")
-        gfx_menu_dir = config.get("menus", "menu_dir")
-        gfx_menu_filename = config.get("menus", "menu_filename")
-
-        gfx_vgl_bin = config.get("vgl", "vgl_bin")
-        gfx_backend_node = config.get("vgl", "backend_node")
-        gfx_vgl_connect_template = config.get("vgl", "vglconnect_template")
-    except ConfigParser.Error:
-        return False
-
-    return True
 
 
 if __name__ == '__main__':
@@ -291,7 +110,7 @@ if __name__ == '__main__':
     print("Written by Jonas Lindemann (jonas.lindemann@lunarc.lu.se)")
     print("Copyright (C) 2017 LUNARC, Lund University")
 
-    cfg = config.GfxConfig()    
+    cfg = config.GfxConfig.create()
 
     if cfg.is_ok:
-        parse_script_dir(cfg)
+        parse_script_dir()
