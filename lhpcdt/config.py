@@ -1,6 +1,6 @@
 #!/bin/env python
 
-import os, sys, ConfigParser
+import os, ConfigParser
 
 from singleton import *
 
@@ -36,6 +36,7 @@ class GfxConfig(object):
 
     def _default_props(self):
         """Assign default properties"""
+        self.debug_mode = False
         self.script_dir = "/sw/pkg/rviz/sbin/run"
         self.default_part = "lvis"
         self.default_account = "lvis-test"
@@ -49,6 +50,7 @@ class GfxConfig(object):
         self.vgl_connect_template = '%s/vglconnect %s %s/%s'
         self.simple_slurm_template = 'gfxlaunch --vgl --title "%s" --partition %s --account %s --exclusive --cmd %s --simplified'
         self.adv_slurm_template = 'gfxlaunch --vgl --title "%s" --partition %s --account %s --exclusive --cmd %s'
+        self.direct_scripts = False
 
     def print_config(self):
         """Print configuration"""
@@ -90,6 +92,23 @@ class GfxConfig(object):
         print("vgl_bin = %s" % self.vgl_bin)
         print("backend_node = %s" % self.backend_node)
         print("vgl_connect_template = %s" % self.vgl_connect_template)
+        
+    def _config_get(self, config, section, option):
+        """Safe config retrieval"""
+        
+        if config.has_option(section, option):
+            return config.get(section, option)
+        else:
+            return ""
+
+    def _config_getboolean(self, config, section, option):
+        """Safe config retrieval"""
+
+        if config.has_option(section, option):
+            return config.getboolean(section, option)
+        else:
+            return ""
+
 
     def parse_config_file(self):
         """Parse configuration file"""
@@ -106,23 +125,25 @@ class GfxConfig(object):
         # Check for correct sections
 
         try:
-            self.script_dir = config.get("general", "script_dir")
-            self.client_script_dir = config.get("general", "client_script_dir")
+            self.script_dir = self._config_get(config, "general", "script_dir")
+            self.client_script_dir = self._config_get(config, "general", "client_script_dir")
+            self.debug_mode = self._config_getboolean(config, "general", "debug_mode")
 
-            self.default_part = config.get("slurm", "default_part")
-            self.default_account = config.get("slurm", "default_account")
-            self.grantfile = config.get("slurm", "grantfile")
+            self.default_part = self._config_get(config, "slurm", "default_part")
+            self.default_account = self._config_get(config, "slurm", "default_account")
+            self.grantfile = self._config_get(config, "slurm", "grantfile")
 
-            self.simple_slurm_template = config.get("slurm", "simple_slurm_template")
-            self.adv_slurm_template = config.get("slurm", "adv_slurm_template")
+            self.simple_slurm_template = self._config_get(config, "slurm", "simple_slurm_template")
+            self.adv_slurm_template = self._config_get(config, "slurm", "adv_slurm_template")
 
-            self.applications_dir = config.get("menus", "applications_dir")
-            self.menu_dir = config.get("menus", "menu_dir")
-            self.menu_filename = config.get("menus", "menu_filename")
+            self.applications_dir = self._config_get(config, "menus", "applications_dir")
+            self.menu_dir = self._config_get(config, "menus", "menu_dir")
+            self.menu_filename = self._config_get(config, "menus", "menu_filename")
+            self.direct_scripts = self._config_getboolean(config, "menus", "direct_scripts")
 
-            self.vgl_bin = config.get("vgl", "vgl_bin")
-            self.backend_node = config.get("vgl", "backend_node")
-            self.vgl_connect_template = config.get("vgl", "vglconnect_template")
+            self.vgl_bin = self._config_get(config, "vgl", "vgl_bin")
+            self.backend_node = self._config_get(config, "vgl", "backend_node")
+            self.vgl_connect_template = self._config_get(config, "vgl", "vglconnect_template")
         except ConfigParser.Error:
             print_error("Failed to read configuration.")
             return False

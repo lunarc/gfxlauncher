@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>380</width>
-    <height>365</height>
+    <width>349</width>
+    <height>393</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -72,6 +72,12 @@
      <layout class="QHBoxLayout" name="horizontalLayout_2">
       <item>
        <widget class="QLabel" name="label">
+        <property name="minimumSize">
+         <size>
+          <width>165</width>
+          <height>0</height>
+         </size>
+        </property>
         <property name="text">
          <string>Requested walltime (h)</string>
         </property>
@@ -79,6 +85,39 @@
       </item>
       <item>
        <widget class="QLineEdit" name="wallTimeEdit"/>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_4">
+      <item>
+       <widget class="QLabel" name="label_4">
+        <property name="minimumSize">
+         <size>
+          <width>165</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>Project</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="projectEdit">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="autoFillBackground">
+         <bool>false</bool>
+        </property>
+        <property name="frame">
+         <bool>true</bool>
+        </property>
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+       </widget>
       </item>
      </layout>
     </item>

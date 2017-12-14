@@ -7,7 +7,7 @@ class Menu:
 
     def __init__(self):
         """Constructor"""
-        self.name = "Lunarc On-Demand"
+        self.name = "Lunarc Applications On-Demand"
         self.dir_file = "Lunarc-On-Demand.directory"
         self.items = []
         self.dest_filename = ""

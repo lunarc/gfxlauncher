@@ -2,11 +2,11 @@
 """Base classes for interacting with resource management systems."""
 
 import os
-import sys
 import subprocess
 import time
 from subprocess import Popen, PIPE, STDOUT
 import hostlist
+import config
 
 import jobs
 
@@ -18,6 +18,37 @@ def execute_cmd(cmd):
     output = p.stdout.read()
     retval = p.wait()
     return output
+
+
+class GrantFile:
+    """Class for accessing LUNARC grantfiles"""
+
+    def __init__(self, filename):
+        """Class constructor"""
+        self.filename = filename
+
+        self._parse_grantfile()
+
+    def _parse_grantfile(self):
+        """Parse grantfile"""
+
+        f = open(self.filename, "r")
+        lines = f.readlines()
+        f.close()
+
+        self.projects = {}
+
+        for line in lines:
+            items = line.split(",")
+            if len(items)==6:
+                name = items[0]
+                self.projects[name] = {}
+                self.projects[name]["start_date"] = items[1]
+                self.projects[name]["end_date"] = items[2]
+                self.projects[name]["core_hours"] = int(items[3])
+                self.projects[name]["partition"] = items[4]
+                self.projects[name]["pi"] = items[5].split("#")[0]
+                self.projects[name]["users"] = items[5].split("#")[1].split()
 
 
 class Queue(object):
@@ -101,10 +132,26 @@ class Slurm(object):
 
     def submit(self, job):
         """Submit job to SLURM"""
+
+        # Write job script to file (Debugging)
+
+        cfg = config.GfxConfig.create()
+
+        if cfg.debug_mode:
+            home_dir = os.getenv("HOME")
+            debug_script_filename = os.path.join(home_dir, "gfxjob.sh")
+
+            submit_script = open(debug_script_filename, "w")
+            submit_script.write(job.script)
+            submit_script.close()
+
+        # Start a sbatch process for job submission
+
         p = Popen("sbatch", stdout=PIPE, stdin=PIPE, stderr=PIPE, shell=True)
-        sbatchOutput = p.communicate(input=job.script)[0].strip()
-        if sbatchOutput.find("Submitted batch") != -1:
-            job.id = int(sbatchOutput.split()[3])
+        sbatch_output = p.communicate(input=job.script)[0].strip()
+
+        if sbatch_output.find("Submitted batch") != -1:
+            job.id = int(sbatch_output.split()[3])
             return True
         else:
             job.id = -1

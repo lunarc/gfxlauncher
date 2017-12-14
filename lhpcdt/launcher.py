@@ -1,7 +1,6 @@
 """LUNARC HPC Desktop Launcher Module"""
 
 import os
-import sys
 import getpass
 from datetime import datetime
 
@@ -11,6 +10,7 @@ import jobs
 import lrms
 import remote
 import settings
+import config
 
 
 class WriteStream(object):
@@ -165,6 +165,54 @@ class SessionWindow(QtGui.QWidget):
     def on_refreshButton_clicked(self):
         self.update_table()
 
+class SplashWindow(QtGui.QWidget):
+    def __init__(self, parent = None, splash_text = ""):
+        super(SplashWindow, self).__init__(parent)
+
+        # Where can we find the user interface definitions (ui-files)
+
+        self.tool_path = settings.LaunchSettings.create().tool_path
+
+        ui_path = os.path.join(self.tool_path, "ui")
+        image_path = os.path.join(self.tool_path, "images")
+
+        # Load appropriate user interface
+
+        uic.loadUi(os.path.join(ui_path, "splash.ui"), self)
+
+        pixmap = QtGui.QPixmap(os.path.join(image_path, "lhpcdt_splash.png"))
+        self.splashLabel.setPixmap(pixmap)
+
+        #self.setWindowFlags(QtCore.Qt.SplashScreen)
+        self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
+        self.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
+
+        self.center()
+
+        self.versionLabel.setText(splash_text)
+
+        self.statusTimer = QtCore.QTimer()
+        self.statusTimer.timeout.connect(self.on_timeout)
+        self.statusTimer.setInterval(5000)
+        self.statusTimer.start()
+
+        self.closeButton.clicked.connect(self.on_close_button_clicked)
+
+    def center(self):
+        frameGm = self.frameGeometry()
+        screen = QtGui.QApplication.desktop().screenNumber(QtGui.QApplication.desktop().cursor().pos())
+        centerPoint = QtGui.QApplication.desktop().screenGeometry(screen).center()
+        frameGm.moveCenter(centerPoint)
+        self.move(frameGm.topLeft())
+
+    def on_timeout(self):
+        self.statusTimer.stop()
+        self.close()
+
+    def on_close_button_clicked(self):
+        self.statusTimer.stop()
+        self.close()
+
 
 class GfxLaunchWindow(QtGui.QMainWindow):
     """Main launch window user interface"""
@@ -179,6 +227,8 @@ class GfxLaunchWindow(QtGui.QMainWindow):
         self.args = settings.LaunchSettings.create().args
         self.tool_path = settings.LaunchSettings.create().tool_path
 
+        self.config = config.GfxConfig.create()
+
         # Setup default launch properties
 
         self.init_defaults()
@@ -187,9 +237,15 @@ class GfxLaunchWindow(QtGui.QMainWindow):
 
         self.get_defaults_from_cmdline()
 
+        # Check for available project
+
+        if not self.has_project():
+            QtGui.QMessageBox.information(self, self.title, "No project allocation found. Please apply for a project in SUPR.")
+
         # Where can we find the user interface definitions (ui-files)
 
         ui_path = os.path.join(self.tool_path, "ui")
+        print(ui_path)
 
         # Load appropriate user interface
 
@@ -220,6 +276,22 @@ class GfxLaunchWindow(QtGui.QMainWindow):
 
         return int(h) * 3600 + int(m) * 60 + int(s)
 
+    def has_project(self):
+        """Check for user in grantfile"""
+
+        user = getpass.getuser()
+
+        grant_file = lrms.GrantFile(self.config.grantfile)
+
+        for project in grant_file.projects.keys():
+            if user in grant_file.projects[project]["users"]:
+                print("Found user %s in project %s in grantfile %s" % (user, project, self.config.grantfile))
+                self.account = project
+                return True
+
+        return False
+
+
     def init_defaults(self):
         """Basic property defaults"""
         self.time = "00:30:00"
@@ -228,8 +300,8 @@ class GfxLaunchWindow(QtGui.QMainWindow):
         self.exclusive = False
         self.vgl = False
         self.vglrun = False
-        self.account = "erik-test"
-        self.part = "erik"
+        self.account = self.config.default_account
+        self.part = self.config.default_part
         self.cmd = "xterm"
         self.title = "Lunarc HPC Desktop Launcher"
         self.simplified = False
@@ -336,6 +408,7 @@ class GfxLaunchWindow(QtGui.QMainWindow):
             self.wallTimeEdit.setText(str(self.time))
         else:
             self.wallTimeEdit.setText(str(self.time))
+            self.projectEdit.setText(str(self.account))
 
         if self.args.title != "":
             self.setWindowTitle(self.args.title)
@@ -401,7 +474,7 @@ class GfxLaunchWindow(QtGui.QMainWindow):
         self.job.exclusive = self.exclusive
         self.job.update()
 
-        print(self.job)
+        #print(self.job)
 
         self.submitThread = SubmitThread(self.job, self.cmd, self.vgl, self.vglrun)
         self.submitThread.finished.connect(self.on_submit_finished)
@@ -438,6 +511,8 @@ class GfxLaunchWindow(QtGui.QMainWindow):
             self.statusText.insertPlainText(now.strftime("[%H:%M:%S] ") + text)
         else:
             self.statusText.insertPlainText(text)
+
+        self.statusText.moveCursor(QtGui.QTextCursor.StartOfLine)
 
     @QtCore.pyqtSlot()
     def on_oneHourRadio_clicked(self):

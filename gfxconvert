@@ -1,12 +1,12 @@
 #!/bin/env python
 
-import os, sys, gettext, argparse, getpass, ConfigParser
+import os, sys, getpass
 
 from lhpcdt import *
 
 # --- Version information
 
-gfxconvert_version = "0.4"
+gfxconvert_version = "0.5"
 
 # --- Fix search path for tool
 
@@ -85,17 +85,20 @@ def parse_script_dir():
             server_filename = os.path.basename(filename)
 
             direct_client_filename = 'run_%s_rviz-direct.sh' % app_name
-            direct_client_descr = app_name.title() + ' (Shared)'
+            direct_client_descr = app_name.title() + ' (Direct)'
             slurm_client_filename = 'run_%s_rviz-slurm.sh' % app_name
-            slurm_client_descr = app_name.title() + ' (SLURM)'
+            slurm_client_descr = app_name.title()
 
             create_slurm_script(server_filename, slurm_client_filename, slurm_client_descr)
-            create_direct_script(server_filename, direct_client_filename, direct_client_descr)
-
-            direct_entry = create_desktop_entry(direct_client_filename, direct_client_descr)
             slurm_entry = create_desktop_entry(slurm_client_filename, slurm_client_descr)
 
-            menu.items.append(os.path.basename(direct_entry.filename))
+            if cfg.direct_scripts:
+                create_direct_script(server_filename, direct_client_filename, direct_client_descr)
+                direct_entry = create_desktop_entry(direct_client_filename, direct_client_descr)
+
+            if cfg.direct_scripts:
+                menu.items.append(os.path.basename(direct_entry.filename))
+
             menu.items.append(os.path.basename(slurm_entry.filename))
 
     menu.dest_filename = os.path.join(cfg.menu_dir, cfg.menu_filename)
