@@ -111,12 +111,10 @@ class VGLConnect(object):
             self._vgl_cmd = os.path.join(self.vgl_path, 'vglconnect')
 
         if self.vglrun:
-            print("vglconnect %s %s '%s'" %
-                (self._options, node, "vglrun %s" % (command)))
+            #print("vglconnect %s %s '%s'" % (self._options, node, "vglrun %s" % (command)))
             self.process = Popen("%s %s %s '%s'" %
                                 (self._vgl_cmd, self._options, node, "vglrun %s" % (command)), shell=self.shell)
         else:
-            print("vglconnect %s %s '%s'" %
-                (self._options, node, command))
+            #print("vglconnect %s %s '%s'" % (self._options, node, command))
             self.process = Popen("%s %s %s '%s'" %
                                 (self._vgl_cmd, self._options, node, command), shell=self.shell)
