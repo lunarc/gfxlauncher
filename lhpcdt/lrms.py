@@ -137,13 +137,18 @@ class Slurm(object):
 
         cfg = config.GfxConfig.create()
 
+        home_dir = os.getenv("HOME")
+
         if cfg.debug_mode:
-            home_dir = os.getenv("HOME")
             debug_script_filename = os.path.join(home_dir, "gfxjob.sh")
 
             submit_script = open(debug_script_filename, "w")
             submit_script.write(job.script)
             submit_script.close()
+
+        # Submit from user home dir.
+
+        os.chdir(home_dir)
 
         # Start a sbatch process for job submission
 
