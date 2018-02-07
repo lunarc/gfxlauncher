@@ -43,6 +43,7 @@ class GfxConfig(object):
         self.grantfile = ""
         self.client_script_dir = "/home/bmjl/Development/gfxlauncher/scripts/client"
         self.applications_dir = "/home/bmjl/test-menu/share/applications"
+        self.directories_dir = "/home/bmjl/test-menu/share/desktop-directories"
         self.menu_dir = "/home/bmjl/test-menu/etc/xdg/menus/applications-merged"
         self.menu_filename = "Lunarc-On-Demand.menu"
         self.vgl_bin = "/sw/pkg/rviz/vgl/bin/latest"
@@ -82,6 +83,7 @@ class GfxConfig(object):
         print("")
 
         print("application_dir = %s" % self.applications_dir)
+        print("directories_dir = %s" % self.directories_dir)
         print("menu_dir = %s" % self.menu_dir)
         print("menu_filename = %s" % self.menu_filename)
 
@@ -137,6 +139,7 @@ class GfxConfig(object):
             self.adv_slurm_template = self._config_get(config, "slurm", "adv_slurm_template")
 
             self.applications_dir = self._config_get(config, "menus", "applications_dir")
+            self.directories_dir = self._config_get(config, "menus", "directories_dir")
             self.menu_dir = self._config_get(config, "menus", "menu_dir")
             self.menu_filename = self._config_get(config, "menus", "menu_filename")
             self.direct_scripts = self._config_getboolean(config, "menus", "direct_scripts")

@@ -1,18 +1,23 @@
 #!/bin/env python
 
+import sys, os
+
 # --- Classes
 
 class Menu:
     """XDG Menu class"""
 
-    def __init__(self):
+    def __init__(self, dryrun = False):
         """Constructor"""
         self.name = "Lunarc Applications On-Demand"
         self.dir_file = "Lunarc-On-Demand.directory"
         self.items = []
+        self.sub_menus = {}
         self.dest_filename = ""
+        self.directory_dir = ""
         self._indent_level = 0
         self._tab = "    "
+        self.dryrun = dryrun
 
     def _write_header(self, f):
         """Writes menu header"""
@@ -50,12 +55,37 @@ class Menu:
         self._dedent()
         self._close_tag(f, name)
 
+    def _write_dir_entry(self, filename, name):
+        """Write directory entry"""
+        if self.dryrun:
+            f = sys.stdout
+            f.write("direntry = "+filename+"\n")
+        else:
+            f = open(filename, "w")
+
+        f.write("[Desktop Entry]\n")
+        f.write("Type = Directory\n")
+        f.write("Name = %s\n" % name)
+        f.write("Icon = /usr/share/icons/mate/48x48/actions/lunarc.png\n")
+
+        if not self.dryrun:
+            f.close()
+
+        # [Desktop Entry]
+        # Type = Directory
+        # Name = Python
+        # Icon = / usr / share / icons / mate / 48
+        # x48 / actions / lunarc.png
+
     def write(self):
         """Write menu XML"""
         if self.dest_filename == "":
             return
 
-        f = open(self.dest_filename, "w")
+        if self.dryrun:
+            f = sys.stdout
+        else:
+            f = open(self.dest_filename, "w")
 
         self._write_header(f)
 
@@ -70,16 +100,42 @@ class Menu:
             self._tag_value(f, "Filename", item)
 
         self._end_tag(f, "Include")
+
+        dir_entries = []
+
+        for key in self.sub_menus.keys():
+            self._begin_tag(f, "Menu")
+            self._tag_value(f, "Name", key)
+            self._tag_value(f, "Directory", key.replace(" ", "_")+".directory")
+            dir_entries.append([key, key.replace(" ", "_")+".directory"])
+            self._begin_tag(f, "Include")
+            for item in self.sub_menus[key]:
+                self._tag_value(f, "Filename", item)
+            self._end_tag(f, "Include")
+            self._end_tag(f, "Menu")
+
         self._end_tag(f, "Menu")
         self._end_tag(f, "Menu")
 
-        f.close()
+        #< Menu >
+        #< Name > Python < / Name >
+        #< Directory > Python.directory < / Directory >
+        #< Include >
+        #< Filename > Paraview.desktop < / Filename >
+        #< / Include >
+        #< / Menu >
 
+        if not self.dryrun:
+            f.close()
+
+        for dir_entry in dir_entries:
+            filename = os.path.join(self.directory_dir, dir_entry[1])
+            self._write_dir_entry(filename, dir_entry[0])
 
 class DesktopEntry:
     """Implements a XDG menu entry"""
 
-    def __init__(self):
+    def __init__(self, dryrun):
         self._version = "1.0"
         self._type = "Application"
         self.terminal = False
@@ -87,13 +143,19 @@ class DesktopEntry:
         self.name = "Entry"
         self.exec_file = ""
         self.filename = ""
+        self.dryrun = dryrun
 
     def write(self):
         """Write desktop entry"""
         if self.filename == "":
             return
 
-        f = open(self.filename, "w")
+        if self.dryrun:
+            f = sys.stdout
+            f.write("desktop entry = "+self.filename+"\n")
+        else:
+            f = open(self.filename, "w")
+
         f.write("[Desktop Entry]\n")
         f.write("Name=%s\n" % self.name)
         f.write("Type=%s\n" % self._type)
@@ -108,4 +170,5 @@ class DesktopEntry:
         if self.exec_file != "":
             f.write("Exec=%s\n" % self.exec_file)
 
-        f.close()
+        if not self.dryrun:
+            f.close()
