@@ -7,10 +7,11 @@ from PyQt4 import QtCore, QtGui
 
 # --- Version information
 
-gfxlaunch_copyright = """LUNARC HPC Desktop On-Demand - Version %s (BETA)
+gfxlaunch_copyright = """LUNARC HPC Desktop On-Demand - Version %s
 Copyright (C) 2017 LUNARC, Lund University
 """
-gfxlaunch_version = "0.2"
+gfxlaunch_copyright_short = """LUNARC HPC Desktop On-Demand - %s"""
+gfxlaunch_version = "0.3-beta"
 
 # --- Fix search path for tool
 
@@ -25,7 +26,7 @@ if __name__ == '__main__':
 
 
     print(gfxlaunch_copyright % gfxlaunch_version)
-    print()
+    print("")
 
     # Parse command line arguments  
 
@@ -66,6 +67,9 @@ if __name__ == '__main__':
     launchSettings = settings.LaunchSettings.create()
     launchSettings.args = args
     launchSettings.tool_path = tool_path
+    launchSettings.copyright_info = gfxlaunch_copyright
+    launchSettings.copyright_short_info = gfxlaunch_copyright_short
+    launchSettings.version_info = gfxlaunch_version
 
     # Redirect standard output
 

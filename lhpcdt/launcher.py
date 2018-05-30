@@ -99,7 +99,7 @@ class SessionWindow(QtGui.QWidget):
         self.update_table()
 
     def update_table(self):
-        print("update_table")
+        """Update session table"""
 
         self.queue.update()
 
@@ -226,8 +226,14 @@ class GfxLaunchWindow(QtGui.QMainWindow):
         self.slurm = lrms.Slurm()
         self.args = settings.LaunchSettings.create().args
         self.tool_path = settings.LaunchSettings.create().tool_path
+        self.copyright_info = settings.LaunchSettings.create().copyright_info
+        self.copyright_short_info = settings.LaunchSettings.create().copyright_short_info
+        self.version_info = settings.LaunchSettings.create().version_info
 
         self.config = config.GfxConfig.create()
+
+        self.slurm.query_partitions()
+        self.features = self.slurm.query_features(self.config.default_part)
 
         # Setup default launch properties
 
@@ -245,7 +251,6 @@ class GfxLaunchWindow(QtGui.QMainWindow):
         # Where can we find the user interface definitions (ui-files)
 
         ui_path = os.path.join(self.tool_path, "ui")
-        print(ui_path)
 
         # Load appropriate user interface
 
@@ -262,6 +267,8 @@ class GfxLaunchWindow(QtGui.QMainWindow):
 
         self.statusTimer = QtCore.QTimer()
         self.statusTimer.timeout.connect(self.on_status_timeout)
+
+        self.versionLabel.setText(self.copyright_short_info % self.version_info)
 
     def time_to_decimal(self, time_string):
         """Time to decimal conversion routine"""
@@ -307,6 +314,7 @@ class GfxLaunchWindow(QtGui.QMainWindow):
         self.simplified = False
         self.running = False
         self.job = None
+        self.selected_feature = ""
 
     def get_defaults_from_cmdline(self):
         """Get properties from command line"""
@@ -324,7 +332,7 @@ class GfxLaunchWindow(QtGui.QMainWindow):
 
     def update_properties(self):
         """Get properties from user interface"""
-        self.time = self.wallTimeEdit.text()
+        self.time = self.wallTimeEdit.currentText()
 
         if not self.simplified:
             self.memory = self.memoryEdit.text()
@@ -332,6 +340,11 @@ class GfxLaunchWindow(QtGui.QMainWindow):
             self.exclusive = self.exclusiveCheck.isChecked()
             self.account = self.accountEdit.text()
             self.part = self.partitionCombo.currentText()
+
+        if self.featureCombo.currentIndex() != -1:
+            self.selected_feature = self.filtered_features[self.featureCombo.currentIndex()]
+        else:
+            self.selected_feature = ""
 
         #self.vgl = self.openGLCheck.isChecked()
         #self.cmd = self.executableEdit.text()
@@ -341,14 +354,47 @@ class GfxLaunchWindow(QtGui.QMainWindow):
 
         self.slurm.query_partitions()
 
+        self.filtered_features = []
+        self.filtered_features.append("")
+
+        self.featureCombo.clear()
+        self.featureCombo.addItem("None")
+
+        for feature in self.features:
+            if feature.find("mem") != -1:
+                if self.config.feature_descriptions.has_key(feature.lower()):
+                    self.featureCombo.addItem(self.config.feature_descriptions[feature.lower()])
+                else:
+                    self.featureCombo.addItem(feature)
+                self.filtered_features.append(feature)
+            elif feature.find("gpu") != -1:
+                if self.config.feature_descriptions.has_key(feature.lower()):
+                    self.featureCombo.addItem(self.config.feature_descriptions[feature.lower()])
+                else:
+                    self.featureCombo.addItem(feature)
+                self.filtered_features.append(feature)
+
+        selected_index = -1
+        selected_count = 0
+
+        for feature in self.filtered_features:
+            if feature == self.selected_feature:
+                selected_index = selected_count
+            selected_count += 1
+
+        if selected_index != -1:
+            self.featureCombo.setCurrentIndex(selected_index)
+        else:
+            self.featureCombo.setCurrentIndex(0)
+
         if self.running:
             self.cancelButton.setEnabled(True)
             self.startButton.setEnabled(False)
-            self.oneHourRadio.setEnabled(False)
-            self.twoHourRadio.setEnabled(False)
-            self.sixHourRadio.setEnabled(False)
-            self.twelveHourRadio.setEnabled(False)
-            self.twentyFourHourRadio.setEnabled(False)
+            #self.oneHourRadio.setEnabled(False)
+            #self.twoHourRadio.setEnabled(False)
+            #self.sixHourRadio.setEnabled(False)
+            #self.twelveHourRadio.setEnabled(False)
+            #self.twentyFourHourRadio.setEnabled(False)
             self.usageBar.setEnabled(True)
             p = self.runningFrame.palette()
             p.setColor(self.runningFrame.backgroundRole(), QtCore.Qt.green)
@@ -365,11 +411,11 @@ class GfxLaunchWindow(QtGui.QMainWindow):
         else:
             self.cancelButton.setEnabled(False)
             self.startButton.setEnabled(True)
-            self.oneHourRadio.setEnabled(True)
-            self.twoHourRadio.setEnabled(True)
-            self.sixHourRadio.setEnabled(True)
-            self.twelveHourRadio.setEnabled(True)
-            self.twentyFourHourRadio.setEnabled(True)
+            #self.oneHourRadio.setEnabled(True)
+            #self.twoHourRadio.setEnabled(True)
+            #self.sixHourRadio.setEnabled(True)
+            #self.twelveHourRadio.setEnabled(True)
+            #self.twentyFourHourRadio.setEnabled(True)
             self.usageBar.setEnabled(False)
             self.usageBar.setValue(0)
             p = self.runningFrame.palette()
@@ -405,9 +451,9 @@ class GfxLaunchWindow(QtGui.QMainWindow):
             #self.openGLCheck.setChecked(self.vgl)
             self.accountEdit.setText(self.account)
             #self.executableEdit.setText(self.cmd)
-            self.wallTimeEdit.setText(str(self.time))
+            self.wallTimeEdit.setEditText(str(self.time))
         else:
-            self.wallTimeEdit.setText(str(self.time))
+            self.wallTimeEdit.setEditText(str(self.time))
             self.projectEdit.setText(str(self.account))
 
         if self.args.title != "":
@@ -472,9 +518,11 @@ class GfxLaunchWindow(QtGui.QMainWindow):
         self.job.memory = int(self.memory)
         self.job.nodeCount = int(self.count)
         self.job.exclusive = self.exclusive
+        if self.selected_feature != "":
+            self.job.add_constraint(self.selected_feature)
         self.job.update()
 
-        #print(self.job)
+        print(self.job)
 
         self.submitThread = SubmitThread(self.job, self.cmd, self.vgl, self.vglrun)
         self.submitThread.finished.connect(self.on_submit_finished)
@@ -514,32 +562,9 @@ class GfxLaunchWindow(QtGui.QMainWindow):
 
         self.statusText.moveCursor(QtGui.QTextCursor.StartOfLine)
 
-    @QtCore.pyqtSlot()
-    def on_oneHourRadio_clicked(self):
-        """Set walltime"""
-
-        self.wallTimeEdit.setText("00:60:00")
-
-    @QtCore.pyqtSlot()
-    def on_twoHourRadio_clicked(self):
-        """Set walltime"""
-
-        self.wallTimeEdit.setText("02:00:00")
-
-    @QtCore.pyqtSlot()
-    def on_sixHourRadio_clicked(self):
-        """Set walltime"""
-
-        self.wallTimeEdit.setText("06:00:00")
-
-    @QtCore.pyqtSlot()
-    def on_twelveHourRadio_clicked(self):
-        """Set walltime"""
-
-        self.wallTimeEdit.setText("12:00:00")
-
-    @QtCore.pyqtSlot()
-    def on_twentyFourHourRadio_clicked(self):
-        """Set walltime"""
-
-        self.wallTimeEdit.setText("24:00:00")
+#    @QtCore.pyqtSlot(int)
+#    def on_featureCombo_currentIndexChanged(self, idx):
+#        """Handle feature selection"""
+#
+#        self.selected_feature = self.filtered_features[idx]
+#        print(self.selected_feature)

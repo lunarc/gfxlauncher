@@ -107,28 +107,94 @@ class Slurm(object):
     def __init__(self):
         """Slurm constructor"""
         self.partitions = []
-        self.nodeLists = {}
+        self.node_lists = {}
 
     def query_partitions(self):
         """Query partitions in slurm."""
         p = Popen("sinfo", stdout=PIPE, stderr=PIPE, shell=True)
-        squeueOutput = p.communicate()[0].split("\n")
+        squeue_output = p.communicate()[0].split("\n")
 
         self.partitions = []
-        self.nodeLists = {}
+        self.node_lists = {}
 
-        partLines = squeueOutput[1:]
+        part_lines = squeue_output[1:]
 
-        for line in partLines:
+        for line in part_lines:
             if line != "":
-                partName = line.split()[0].strip()
-                nodeList = line.split()[5]
-                if partName.find("*") != -1:
-                    partName = partName[:-1]
-                self.partitions.append(partName)
-                self.nodeLists[partName] = hostlist.expand_hostlist(nodeList)
+                part_name = line.split()[0].strip()
+                node_list = line.split()[5]
+                if part_name.find("*") != -1:
+                    part_name = part_name[:-1]
+                self.partitions.append(part_name)
+                self.node_lists[part_name] = hostlist.expand_hostlist(node_list)
 
         self.partitions = list(set(self.partitions))
+
+    """
+    NodeName=eg24 Arch=x86_64 CoresPerSocket=8
+       CPUAlloc=0 CPUErr=0 CPUTot=16 CPULoad=0.01
+       AvailableFeatures=rack-f1,kepler,mem96GB,gpu8k20
+       ActiveFeatures=rack-f1,kepler,mem96GB,gpu8k20
+       Gres=gpu:k20:6
+       NodeAddr=eg24 NodeHostName=eg24 Version=17.02
+       OS=Linux RealMemory=94000 AllocMem=0 FreeMem=94163 Sockets=2 Boards=1
+       State=IDLE ThreadsPerCore=1 TmpDisk=0 Weight=1 Owner=N/A MCS_label=N/A
+       Partitions=lvis 
+       BootTime=2018-02-05T18:02:37 SlurmdStartTime=2018-02-05T18:05:18
+       CfgTRES=cpu=16,mem=94000M
+       AllocTRES=
+       CapWatts=n/a
+       CurrentWatts=0 LowestJoules=0 ConsumedJoules=0
+       ExtSensorsJoules=n/s ExtSensorsWatts=0 ExtSensorsTemp=n/s
+    """
+
+    def query_node(self, node):
+        """Query information on node"""
+        p = Popen("scontrol show node %s" % node, stdout=PIPE, stderr=PIPE, shell=True)
+        scontrol_output = p.communicate()[0].split("\n")
+
+        node_dict = {}
+
+        for line in scontrol_output:
+            var_pairs = line.strip().split(" ")
+            if len(var_pairs) >= 1:
+                for var_pair in var_pairs:
+                    if len(var_pair)>0:
+                        var_name = var_pair.split("=")[0]
+                        var_value = var_pair.split("=")[1]
+                        node_dict[var_name] = var_value
+
+        return node_dict
+
+    def query_features(self, part):
+        """Query features of partition"""
+
+        node_list = self.node_lists[part]
+
+        feature_list =[]
+
+        for node in node_list:
+            node_info = self.query_node(node)
+
+            features = node_info["AvailableFeatures"].split(",")
+            feature_list.extend(features)
+
+        return list(set(feature_list))
+
+    def query_gres(self, part):
+        """Query features of partition"""
+
+        node_list = self.node_lists[part]
+
+        gres_list =[]
+
+        for node in node_list:
+            node_info = self.query_node(node)
+
+            gres = node_info["Gres"].split(",")
+            gres_list.extend(gres)
+
+        return list(set(gres_list))
 
     def submit(self, job):
         """Submit job to SLURM"""
@@ -166,14 +232,14 @@ class Slurm(object):
         """Query status of job"""
         p = Popen("squeue -j " + str(job.id) + " -t PD,R -h -o '%t;%N;%L;%M;%l'",
                   stdout=PIPE, stderr=PIPE, shell=True)
-        squeueOutput = p.communicate()[0].strip().split(";")
+        squeue_output = p.communicate()[0].strip().split(";")
 
-        if len(squeueOutput) > 1:
-            job.status = squeueOutput[0]
-            job.nodes = squeueOutput[1]
-            job.timeLeft = squeueOutput[2]
-            job.timeRunning = squeueOutput[3]
-            job.timeLimit = squeueOutput[4]
+        if len(squeue_output) > 1:
+            job.status = squeue_output[0]
+            job.nodes = squeue_output[1]
+            job.timeLeft = squeue_output[2]
+            job.timeRunning = squeue_output[3]
+            job.timeLimit = squeue_output[4]
         else:
             job.status = ""
             job.nodes = ""

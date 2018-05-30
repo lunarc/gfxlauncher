@@ -29,11 +29,20 @@ class Job(object):
         self.partition = partition
         self.node = ""
         self.submitNode = False
+        self.constraints = []
+        self.gres = ""
 
         self.scriptLines = []
         self.customLines = []
 
         self._create_script()
+
+    def add_constraint(self, constraint):
+        """Add constraint (feature)"""
+        self.constraints.append(constraint)
+
+    def clear_constraints(self):
+        self.constraints = []
 
     def add_script(self, line):
         self.scriptLines.append(line)
@@ -44,6 +53,7 @@ class Job(object):
     def clear_script(self):
         self.scriptLines = []
         self.customLines = []
+        self.constraints = []
 
     def _create_script(self):
 
@@ -65,11 +75,21 @@ class Job(object):
         self.add_option("--ntasks-per-node=%d" % self.tasksPerNode)
         self.add_option("--time=%s" % self.time)
 
+        if self.gres != "":
+            self.add_option("--gres=%s" % self.gres)
+
         if self.memory > 0:
             self.add_option("--mem=%d" % self.memory)
 
         if self.exclusive:
             self.add_option("--exclusive")
+
+        if len(self.constraints) > 0:
+            if len(self.constraints) == 1:
+                self.add_option("--constraint=%s" % self.constraints[0])
+            else:
+                constraint_string = "&".join(self.constraints)
+                self.add_option("--constraint=%s" % constraint_string)
 
         self.add_option("-J %s" % self.name)
         self.add_script("")

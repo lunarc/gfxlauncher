@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>349</width>
-    <height>393</height>
+    <width>316</width>
+    <height>418</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,7 +18,7 @@
     <item>
      <widget class="QLabel" name="label_2">
       <property name="text">
-       <string>Select usage interval</string>
+       <string>Application requirements</string>
       </property>
      </widget>
     </item>
@@ -30,61 +30,96 @@
      </widget>
     </item>
     <item>
-     <layout class="QGridLayout" name="gridLayout">
-      <item row="1" column="0">
-       <widget class="QRadioButton" name="twoHourRadio">
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <item>
+       <widget class="QLabel" name="label">
         <property name="text">
-         <string>2 hours</string>
+         <string>Walltime</string>
         </property>
        </widget>
       </item>
-      <item row="1" column="1">
-       <widget class="QRadioButton" name="twentyFourHourRadio">
-        <property name="text">
-         <string>24 hours</string>
+      <item>
+       <widget class="QComboBox" name="wallTimeEdit">
+        <property name="maximumSize">
+         <size>
+          <width>125</width>
+          <height>16777215</height>
+         </size>
         </property>
-       </widget>
-      </item>
-      <item row="2" column="0">
-       <widget class="QRadioButton" name="sixHourRadio">
-        <property name="text">
-         <string>6 hours</string>
+        <property name="editable">
+         <bool>true</bool>
         </property>
-       </widget>
-      </item>
-      <item row="0" column="0">
-       <widget class="QRadioButton" name="oneHourRadio">
-        <property name="text">
-         <string>1 hour</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="1">
-       <widget class="QRadioButton" name="twelveHourRadio">
-        <property name="text">
-         <string>12 hours</string>
-        </property>
+        <item>
+         <property name="text">
+          <string>00:60:00</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>02:00:00</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>06:00:00</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>12:00:00</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>24:00:00</string>
+         </property>
+        </item>
        </widget>
       </item>
      </layout>
     </item>
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <layout class="QHBoxLayout" name="horizontalLayout_5">
       <item>
-       <widget class="QLabel" name="label">
-        <property name="minimumSize">
+       <widget class="QLabel" name="label_5">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="maximumSize">
          <size>
-          <width>165</width>
-          <height>0</height>
+          <width>16777215</width>
+          <height>16777215</height>
          </size>
         </property>
         <property name="text">
-         <string>Requested walltime (h)</string>
+         <string>Feature</string>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QLineEdit" name="wallTimeEdit"/>
+       <widget class="QComboBox" name="featureCombo">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>200</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>16777215</height>
+         </size>
+        </property>
+       </widget>
       </item>
      </layout>
     </item>
@@ -94,7 +129,7 @@
        <widget class="QLabel" name="label_4">
         <property name="minimumSize">
          <size>
-          <width>165</width>
+          <width>60</width>
           <height>0</height>
          </size>
         </property>
@@ -107,6 +142,18 @@
        <widget class="QLineEdit" name="projectEdit">
         <property name="enabled">
          <bool>false</bool>
+        </property>
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>200</width>
+          <height>0</height>
+         </size>
         </property>
         <property name="autoFillBackground">
          <bool>false</bool>
@@ -239,7 +286,7 @@
      </widget>
     </item>
     <item>
-     <widget class="QLabel" name="label_3">
+     <widget class="QLabel" name="versionLabel">
       <property name="baseSize">
        <size>
         <width>0</width>

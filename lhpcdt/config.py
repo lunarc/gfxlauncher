@@ -52,6 +52,7 @@ class GfxConfig(object):
         self.simple_slurm_template = 'gfxlaunch --vgl --title "%s" --partition %s --account %s --exclusive --cmd %s --simplified'
         self.adv_slurm_template = 'gfxlaunch --vgl --title "%s" --partition %s --account %s --exclusive --cmd %s'
         self.direct_scripts = False
+        self.feature_descriptions = {}
 
     def print_config(self):
         """Print configuration"""
@@ -111,7 +112,6 @@ class GfxConfig(object):
         else:
             return ""
 
-
     def parse_config_file(self):
         """Parse configuration file"""
 
@@ -147,6 +147,19 @@ class GfxConfig(object):
             self.vgl_bin = self._config_get(config, "vgl", "vgl_bin")
             self.backend_node = self._config_get(config, "vgl", "backend_node")
             self.vgl_connect_template = self._config_get(config, "vgl", "vglconnect_template")
+        except ConfigParser.Error:
+            print_error("Failed to read configuration.")
+            return False
+
+        # Check for feature descriptions
+
+        try:
+            slurm_options = config.options("slurm")
+            for option in slurm_options:
+                if option.find("feature_")!=-1:
+                    descr = self._config_get(config, "slurm", option)
+                    feature = option.split("_")[1]
+                    self.feature_descriptions[feature] = descr.strip('"')
         except ConfigParser.Error:
             print_error("Failed to read configuration.")
             return False
