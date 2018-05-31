@@ -94,7 +94,15 @@ class SessionWindow(QtGui.QWidget):
         self.slurm = lrms.Slurm()
         self.queue = lrms.Queue()
 
-        uic.loadUi("../session_manager.ui", self)
+        #uic.loadUi("../session_manager.ui", self)
+
+        self.tool_path = settings.LaunchSettings.create().tool_path
+
+        ui_path = os.path.join(self.tool_path, "ui")
+
+        # Load appropriate user interface
+
+        uic.loadUi(os.path.join(ui_path, "session_manager.ui"), self)
 
         self.update_table()
 
