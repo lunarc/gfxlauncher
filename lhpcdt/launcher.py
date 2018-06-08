@@ -86,6 +86,65 @@ class SubmitThread(QtCore.QThread):
             self.active_connection = self.ssh
 
 
+class MonitorWindow(QtGui.QWidget):
+    def __init__(self, parent = None):
+        super(MonitorWindow, self).__init__(parent)
+        self.tool_path = settings.LaunchSettings.create().tool_path
+        self.hostname = settings.LaunchSettings.create().args[1]
+
+        ui_path = os.path.join(self.tool_path, "ui")
+
+        # Load appropriate user interface
+
+        uic.loadUi(os.path.join(ui_path, "monitor.ui"), self)
+
+        self.remote_probe = remote.StatusProbe()
+        self.remote_probe.check_all(self.hostname)
+
+        self.update_controls()
+
+    def update_controls(self):
+        self.progressMemory.setMaximum(self.remote_probe.total_mem)
+        self.progressMemory.setValue(self.remote_probe.used_mem)
+        self.progressCPU.setMaximum(100)
+        self.progressCPU.setValue(self.remote_probe.cpu_usage)
+        self.hostnameEdit.setText(self.hostname)
+
+        self.progressGPU1.setEnabled(False)
+        self.progressGPU2.setEnabled(False)
+        self.progressGPU3.setEnabled(False)
+        self.progressGPU4.setEnabled(False)
+        self.progressGPU5.setEnabled(False)
+        self.progressGPU6.setEnabled(False)
+        self.progressGPU7.setEnabled(False)
+        self.progressGPU8.setEnabled(False)
+
+        if len(self.remote_probe.gpu_usage)>=1:
+            self.progressGPU1.setEnabled(True)
+            self.progressGPU1.setValue(self.remote_probe.gpu_usage[0])
+        if len(self.remote_probe.gpu_usage)>=2:
+            self.progressGPU2.setEnabled(True)
+            self.progressGPU2.setValue(self.remote_probe.gpu_usage[1])
+        if len(self.remote_probe.gpu_usage)>=3:
+            self.progressGPU3.setEnabled(True)
+            self.progressGPU3.setValue(self.remote_probe.gpu_usage[2])
+        if len(self.remote_probe.gpu_usage)>=4:
+            self.progressGPU4.setEnabled(True)
+            self.progressGPU4.setValue(self.remote_probe.gpu_usage[3])
+        if len(self.remote_probe.gpu_usage)>=5:
+            self.progressGPU5.setEnabled(True)
+            self.progressGPU5.setValue(self.remote_probe.gpu_usage[4])
+        if len(self.remote_probe.gpu_usage)>=6:
+            self.progressGPU6.setEnabled(True)
+            self.progressGPU6.setValue(self.remote_probe.gpu_usage[4])
+        if len(self.remote_probe.gpu_usage)>=7:
+            self.progressGPU7.setEnabled(True)
+            self.progressGPU7.setValue(self.remote_probe.gpu_usage[7])
+        if len(self.remote_probe.gpu_usage)>=8:
+            self.progressGPU8.setEnabled(True)
+            self.progressGPU8.setValue(self.remote_probe.gpu_usage[8])
+
+
 class SessionWindow(QtGui.QWidget):
     """Session Window class"""
 
