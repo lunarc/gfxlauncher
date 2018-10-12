@@ -126,7 +126,10 @@ class Slurm(object):
                 if part_name.find("*") != -1:
                     part_name = part_name[:-1]
                 self.partitions.append(part_name)
-                self.node_lists[part_name] = hostlist.expand_hostlist(node_list)
+                if part_name in self.node_lists:
+                    self.node_lists[part_name] = self.node_lists[part_name] + hostlist.expand_hostlist(node_list)
+                else:
+                    self.node_lists[part_name] = hostlist.expand_hostlist(node_list)
 
         self.partitions = list(set(self.partitions))
 
