@@ -41,6 +41,7 @@ class GfxConfig(object):
         self.default_part = "lvis"
         self.default_account = "lvis-test"
         self.grantfile = ""
+        self.grantfile_base = ""
         self.client_script_dir = "/home/bmjl/Development/gfxlauncher/scripts/client"
         self.applications_dir = "/home/bmjl/test-menu/share/applications"
         self.directories_dir = "/home/bmjl/test-menu/share/desktop-directories"
@@ -75,6 +76,7 @@ class GfxConfig(object):
         print("default_part = %s" % self.default_part)
         print("default_account = %s" % self.default_account)
         print("grantfile = %s" % self.grantfile)
+        print("grantfile_base = %s" % self.grantfile)
 
         print("simple_slurm_template = %s" % self.simple_slurm_template)
         print("adv_slurm_template = %s" % self.adv_slurm_template)
@@ -134,6 +136,7 @@ class GfxConfig(object):
             self.default_part = self._config_get(config, "slurm", "default_part")
             self.default_account = self._config_get(config, "slurm", "default_account")
             self.grantfile = self._config_get(config, "slurm", "grantfile")
+            self.grantfile_base = self._config_get(config, "slurm", "grantfile_base")
 
             self.simple_slurm_template = self._config_get(config, "slurm", "simple_slurm_template")
             self.adv_slurm_template = self._config_get(config, "slurm", "adv_slurm_template")

@@ -355,11 +355,16 @@ class GfxLaunchWindow(QtGui.QMainWindow):
 
         user = getpass.getuser()
 
-        grant_file = lrms.GrantFile(self.config.grantfile)
+        grant_filename = self.config.grantfile
+
+        if self.config.grantfile_base!="":
+            grant_filename = self.config.grantfile_base % self.part
+        
+        grant_file = lrms.GrantFile(grant_filename)
 
         for project in grant_file.projects.keys():
             if user in grant_file.projects[project]["users"]:
-                print("Found user %s in project %s in grantfile %s" % (user, project, self.config.grantfile))
+                print("Found user %s in project %s in grantfile %s" % (user, project, grant_filename))
                 self.account = project
                 return True
 
