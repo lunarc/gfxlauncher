@@ -156,6 +156,8 @@ class Slurm(object):
         p = Popen("scontrol show node %s" % node, stdout=PIPE, stderr=PIPE, shell=True)
         scontrol_output = p.communicate()[0].split("\n")
 
+        print(scontrol_output)
+
         node_dict = {}
 
         for line in scontrol_output:
@@ -163,9 +165,10 @@ class Slurm(object):
             if len(var_pairs) >= 1:
                 for var_pair in var_pairs:
                     if len(var_pair)>0:
-                        var_name = var_pair.split("=")[0]
-                        var_value = var_pair.split("=")[1]
-                        node_dict[var_name] = var_value
+                        if var_pair.find("=")!=-1:
+                            var_name = var_pair.split("=")[0]
+                            var_value = var_pair.split("=")[1]
+                            node_dict[var_name] = var_value
 
         return node_dict
 

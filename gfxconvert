@@ -6,7 +6,7 @@ from lhpcdt import *
 
 # --- Version information
 
-gfxconvert_version = "0.6"
+gfxconvert_version = "0.7"
 
 # --- Fix search path for tool
 
@@ -36,7 +36,7 @@ def create_direct_script(server_fname, direct_fname, descr):
     os.chmod(client_script_filename, 0755)
 
 
-def create_slurm_script(server_fname, slurm_fname, descr, dryrun = False):
+def create_slurm_script(server_fname, slurm_fname, descr, metadata = {}, dryrun = False):
     """Create script for running through SLURM"""
 
     cfg = config.GfxConfig.create()
@@ -50,7 +50,12 @@ def create_slurm_script(server_fname, slurm_fname, descr, dryrun = False):
     else:
         client_file = open(client_script_filename, "w")
 
-    client_file.write(cfg.simple_slurm_template % (descr, cfg.default_part, cfg.default_account, server_script_filename))
+    part = cfg.default_part
+
+    if "part" in metadata:
+        part = metadata["part"]
+
+    client_file.write(cfg.simple_slurm_template % (descr, part, cfg.default_account, server_script_filename))
 
     if not dryrun:
         client_file.close()
@@ -82,6 +87,7 @@ def parse_script_metadata(filename):
 
     ##LDT category = "Post Processing"
     ##LDT title = "ParaView 5.4.1"
+    ##LDT part = "snic"
 
     variables = {}
 
@@ -122,7 +128,7 @@ def parse_script_dir(dryrun = False):
             slurm_client_filename = 'run_%s_rviz-slurm.sh' % app_name
             slurm_client_descr = app_name.title()
 
-            create_slurm_script(server_filename, slurm_client_filename, slurm_client_descr, dryrun)
+            create_slurm_script(server_filename, slurm_client_filename, slurm_client_descr, metadata, dryrun)
             slurm_entry = create_desktop_entry(slurm_client_filename, slurm_client_descr, metadata, dryrun)
 
             if cfg.direct_scripts:
