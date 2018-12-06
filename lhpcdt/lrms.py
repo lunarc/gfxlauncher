@@ -156,8 +156,6 @@ class Slurm(object):
         p = Popen("scontrol show node %s" % node, stdout=PIPE, stderr=PIPE, shell=True)
         scontrol_output = p.communicate()[0].split("\n")
 
-        print(scontrol_output)
-
         node_dict = {}
 
         for line in scontrol_output:
