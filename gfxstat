@@ -1,0 +1,51 @@
+#!/bin/env python
+
+import os, sys, argparse
+
+from Queue import Queue
+from PyQt4 import QtCore, QtGui
+
+# --- Version information
+
+gfxlaunch_copyright = """LUNARC HPC Desktop On-Demand - Version %s
+Copyright (C) 2017 LUNARC, Lund University
+"""
+gfxlaunch_copyright_short = """LUNARC HPC Desktop On-Demand - %s"""
+gfxlaunch_version = "0.3-beta"
+
+# --- Fix search path for tool
+
+tool_path = os.path.dirname(os.path.abspath(sys.argv[0]))
+sys.path.append(tool_path)
+
+from lhpcdt import *
+
+if __name__ == '__main__':
+
+    # Show version information
+
+    print(gfxlaunch_copyright % gfxlaunch_version)
+    print("")
+
+    launchSettings = settings.LaunchSettings.create()
+    launchSettings.args = sys.argv
+    launchSettings.tool_path = tool_path
+    launchSettings.copyright_info = gfxlaunch_copyright
+    launchSettings.copyright_short_info = gfxlaunch_copyright_short
+    launchSettings.version_info = gfxlaunch_version
+
+    # Redirect standard output
+
+    redirect = True
+
+    app = QtGui.QApplication(sys.argv)
+    app.setStyle("GTK+")
+
+    # Show user interface
+    
+    form = launcher.MonitorWindow()
+    form.show()
+
+    # Start main application loop
+
+    app.exec_()
