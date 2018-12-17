@@ -8,10 +8,10 @@ from PyQt4 import QtCore, QtGui
 # --- Version information
 
 gfxlaunch_copyright = """LUNARC HPC Desktop On-Demand - Version %s
-Copyright (C) 2017 LUNARC, Lund University
+Copyright (C) 2017, 2018 LUNARC, Lund University
 """
 gfxlaunch_copyright_short = """LUNARC HPC Desktop On-Demand - %s"""
-gfxlaunch_version = "0.3-beta"
+gfxlaunch_version = "0.4-beta"
 
 # --- Fix search path for tool
 
@@ -60,7 +60,13 @@ if __name__ == '__main__':
     parser.add_argument("--memory", dest="memory", action="store", default=-1,
         help = "Memory in MB to use")
 
-    parser.add_argument("--time", dest="time", action="store", default="00:30:00", )
+    parser.add_argument("--time", dest="time", action="store", default="00:30:00")
+
+    parser.add_argument("--only-submit", dest="only_submit", action="store_true", default=False,
+        help = "Only job submission. No remote execution to node.")
+
+    parser.add_argument("--job", dest="job_type", action="store", default="",
+        help = "Submit a specifi type of job.")
 
     args = parser.parse_args()
 
@@ -73,7 +79,7 @@ if __name__ == '__main__':
 
     # Redirect standard output
 
-    redirect = False
+    redirect = True
 
     # Create Queue and redirect sys.stdout to this queue
 

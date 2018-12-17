@@ -6,7 +6,7 @@ from lhpcdt import *
 
 # --- Version information
 
-gfxconvert_version = "0.7"
+gfxconvert_version = "0.8"
 
 # --- Fix search path for tool
 

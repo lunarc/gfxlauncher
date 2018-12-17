@@ -12,6 +12,8 @@ import remote
 import settings
 import config
 
+from subprocess import Popen, PIPE, STDOUT
+
 
 class WriteStream(object):
     """Class for synchronised stream writing"""
@@ -43,12 +45,13 @@ class SubmitThread(QtCore.QThread):
     NO_ERROR = 0
     SUBMIT_FAILED = 1
 
-    def __init__(self, job, cmd="xterm", opengl=False, vglrun=True):
+    def __init__(self, job, cmd="xterm", opengl=False, vglrun=True, only_submit=False):
         QtCore.QThread.__init__(self)
 
         self.job = job
         self.cmd = cmd
         self.opengl = opengl
+        self.only_submit = only_submit
 
         self.ssh = remote.SSH()
         self.vgl = remote.VGLConnect()
@@ -74,16 +77,18 @@ class SubmitThread(QtCore.QThread):
         self.slurm.job_status(self.job)
         print("Session has started on node %s." % self.job.nodes)
 
-        print("Starting graphical application on node.")
+        if not self.only_submit:
 
-        if self.opengl:
-            print("Executing command on node (OpenGL)...")
-            self.vgl.execute(self.job.nodes, self.cmd)
-            self.active_connection = self.vgl
-        else:
-            print("Executing command on node...")
-            self.ssh.execute(self.job.nodes, self.cmd)
-            self.active_connection = self.ssh
+            print("Starting graphical application on node.")
+
+            if self.opengl:
+                print("Executing command on node (OpenGL)...")
+                self.vgl.execute(self.job.nodes, self.cmd)
+                self.active_connection = self.vgl
+            else:
+                print("Executing command on node...")
+                self.ssh.execute(self.job.nodes, self.cmd)
+                self.active_connection = self.ssh
 
 
 class MonitorWindow(QtGui.QWidget):
@@ -299,9 +304,6 @@ class GfxLaunchWindow(QtGui.QMainWindow):
 
         self.config = config.GfxConfig.create()
 
-        self.slurm.query_partitions()
-        self.features = self.slurm.query_features(self.config.default_part)
-
         # Setup default launch properties
 
         self.init_defaults()
@@ -309,6 +311,11 @@ class GfxLaunchWindow(QtGui.QMainWindow):
         # Get changes from command line
 
         self.get_defaults_from_cmdline()
+
+        # Query partition features
+
+        self.slurm.query_partitions()
+        self.features = self.slurm.query_features(self.part)
 
         # Check for available project
 
@@ -387,6 +394,8 @@ class GfxLaunchWindow(QtGui.QMainWindow):
         self.running = False
         self.job = None
         self.selected_feature = ""
+        self.only_submit = False
+        self.job_type = ""
 
     def get_defaults_from_cmdline(self):
         """Get properties from command line"""
@@ -401,6 +410,8 @@ class GfxLaunchWindow(QtGui.QMainWindow):
         self.title = self.args.title
         self.part = self.args.part
         self.simplified = self.args.simplified
+        self.only_submit = self.args.only_submit
+        self.job_type = self.args.job_type
 
     def update_properties(self):
         """Get properties from user interface"""
@@ -551,6 +562,11 @@ class GfxLaunchWindow(QtGui.QMainWindow):
             self.update_controls()
             self.active_connection = None
 
+    def on_notebook_url_found(self, url):
+        """Callback when notebook url has been found."""
+
+        Popen("firefox %s" % url, shell=True)
+
     def on_status_timeout(self):
         """Status timer callback. Updates job status."""
         if self.job is not None:
@@ -560,15 +576,21 @@ class GfxLaunchWindow(QtGui.QMainWindow):
                 percent = 100 * timeRunning / timeLimit
                 self.usageBar.setValue(int(percent))
 
-                if not self.active_connection.is_active():
-                    print("Active connection closed. Terminating session.")
-                    self.running = False
-                    self.statusTimer.stop()
-                    self.usageBar.setValue(0)
-                    self.update_controls()
-                    if self.job is not None:
-                        self.slurm.cancel_job(self.job)
-                    
+                if not self.only_submit:
+                    if not self.active_connection.is_active():
+                        print("Active connection closed. Terminating session.")
+                        self.running = False
+                        self.statusTimer.stop()
+                        self.usageBar.setValue(0)
+                        self.update_controls()
+                        if self.job is not None:
+                            self.slurm.cancel_job(self.job)
+                else:
+                    if self.job.process_output:
+                        print("Checking job output.")
+                        output_lines = self.slurm.job_output(self.job)
+                        self.job.do_process_output(output_lines)
+
             else:
                 print("Session completed.")
                 self.running = False
@@ -582,7 +604,17 @@ class GfxLaunchWindow(QtGui.QMainWindow):
 
         self.update_properties()
 
-        self.job = jobs.PlaceHolderJob()
+        # NOTE: This shoudl be modularised
+
+        if self.job_type == "":
+            self.job = jobs.PlaceHolderJob()
+        elif self.job_type == "notebook":
+            self.job = jobs.JupyterNotebookJob()
+            self.job.on_notebook_url_found = self.on_notebook_url_found
+        else:
+            QtGui.QMessageBox.about(self, self.title, "Session start failed.")
+            return
+
         self.job.account = str(self.account)
         self.job.nodeCount = self.count
         self.job.partition = str(self.part)
@@ -594,9 +626,7 @@ class GfxLaunchWindow(QtGui.QMainWindow):
             self.job.add_constraint(self.selected_feature)
         self.job.update()
 
-        print(self.job)
-
-        self.submitThread = SubmitThread(self.job, self.cmd, self.vgl, self.vglrun)
+        self.submitThread = SubmitThread(self.job, self.cmd, self.vgl, self.vglrun, self.only_submit)
         self.submitThread.finished.connect(self.on_submit_finished)
         self.submitThread.start()
 

@@ -156,8 +156,6 @@ class Slurm(object):
         p = Popen("scontrol show node %s" % node, stdout=PIPE, stderr=PIPE, shell=True)
         scontrol_output = p.communicate()[0].split("\n")
 
-        print(scontrol_output)
-
         node_dict = {}
 
         for line in scontrol_output:
@@ -172,18 +170,48 @@ class Slurm(object):
 
         return node_dict
 
+    def query_nodes(self):
+        """Query information on node"""
+        p = Popen("scontrol show nodes -o", stdout=PIPE, stderr=PIPE, shell=True)
+        scontrol_output = p.communicate()[0].split("\n")
+
+        node_dict = {}
+
+        current_node_name = ""
+
+        for line in scontrol_output:
+            var_pairs = line.strip().split(" ")
+            if len(var_pairs) >= 1:
+                for var_pair in var_pairs:
+                    if len(var_pair)>0:
+                        if var_pair.find("=")!=-1:
+                            var_name = var_pair.split("=")[0]
+                            var_value = var_pair.split("=")[1]
+
+                            if var_name == "NodeName":
+                                current_node_name = var_value
+                                node_dict[var_value] = {}
+                            else:
+                                node_dict[current_node_name][var_name] = var_value
+
+        return node_dict
+
     def query_features(self, part):
         """Query features of partition"""
 
-        node_list = self.node_lists[part]
+        print("Please wait, querying nodes...")
+
+        node_info = self.query_nodes()
 
         feature_list =[]
 
-        for node in node_list:
-            node_info = self.query_node(node)
+        for node in node_info.keys():
+            if "Partitions" in node_info[node]:
+                if node_info[node]["Partitions"] == part:
+                    features = node_info[node]["ActiveFeatures"].split(",")
+                    feature_list.extend(features)
 
-            features = node_info["AvailableFeatures"].split(",")
-            feature_list.extend(features)
+        print("Done.")
 
         return list(set(feature_list))
 
@@ -265,6 +293,21 @@ class Slurm(object):
         job.status = ""
         return result
 
+    def job_output(self, job):
+        """Query job output"""
+        if self.is_running(job):
+            output_filename = os.path.join(os.environ["HOME"],"slurm-%d.out" % job.id)
+            if os.path.exists(output_filename):
+                output_file = open(output_filename, "r")
+                output = output_file.readlines()
+                output_file.close()
+                return output
+            else:
+                print("Couldn't find: "+output_filename)
+                return []
+        else:
+            return []
+
     def wait_for_start(self, job):
         """Wait for job to start"""
         self.job_status(job)
@@ -286,3 +329,10 @@ class Slurm(object):
         """Query if job is in an non-running state"""
         self.job_status(job)
         return job.status != "R"
+
+
+if __name__ == "__main__":
+
+    slurm = Slurm()
+    features = slurm.query_features("snic")
+    print(features)
