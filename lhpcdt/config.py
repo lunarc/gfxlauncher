@@ -52,6 +52,7 @@ class GfxConfig(object):
         self.vgl_connect_template = '%s/vglconnect %s %s/%s'
         self.simple_slurm_template = 'gfxlaunch --vgl --title "%s" --partition %s --account %s --exclusive --cmd %s --simplified'
         self.adv_slurm_template = 'gfxlaunch --vgl --title "%s" --partition %s --account %s --exclusive --cmd %s'
+        self.submit_only_slurm_template = 'gfxlaunch --vgl --title "%s" --partition %s --account %s --only-submit --job=%s'
         self.direct_scripts = False
         self.feature_descriptions = {}
         self.only_submit = False
