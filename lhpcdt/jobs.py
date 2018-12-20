@@ -5,7 +5,7 @@ import os
 import sys
 import subprocess
 import time
-
+from subprocess import Popen, PIPE, STDOUT
 
 class Job(object):
     """Class describing a SLURM jobs"""
@@ -34,6 +34,8 @@ class Job(object):
 
         self.scriptLines = []
         self.customLines = []
+
+        self._process_output = False
 
         self._create_script()
 
@@ -102,6 +104,7 @@ class Job(object):
         self.add_script('echo "Node has $SLURM_MEM_PER_NODE total memory."')
         self.add_script('echo "Node has $SLURM_MEM_PER_CPU memory per cpu."')
         self.add_script('echo "Current working directory is `pwd`"')
+        self.add_script('echo "Current path is $PATH"')
         self.add_script('')
 
         self.script = "\n".join(self.scriptLines + self.customLines)
@@ -112,8 +115,19 @@ class Job(object):
     def update(self):
         self._create_script()
 
+    def set_process_output(self, flag):
+        self._process_output = flag
+
+    def get_process_output(self):
+        return self._process_output
+
+    def do_process_output(self, output_lines):
+        pass
+
     def __str__(self):
         return self.script
+
+    process_output = property(get_process_output, set_process_output)
 
 
 class PlaceHolderJob(Job):
@@ -123,3 +137,41 @@ class PlaceHolderJob(Job):
         Job.__init__(self, account, partition, time)
         self.add_custom_script('while true; do date; sleep 5; done')
         self.update()
+
+class JupyterNotebookJob(Job):
+    """Jupyter notebook job"""
+
+    def __init__(self, account="", partition="", time="00:30:00"):
+        Job.__init__(self, account, partition, time)
+        self.notebook_url = ""
+        self.process_output = True
+        self.add_custom_script("unset XDG_RUNTIME_DIR")
+        self.add_custom_script("ml purge")
+        self.add_custom_script('ml Anaconda3')
+        self.add_custom_script('jupyter-notebook --no-browser --ip=$HOSTNAME')
+        self.add_custom_script("ml")
+        self.add_custom_script("which python")
+
+    def on_notebook_url_found(self, url):
+        """Event method called when notebook has been found"""
+        print("Notebook found: "+url)
+
+    def do_process_output(self, output_lines):
+        """Process job output"""
+
+        Job.do_process_output(self, output_lines)
+
+        if self.process_output:
+            for line in output_lines:
+                if line.find("?token=")!=-1:
+                    parts = line.split()
+                    if len(parts)==4:
+                        self.notebook_url = parts[3]
+                        self.process_output = False
+
+                        self.on_notebook_url_found(self.notebook_url)
+
+
+
+
+

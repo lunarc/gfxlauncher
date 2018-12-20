@@ -52,8 +52,10 @@ class GfxConfig(object):
         self.vgl_connect_template = '%s/vglconnect %s %s/%s'
         self.simple_slurm_template = 'gfxlaunch --vgl --title "%s" --partition %s --account %s --exclusive --cmd %s --simplified'
         self.adv_slurm_template = 'gfxlaunch --vgl --title "%s" --partition %s --account %s --exclusive --cmd %s'
+        self.submit_only_slurm_template = 'gfxlaunch --vgl --title "%s" --partition %s --account %s --only-submit --job=%s --simplified'
         self.direct_scripts = False
         self.feature_descriptions = {}
+        self.only_submit = False
 
     def print_config(self):
         """Print configuration"""
@@ -68,6 +70,7 @@ class GfxConfig(object):
         print("")
         print("script_dir = %s" % self.script_dir)
         print("client_script_dir = %s" % self.client_script_dir)
+        print("only_submit = %s" % str(self.only_submit))
 
         print("")
         print("SLURM settings")
@@ -132,6 +135,7 @@ class GfxConfig(object):
             self.script_dir = self._config_get(config, "general", "script_dir")
             self.client_script_dir = self._config_get(config, "general", "client_script_dir")
             self.debug_mode = self._config_getboolean(config, "general", "debug_mode")
+            self.only_submit = self._config_getboolean(config, "general", "only_submit")
 
             self.default_part = self._config_get(config, "slurm", "default_part")
             self.default_account = self._config_get(config, "slurm", "default_account")
