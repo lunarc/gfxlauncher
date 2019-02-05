@@ -4,7 +4,7 @@ import os
 import getpass
 from datetime import datetime
 
-from PyQt4 import QtCore, QtGui, uic
+from PyQt4 import Qt, QtCore, QtGui, uic
 
 import jobs
 import lrms
@@ -285,6 +285,67 @@ class SplashWindow(QtGui.QWidget):
         self.statusTimer.stop()
         self.close()
 
+class ResourceSpecWindow(QtGui.QWidget):
+    """Resource specification window"""
+
+    def __init__(self, parent=None):
+        """Resource window constructor"""
+
+        super(ResourceSpecWindow, self).__init__(parent, QtCore.Qt.Window)
+
+        self.tool_path = settings.LaunchSettings.create().tool_path
+        ui_path = os.path.join(self.tool_path, "ui")
+
+        uic.loadUi(os.path.join(ui_path, "resource_specification.ui"), self)
+
+        self.parent = parent
+
+        self.set_data()
+
+    def set_data(self):
+        """Assign values to controls"""
+
+        self.jobNameEdit.setText(self.parent.job_name)
+        self.memoryPerCpuEdit.setText(str(self.parent.memory))
+        self.exclusiveCheck.setChecked(self.parent.exclusive)
+        self.tasksPerNodeSpin.setValue(int(self.parent.tasks_per_node))
+        self.numberOfNodesSpin.setValue(int(self.parent.count))
+        self.cpuPerTaskSpin.setValue(int(self.parent.cpus_per_task))
+        self.noRequeueCheck.setChecked(self.parent.no_requeue)
+
+    def get_data(self):
+        """Get values from controls"""
+
+        try:
+            self.parent.job_name = self.jobNameEdit.text()
+            self.perent.memory = int(self.memoryPerCpuEdit.text())
+            self.parent.exclusive = self.exclusiveCheck.isChecked()
+            self.parent.tasks_per_node = self.tasksPerNodeSpin.value()
+            self.parent.number_of_nodes = self.numberOfNodesSpin.value()
+            self.parent.cpus_per_task = self.cpuPerTaskSpin.value()
+            self.parent.no_requeue = self.noRequeueCheck.isChecked()
+        except ValueError:
+            pass
+
+    @QtCore.pyqtSlot()
+    def on_okButton_clicked(self):
+        """Event method for OK button"""
+        self.get_data()
+
+        self.job.name = self.job_name
+        self.job.memory = self.memory_per_cpu
+        self.job.tasksPerNode = self.tasks_per_node
+        self.job.nodeCount = self.number_of_nodes
+        self.job.exclusive = self.exclusive
+
+        self.close()
+
+    @QtCore.pyqtSlot()
+    def on_cancelButton_clicked(self):
+        """Event method for Cancel button"""
+
+        self.close()
+
 
 class GfxLaunchWindow(QtGui.QMainWindow):
     """Main launch window user interface"""
@@ -396,6 +457,10 @@ class GfxLaunchWindow(QtGui.QMainWindow):
         self.selected_feature = ""
         self.only_submit = False
         self.job_type = ""
+        self.job_name = "lhpc"
+        self.tasks_per_node = 1
+        self.cpus_per_task = 1
+        self.no_requeue = False
 
     def get_defaults_from_cmdline(self):
         """Get properties from command line"""
@@ -412,6 +477,10 @@ class GfxLaunchWindow(QtGui.QMainWindow):
         self.simplified = self.args.simplified
         self.only_submit = self.args.only_submit
         self.job_type = self.args.job_type
+        self.job_name = self.args.job_name
+        self.tasks_per_node = self.args.tasks_per_node
+        self.cpus_per_task = self.args.cpus_per_task
+        self.no_requeue = self.args.no_requeue
 
     def update_properties(self):
         """Get properties from user interface"""
@@ -569,6 +638,7 @@ class GfxLaunchWindow(QtGui.QMainWindow):
 
     def on_status_timeout(self):
         """Status timer callback. Updates job status."""
+
         if self.job is not None:
             if self.slurm.is_running(self.job):
                 timeRunning = self.time_to_decimal(self.job.timeRunning)
@@ -599,6 +669,13 @@ class GfxLaunchWindow(QtGui.QMainWindow):
                 self.update_controls()
 
     @QtCore.pyqtSlot()
+    def on_resourceDetailsButton_clicked(self):
+
+        self.resource_window = ResourceSpecWindow(self)
+        self.resource_window.show()
+
+
+    @QtCore.pyqtSlot()
     def on_startButton_clicked(self):
         """Submit placeholder job"""
 
@@ -615,6 +692,7 @@ class GfxLaunchWindow(QtGui.QMainWindow):
             QtGui.QMessageBox.about(self, self.title, "Session start failed.")
             return
 
+        self.job.name = self.job_name
         self.job.account = str(self.account)
         self.job.nodeCount = self.count
         self.job.partition = str(self.part)
