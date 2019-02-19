@@ -36,6 +36,7 @@ class Job(object):
         self.customLines = []
 
         self._process_output = False
+        self.update_processing = False
 
         self._create_script()
 
@@ -124,6 +125,9 @@ class Job(object):
     def do_process_output(self, output_lines):
         pass
 
+    def do_update_processing(self):
+        pass
+
     def __str__(self):
         return self.script
 
@@ -170,6 +174,36 @@ class JupyterNotebookJob(Job):
                         self.process_output = False
 
                         self.on_notebook_url_found(self.notebook_url)
+
+class VMJob(Job):
+    """Special Job for starting VM:s"""
+    def __init__(self, account="", partition="", time="00:30:00"):
+        """Class constructor"""
+        Job.__init__(self, account, partition, time)
+        self.notebook_url = ""
+        self.process_output = False
+        self.update_processing = True
+        self.add_custom_script("sleep infinity")
+
+    def do_update_processing(self):
+        """Check for vm job ip file"""
+
+        home_dir = os.getenv("HOME")
+
+        store_dir = os.path.join(home_dir, ".lhpc")
+        job_host_filename = os.path.join(store_dir, "vm_host_%s.ip" % str(self.id))
+
+        if os.path.exists(job_host_filename):
+            with open(job_host_filename) as f:
+                hostname = f.readlines()[0].strip()
+
+            self.update_processing = False
+            self.on_vm_available(hostname)
+
+    def on_vm_available(self, hostname):
+        """Callback when job ib file found."""
+        print("VM vailable: "+hostname)
+
 
 
 

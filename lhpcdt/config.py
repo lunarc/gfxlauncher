@@ -38,8 +38,8 @@ class GfxConfig(object):
         """Assign default properties"""
         self.debug_mode = False
         self.script_dir = "/sw/pkg/rviz/sbin/run"
-        self.default_part = "lvis"
-        self.default_account = "lvis-test"
+        self.default_part = "rviz"
+        self.default_account = "rviz"
         self.grantfile = ""
         self.grantfile_base = ""
         self.client_script_dir = "/home/bmjl/Development/gfxlauncher/scripts/client"

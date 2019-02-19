@@ -329,6 +329,41 @@ class StatusProbe(SSH):
         self.check_memory(node)
         self.check_gpu_usage(node)
 
+class XFreeRDP(object):
+    """Implements a RDP connection"""
 
+    def __init__(self, hostname):
+        self.hostname = hostname
+        self.process = None
+        self.output = ""
+        self.error = ""
 
+    def terminate(self):
+        """Terminate RDP connection process"""
+        if self.process != None:
+            self.process.terminate()
 
+    def is_active(self):
+        """Return RDP connection status"""
+        self.process.poll()
+        return self.process.returncode == None
+
+    def wait(self):
+        self.process.wait()        
+
+    def execute(self):
+        """Execute command on a node/host"""
+        #self._update_options()
+
+        cmd_line = 'xfreerdp -u $(zenity --entry --title="%s" --text="Enter your username") -p $(zenity --entry --title="Password" --text="Enter your _password:" --hide-text) --ignore-certificate %s'
+
+        self.process = Popen(cmd_line % (self.hostname, self.hostname), shell=True)
+
+    def execute_with_output(self, node, command):
+        #self._update_options()
+        self.process = Popen("ssh %s %s '%s'" %
+                             (self._options, node, command), shell=self.shell, stdout=PIPE)
+
+        output, error = self.process.communicate()
+
+        return output

@@ -421,12 +421,18 @@ class GfxLaunchWindow(QtGui.QMainWindow):
     def has_project(self):
         """Check for user in grantfile"""
 
+        print("has_project()")
+
         user = getpass.getuser()
 
         grant_filename = self.config.grantfile
 
+        print(grant_filename)
+
         if self.config.grantfile_base!="":
             grant_filename = self.config.grantfile_base % self.part
+
+        print(grant_filename)
         
         grant_file = lrms.GrantFile(grant_filename)
 
@@ -520,6 +526,12 @@ class GfxLaunchWindow(QtGui.QMainWindow):
                     self.featureCombo.addItem(feature)
                 self.filtered_features.append(feature)
             elif feature.find("gpu") != -1:
+                if self.config.feature_descriptions.has_key(feature.lower()):
+                    self.featureCombo.addItem(self.config.feature_descriptions[feature.lower()])
+                else:
+                    self.featureCombo.addItem(feature)
+                self.filtered_features.append(feature)
+            elif feature.find("win") != -1:
                 if self.config.feature_descriptions.has_key(feature.lower()):
                     self.featureCombo.addItem(self.config.feature_descriptions[feature.lower()])
                 else:
@@ -636,6 +648,14 @@ class GfxLaunchWindow(QtGui.QMainWindow):
 
         Popen("firefox %s" % url, shell=True)
 
+    def on_vm_available(self, hostname):
+        """Start an RDP session to host"""
+
+        print("Starting RDP: " + hostname)
+
+        rdp = remote.XFreeRDP(hostname)
+        rdp.execute()
+
     def on_status_timeout(self):
         """Status timer callback. Updates job status."""
 
@@ -660,6 +680,8 @@ class GfxLaunchWindow(QtGui.QMainWindow):
                         print("Checking job output.")
                         output_lines = self.slurm.job_output(self.job)
                         self.job.do_process_output(output_lines)
+                    if self.job.update_processing:
+                        self.job.do_update_processing()
 
             else:
                 print("Session completed.")
@@ -688,6 +710,9 @@ class GfxLaunchWindow(QtGui.QMainWindow):
         elif self.job_type == "notebook":
             self.job = jobs.JupyterNotebookJob()
             self.job.on_notebook_url_found = self.on_notebook_url_found
+        elif self.job_type == "vm":
+            self.job = jobs.VMJob()
+            self.job.on_vm_available = self.on_vm_available
         else:
             QtGui.QMessageBox.about(self, self.title, "Session start failed.")
             return
