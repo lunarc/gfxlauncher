@@ -184,6 +184,7 @@ class VMJob(Job):
         self.process_output = False
         self.update_processing = True
         self.add_custom_script("sleep infinity")
+        self.hostname = ""
 
     def do_update_processing(self):
         """Check for vm job ip file"""
@@ -198,6 +199,7 @@ class VMJob(Job):
                 hostname = f.readlines()[0].strip()
 
             self.update_processing = False
+            self.hostname = hostname
             self.on_vm_available(hostname)
 
     def on_vm_available(self, hostname):

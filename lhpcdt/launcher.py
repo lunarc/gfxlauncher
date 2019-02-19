@@ -648,13 +648,17 @@ class GfxLaunchWindow(QtGui.QMainWindow):
 
         Popen("firefox %s" % url, shell=True)
 
+        self.reconnect_nb_button.setEnabled(True)
+
     def on_vm_available(self, hostname):
         """Start an RDP session to host"""
 
         print("Starting RDP: " + hostname)
 
-        rdp = remote.XFreeRDP(hostname)
-        rdp.execute()
+        self.rdp = remote.XFreeRDP(hostname)
+        self.rdp.execute()
+
+        self.reconnect_vm_button.setEnabled(True)
 
     def on_status_timeout(self):
         """Status timer callback. Updates job status."""
@@ -689,6 +693,24 @@ class GfxLaunchWindow(QtGui.QMainWindow):
                 self.statusTimer.stop()
                 self.usageBar.setValue(0)
                 self.update_controls()
+                self.clearExtasPanel()
+
+    def on_reconnect_notebook(self):
+        """Reopen connection to notebook."""
+
+        if self.job!=None:
+            Popen("firefox %s" % self.job.notebook_url, shell=True)
+
+    def on_reconnect_vm(self):
+        """Reopen connection to vm"""
+
+        if self.job!=None:
+            if self.rdp!=None:
+                self.rdp.terminate()
+
+            self.rdp = remote.XFreeRDP(self.job.hostname)
+            self.rdp.execute()
+
 
     @QtCore.pyqtSlot()
     def on_resourceDetailsButton_clicked(self):
@@ -710,9 +732,23 @@ class GfxLaunchWindow(QtGui.QMainWindow):
         elif self.job_type == "notebook":
             self.job = jobs.JupyterNotebookJob()
             self.job.on_notebook_url_found = self.on_notebook_url_found
+
+            self.reconnect_nb_button = QtGui.QPushButton('Reconnect', self)
+            self.reconnect_nb_button.setEnabled(False)
+            self.reconnect_nb_button.clicked.connect(self.on_reconnect_notebook)
+            self.extraControlsLayout.addStretch(1)
+            self.extraControlsLayout.addWidget(QtGui.QLabel("Notebook", self))
+            self.extraControlsLayout.addWidget(self.reconnect_nb_button)
+
         elif self.job_type == "vm":
             self.job = jobs.VMJob()
             self.job.on_vm_available = self.on_vm_available
+            self.reconnect_vm_button = QtGui.QPushButton('Reconnect', self)
+            self.reconnect_vm_button.setEnabled(False)
+            self.reconnect_vm_button.clicked.connect(self.on_reconnect_vm)
+            self.extraControlsLayout.addStretch(1)
+            self.extraControlsLayout.addWidget(QtGui.QLabel("Desktop", self))
+            self.extraControlsLayout.addWidget(self.reconnect_vm_button)
         else:
             QtGui.QMessageBox.about(self, self.title, "Session start failed.")
             return
@@ -743,6 +779,12 @@ class GfxLaunchWindow(QtGui.QMainWindow):
             self.slurm.cancel_job(self.job)
         self.close()
 
+    def clearExtasPanel(self):
+        for i in reversed(range(self.extraControlsLayout.count())): 
+            widgetToRemove = self.extraControlsLayout.itemAt(i).widget()
+            self.extraControlsLayout.removeWidget(widgetToRemove)
+            widgetToRemove.setParent(None)        
+
     @QtCore.pyqtSlot()
     def on_cancelButton_clicked(self):
         """Cancel running job"""
@@ -754,6 +796,8 @@ class GfxLaunchWindow(QtGui.QMainWindow):
         self.job = None
         self.statusTimer.stop()
         self.update_controls()
+
+        self.clearExtasPanel()
 
     @QtCore.pyqtSlot(str)
     def on_append_text(self, text):

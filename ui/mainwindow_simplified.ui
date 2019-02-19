@@ -274,6 +274,9 @@
      </widget>
     </item>
     <item>
+     <layout class="QHBoxLayout" name="extraControlsLayout"/>
+    </item>
+    <item>
      <widget class="QTextBrowser" name="statusText">
       <property name="font">
        <font>
