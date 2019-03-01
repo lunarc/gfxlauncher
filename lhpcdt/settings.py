@@ -1,7 +1,7 @@
 #!/bin/env python
 
 
-from singleton import *
+from .singleton import *
 
 @Singleton
 class LaunchSettings:

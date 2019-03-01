@@ -5,16 +5,16 @@ import os
 import subprocess
 import time
 from subprocess import Popen, PIPE, STDOUT
-import hostlist
-import config
 
-import jobs
+from . import hostlist
+from . import config
+from . import jobs
 
 
 def execute_cmd(cmd):
     """Wrapper function for calling an external process"""
     p = subprocess.Popen(
-        cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
     output = p.stdout.read()
     retval = p.wait()
     return output
@@ -111,7 +111,7 @@ class Slurm(object):
 
     def query_partitions(self):
         """Query partitions in slurm."""
-        p = Popen("sinfo", stdout=PIPE, stderr=PIPE, shell=True)
+        p = Popen("sinfo", stdout=PIPE, stderr=PIPE, shell=True, universal_newlines=True)
         squeue_output = p.communicate()[0].split("\n")
 
         self.partitions = []
@@ -153,7 +153,7 @@ class Slurm(object):
 
     def query_node(self, node):
         """Query information on node"""
-        p = Popen("scontrol show node %s" % node, stdout=PIPE, stderr=PIPE, shell=True)
+        p = Popen("scontrol show node %s" % node, stdout=PIPE, stderr=PIPE, shell=True, universal_newlines=True)
         scontrol_output = p.communicate()[0].split("\n")
 
         node_dict = {}
@@ -172,7 +172,7 @@ class Slurm(object):
 
     def query_nodes(self):
         """Query information on node"""
-        p = Popen("scontrol show nodes -o", stdout=PIPE, stderr=PIPE, shell=True)
+        p = Popen("scontrol show nodes -o", stdout=PIPE, stderr=PIPE, shell=True, universal_newlines=True)
         scontrol_output = p.communicate()[0].split("\n")
 
         node_dict = {}
@@ -205,7 +205,7 @@ class Slurm(object):
 
         feature_list =[]
 
-        for node in node_info.keys():
+        for node in list(node_info.keys()):
             if "Partitions" in node_info[node]:
                 if node_info[node]["Partitions"] == part:
                     features = node_info[node]["ActiveFeatures"].split(",")
@@ -252,7 +252,7 @@ class Slurm(object):
 
         # Start a sbatch process for job submission
 
-        p = Popen("sbatch", stdout=PIPE, stdin=PIPE, stderr=PIPE, shell=True)
+        p = Popen("sbatch", stdout=PIPE, stdin=PIPE, stderr=PIPE, shell=True, universal_newlines=True)
         sbatch_output = p.communicate(input=job.script)[0].strip()
 
         if sbatch_output.find("Submitted batch") != -1:
@@ -265,7 +265,7 @@ class Slurm(object):
     def job_status(self, job):
         """Query status of job"""
         p = Popen("squeue -j " + str(job.id) + " -t PD,R -h -o '%t;%N;%L;%M;%l'",
-                  stdout=PIPE, stderr=PIPE, shell=True)
+                  stdout=PIPE, stderr=PIPE, shell=True, universal_newlines=True)
         squeue_output = p.communicate()[0].strip().split(";")
 
         if len(squeue_output) > 1:

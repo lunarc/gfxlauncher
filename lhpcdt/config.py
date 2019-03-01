@@ -1,8 +1,8 @@
 #!/bin/env python
 
-import os, ConfigParser
+import os, configparser
 
-from singleton import *
+from . singleton import *
 
 def print_error(msg):
     """Print error message"""
@@ -126,7 +126,7 @@ class GfxConfig(object):
 
         print("Using configuration file : %s" % self.config_filename)
 
-        config = ConfigParser.ConfigParser()
+        config = configparser.RawConfigParser()
         config.read(self.config_filename)
 
         # Check for correct sections
@@ -154,8 +154,8 @@ class GfxConfig(object):
             self.vgl_bin = self._config_get(config, "vgl", "vgl_bin")
             self.backend_node = self._config_get(config, "vgl", "backend_node")
             self.vgl_connect_template = self._config_get(config, "vgl", "vglconnect_template")
-        except ConfigParser.Error:
-            print_error("Failed to read configuration.")
+        except configparser.Error as e:
+            print_error(e)
             return False
 
         # Check for feature descriptions
@@ -167,8 +167,8 @@ class GfxConfig(object):
                     descr = self._config_get(config, "slurm", option)
                     feature = option.split("_")[1]
                     self.feature_descriptions[feature] = descr.strip('"')
-        except ConfigParser.Error:
-            print_error("Failed to read configuration.")
+        except configparser.Error as e:
+            print_error(e)
             return False
 
         return True

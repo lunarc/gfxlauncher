@@ -4,13 +4,13 @@ import os
 import getpass
 from datetime import datetime
 
-from PyQt4 import Qt, QtCore, QtGui, uic
+from PyQt5 import Qt, QtCore, QtGui, QtWidgets, uic
 
-import jobs
-import lrms
-import remote
-import settings
-import config
+from . import jobs
+from . import lrms
+from . import remote
+from . import settings
+from . import config
 
 from subprocess import Popen, PIPE, STDOUT
 
@@ -91,7 +91,7 @@ class SubmitThread(QtCore.QThread):
                 self.active_connection = self.ssh
 
 
-class MonitorWindow(QtGui.QWidget):
+class MonitorWindow(QtWidgets.QWidget):
     def __init__(self, parent = None):
         super(MonitorWindow, self).__init__(parent)
         self.tool_path = settings.LaunchSettings.create().tool_path
@@ -150,7 +150,7 @@ class MonitorWindow(QtGui.QWidget):
             self.progressGPU8.setValue(self.remote_probe.gpu_usage[8])
 
 
-class SessionWindow(QtGui.QWidget):
+class SessionWindow(QtWidgets.QWidget):
     """Session Window class"""
 
     def __init__(self, parent=None):
@@ -181,7 +181,7 @@ class SessionWindow(QtGui.QWidget):
 
         if user in self.queue.userJobs:
             self.sessionTable.setRowCount(
-                len(self.queue.userJobs[user].keys()))
+                len(list(self.queue.userJobs[user].keys())))
         else:
             self.sessionTable.setRowCount(0)
             return
@@ -193,24 +193,24 @@ class SessionWindow(QtGui.QWidget):
             )
 
         row = 0
-        for id in self.queue.userJobs[user].keys():
-            self.sessionTable.setItem(row, 0, QtGui.QTableWidgetItem(str(id)))
-            self.sessionTable.setItem(row, 1, QtGui.QTableWidgetItem(
+        for id in list(self.queue.userJobs[user].keys()):
+            self.sessionTable.setItem(row, 0, QtWidgets.QTableWidgetItem(str(id)))
+            self.sessionTable.setItem(row, 1, QtWidgets.QTableWidgetItem(
                 str(self.queue.userJobs[user][id]["name"])))
-            self.sessionTable.setItem(row, 2, QtGui.QTableWidgetItem(
+            self.sessionTable.setItem(row, 2, QtWidgets.QTableWidgetItem(
                 str(self.queue.userJobs[user][id]["state"])))
-            self.sessionTable.setItem(row, 3, QtGui.QTableWidgetItem(
+            self.sessionTable.setItem(row, 3, QtWidgets.QTableWidgetItem(
                 str(self.queue.userJobs[user][id]["time"])))
-            self.sessionTable.setItem(row, 4, QtGui.QTableWidgetItem(
+            self.sessionTable.setItem(row, 4, QtWidgets.QTableWidgetItem(
                 str(self.queue.userJobs[user][id]["timelimit"])))
-            self.sessionTable.setItem(row, 5, QtGui.QTableWidgetItem(
+            self.sessionTable.setItem(row, 5, QtWidgets.QTableWidgetItem(
                 str(self.queue.userJobs[user][id]["nodes"])))
-            self.sessionTable.setItem(row, 6, QtGui.QTableWidgetItem(
+            self.sessionTable.setItem(row, 6, QtWidgets.QTableWidgetItem(
                 str(self.queue.userJobs[user][id]["nodelist"])))
 
-            cancelButton = QtGui.QPushButton("Cancel")
+            cancelButton = QtWidgets.QPushButton("Cancel")
             cancelButton.clicked.connect(self.cancel_button_clicked)
-            infoButton = QtGui.QPushButton("Info")
+            infoButton = QtWidgets.QPushButton("Info")
             infoButton.clicked.connect(self.info_button_clicked)
 
             self.sessionTable.setCellWidget(row, 7, cancelButton)
@@ -237,7 +237,7 @@ class SessionWindow(QtGui.QWidget):
     def on_refreshButton_clicked(self):
         self.update_table()
 
-class SplashWindow(QtGui.QWidget):
+class SplashWindow(QtWidgets.QWidget):
     def __init__(self, parent = None, splash_text = ""):
         super(SplashWindow, self).__init__(parent)
 
@@ -272,8 +272,8 @@ class SplashWindow(QtGui.QWidget):
 
     def center(self):
         frameGm = self.frameGeometry()
-        screen = QtGui.QApplication.desktop().screenNumber(QtGui.QApplication.desktop().cursor().pos())
-        centerPoint = QtGui.QApplication.desktop().screenGeometry(screen).center()
+        screen = QtWidgets.QApplication.desktop().screenNumber(QtWidgets.QApplication.desktop().cursor().pos())
+        centerPoint = QtWidgets.QApplication.desktop().screenGeometry(screen).center()
         frameGm.moveCenter(centerPoint)
         self.move(frameGm.topLeft())
 
@@ -285,7 +285,7 @@ class SplashWindow(QtGui.QWidget):
         self.statusTimer.stop()
         self.close()
 
-class ResourceSpecWindow(QtGui.QWidget):
+class ResourceSpecWindow(QtWidgets.QWidget):
     """Resource specification window"""
 
     def __init__(self, parent=None):
@@ -347,7 +347,7 @@ class ResourceSpecWindow(QtGui.QWidget):
         self.close()
 
 
-class GfxLaunchWindow(QtGui.QMainWindow):
+class GfxLaunchWindow(QtWidgets.QMainWindow):
     """Main launch window user interface"""
 
     def __init__(self, parent=None):
@@ -368,20 +368,23 @@ class GfxLaunchWindow(QtGui.QMainWindow):
         # Setup default launch properties
 
         self.init_defaults()
+        print(self.part)
 
         # Get changes from command line
 
         self.get_defaults_from_cmdline()
+        print(self.part)
 
         # Query partition features
 
         self.slurm.query_partitions()
+
         self.features = self.slurm.query_features(self.part)
 
         # Check for available project
 
         if not self.has_project():
-            QtGui.QMessageBox.information(self, self.title, "No project allocation found. Please apply for a project in SUPR.")
+            QtWidgets.QMessageBox.information(self, self.title, "No project allocation found. Please apply for a project in SUPR.")
 
         # Where can we find the user interface definitions (ui-files)
 
@@ -389,10 +392,7 @@ class GfxLaunchWindow(QtGui.QMainWindow):
 
         # Load appropriate user interface
 
-        if self.simplified:
-            uic.loadUi(os.path.join(ui_path, "mainwindow_simplified.ui"), self)
-        else:
-            uic.loadUi(os.path.join(ui_path, "mainwindow_advanced.ui"), self)
+        uic.loadUi(os.path.join(ui_path, "mainwindow_simplified.ui"), self)
 
         # Update controls to reflect parameters
 
@@ -436,7 +436,7 @@ class GfxLaunchWindow(QtGui.QMainWindow):
         
         grant_file = lrms.GrantFile(grant_filename)
 
-        for project in grant_file.projects.keys():
+        for project in list(grant_file.projects.keys()):
             if user in grant_file.projects[project]["users"]:
                 print("Found user %s in project %s in grantfile %s" % (user, project, grant_filename))
                 self.account = project
@@ -447,6 +447,7 @@ class GfxLaunchWindow(QtGui.QMainWindow):
 
     def init_defaults(self):
         """Basic property defaults"""
+
         self.time = "00:30:00"
         self.memory = "2048"
         self.count = 1
@@ -457,7 +458,7 @@ class GfxLaunchWindow(QtGui.QMainWindow):
         self.part = self.config.default_part
         self.cmd = "xterm"
         self.title = "Lunarc HPC Desktop Launcher"
-        self.simplified = False
+        self.simplified = True
         self.running = False
         self.job = None
         self.selected_feature = ""
@@ -470,6 +471,7 @@ class GfxLaunchWindow(QtGui.QMainWindow):
 
     def get_defaults_from_cmdline(self):
         """Get properties from command line"""
+        
         self.memory = self.args.memory
         self.count = self.args.count
         self.exclusive = self.args.exclusive
@@ -480,7 +482,7 @@ class GfxLaunchWindow(QtGui.QMainWindow):
         self.time = self.args.time
         self.title = self.args.title
         self.part = self.args.part
-        self.simplified = self.args.simplified
+        self.simplified = True
         self.only_submit = self.args.only_submit
         self.job_type = self.args.job_type
         self.job_name = self.args.job_name
@@ -492,20 +494,10 @@ class GfxLaunchWindow(QtGui.QMainWindow):
         """Get properties from user interface"""
         self.time = self.wallTimeEdit.currentText()
 
-        if not self.simplified:
-            self.memory = self.memoryEdit.text()
-            self.count = self.cpuCountSpin.value()
-            self.exclusive = self.exclusiveCheck.isChecked()
-            self.account = self.accountEdit.text()
-            self.part = self.partitionCombo.currentText()
-
         if self.featureCombo.currentIndex() != -1:
             self.selected_feature = self.filtered_features[self.featureCombo.currentIndex()]
         else:
             self.selected_feature = ""
-
-        #self.vgl = self.openGLCheck.isChecked()
-        #self.cmd = self.executableEdit.text()
 
     def update_controls(self):
         """Update user interface from properties"""
@@ -520,19 +512,19 @@ class GfxLaunchWindow(QtGui.QMainWindow):
 
         for feature in self.features:
             if feature.find("mem") != -1:
-                if self.config.feature_descriptions.has_key(feature.lower()):
+                if feature.lower() in self.config.feature_descriptions:
                     self.featureCombo.addItem(self.config.feature_descriptions[feature.lower()])
                 else:
                     self.featureCombo.addItem(feature)
                 self.filtered_features.append(feature)
             elif feature.find("gpu") != -1:
-                if self.config.feature_descriptions.has_key(feature.lower()):
+                if feature.lower() in self.config.feature_descriptions:
                     self.featureCombo.addItem(self.config.feature_descriptions[feature.lower()])
                 else:
                     self.featureCombo.addItem(feature)
                 self.filtered_features.append(feature)
             elif feature.find("win") != -1:
-                if self.config.feature_descriptions.has_key(feature.lower()):
+                if feature.lower() in self.config.feature_descriptions:
                     self.featureCombo.addItem(self.config.feature_descriptions[feature.lower()])
                 else:
                     self.featureCombo.addItem(feature)
@@ -554,74 +546,37 @@ class GfxLaunchWindow(QtGui.QMainWindow):
         if self.running:
             self.cancelButton.setEnabled(True)
             self.startButton.setEnabled(False)
-            #self.oneHourRadio.setEnabled(False)
-            #self.twoHourRadio.setEnabled(False)
-            #self.sixHourRadio.setEnabled(False)
-            #self.twelveHourRadio.setEnabled(False)
-            #self.twentyFourHourRadio.setEnabled(False)
             self.usageBar.setEnabled(True)
             p = self.runningFrame.palette()
             p.setColor(self.runningFrame.backgroundRole(), QtCore.Qt.green)
             self.runningFrame.setPalette(p)
-            self.wallTimeEdit.setEnabled(False)
-
-            if not self.simplified:
-                self.cpuCountSpin.setEnabled(False)
-                self.memoryEdit.setEnabled(False)
-                self.exclusiveCheck.setEnabled(False)
-                self.accountEdit.setEnabled(False)
-                self.partitionCombo.setEnabled(False)
-    
+            self.wallTimeEdit.setEnabled(False)    
         else:
             self.cancelButton.setEnabled(False)
             self.startButton.setEnabled(True)
-            #self.oneHourRadio.setEnabled(True)
-            #self.twoHourRadio.setEnabled(True)
-            #self.sixHourRadio.setEnabled(True)
-            #self.twelveHourRadio.setEnabled(True)
-            #self.twentyFourHourRadio.setEnabled(True)
             self.usageBar.setEnabled(False)
             self.usageBar.setValue(0)
             p = self.runningFrame.palette()
             p.setColor(self.runningFrame.backgroundRole(), QtCore.Qt.gray)
             self.runningFrame.setPalette(p)
-            self.wallTimeEdit.setEnabled(True)
+            self.wallTimeEdit.setEnabled(True)            
 
-            if not self.simplified:
-                self.cpuCountSpin.setEnabled(True)
-                self.memoryEdit.setEnabled(True)
-                self.exclusiveCheck.setEnabled(True)
-                self.accountEdit.setEnabled(True)
-                self.partitionCombo.setEnabled(True)
-            
-
-        if not self.simplified:
-            default_part_idx = -1
-            i = 0
-
-            for partition in self.slurm.partitions:
-                self.partitionCombo.addItem(partition)
-                if self.part == partition:
-                    default_part_idx = i
-                i += 1
-
-            if default_part_idx != -1:
-                self.partitionCombo.setCurrentIndex(default_part_idx)
-
-        if not self.simplified:
-            self.memoryEdit.setText(str(self.memory))
-            self.cpuCountSpin.setValue(int(self.count))
-            self.exclusiveCheck.setChecked(self.exclusive)
-            #self.openGLCheck.setChecked(self.vgl)
-            self.accountEdit.setText(self.account)
-            #self.executableEdit.setText(self.cmd)
-            self.wallTimeEdit.setEditText(str(self.time))
-        else:
-            self.wallTimeEdit.setEditText(str(self.time))
-            self.projectEdit.setText(str(self.account))
+        self.wallTimeEdit.setEditText(str(self.time))
+        self.projectEdit.setText(str(self.account))
 
         if self.args.title != "":
             self.setWindowTitle(self.args.title)
+
+    def clearExtrasPanel(self):
+        """Clear user interface components in extras panel"""
+
+        try:
+            for i in reversed(list(range(self.extraControlsLayout.count()))): 
+                widgetToRemove = self.extraControlsLayout.itemAt(i).widget()
+                self.extraControlsLayout.removeWidget(widgetToRemove)
+                widgetToRemove.setParent(None)
+        except:
+            pass
 
     def closeEvent(self, event):
         """Handle window close event"""
@@ -637,7 +592,7 @@ class GfxLaunchWindow(QtGui.QMainWindow):
         self.active_connection = self.submitThread.active_connection
 
         if self.submitThread.error_status == SubmitThread.SUBMIT_FAILED:
-            QtGui.QMessageBox.about(self, self.title, "Session start failed.")
+            QtWidgets.QMessageBox.about(self, self.title, "Session start failed.")
             self.running = False
             self.statusTimer.stop()
             self.update_controls()
@@ -664,13 +619,30 @@ class GfxLaunchWindow(QtGui.QMainWindow):
         """Status timer callback. Updates job status."""
 
         if self.job is not None:
+
+            # Check job status
+
             if self.slurm.is_running(self.job):
                 timeRunning = self.time_to_decimal(self.job.timeRunning)
                 timeLimit = self.time_to_decimal(self.job.timeLimit)
                 percent = 100 * timeRunning / timeLimit
                 self.usageBar.setValue(int(percent))
 
-                if not self.only_submit:
+                if self.only_submit:
+
+                    # Handle job processing, if any
+
+                    if self.job.process_output:
+                        print("Checking job output.")
+                        output_lines = self.slurm.job_output(self.job)
+                        self.job.do_process_output(output_lines)
+                    if self.job.update_processing:
+                        self.job.do_update_processing()
+
+                else:
+
+                    # Check for non-active sessions
+
                     if not self.active_connection.is_active():
                         print("Active connection closed. Terminating session.")
                         self.running = False
@@ -679,21 +651,17 @@ class GfxLaunchWindow(QtGui.QMainWindow):
                         self.update_controls()
                         if self.job is not None:
                             self.slurm.cancel_job(self.job)
-                else:
-                    if self.job.process_output:
-                        print("Checking job output.")
-                        output_lines = self.slurm.job_output(self.job)
-                        self.job.do_process_output(output_lines)
-                    if self.job.update_processing:
-                        self.job.do_update_processing()
 
             else:
+
+                # Session has completed. Update UI
+
                 print("Session completed.")
                 self.running = False
                 self.statusTimer.stop()
                 self.usageBar.setValue(0)
                 self.update_controls()
-                self.clearExtasPanel()
+                self.clearExtrasPanel()
 
     def on_reconnect_notebook(self):
         """Reopen connection to notebook."""
@@ -714,6 +682,7 @@ class GfxLaunchWindow(QtGui.QMainWindow):
 
     @QtCore.pyqtSlot()
     def on_resourceDetailsButton_clicked(self):
+        """Open resources specification window"""
 
         self.resource_window = ResourceSpecWindow(self)
         self.resource_window.show()
@@ -725,33 +694,49 @@ class GfxLaunchWindow(QtGui.QMainWindow):
 
         self.update_properties()
 
-        # NOTE: This shoudl be modularised
+        # Note - This should be modularised
 
         if self.job_type == "":
+
+            # Create a standard placeholder job
+
             self.job = jobs.PlaceHolderJob()
         elif self.job_type == "notebook":
+
+            # Create a Jupyter notbook job
+
             self.job = jobs.JupyterNotebookJob()
             self.job.on_notebook_url_found = self.on_notebook_url_found
 
-            self.reconnect_nb_button = QtGui.QPushButton('Reconnect', self)
+            # Create extra user interface controls for reconnection
+
+            self.reconnect_nb_button = QtWidgets.QPushButton('Reconnect', self)
             self.reconnect_nb_button.setEnabled(False)
             self.reconnect_nb_button.clicked.connect(self.on_reconnect_notebook)
             self.extraControlsLayout.addStretch(1)
-            self.extraControlsLayout.addWidget(QtGui.QLabel("Notebook", self))
+            self.extraControlsLayout.addWidget(QtWidgets.QLabel("Notebook", self))
             self.extraControlsLayout.addWidget(self.reconnect_nb_button)
 
         elif self.job_type == "vm":
+
+            # Create a VM job
+
             self.job = jobs.VMJob()
             self.job.on_vm_available = self.on_vm_available
-            self.reconnect_vm_button = QtGui.QPushButton('Reconnect', self)
+
+            # Create extra user interface for reconnection to VM.
+
+            self.reconnect_vm_button = QtWidgets.QPushButton('Reconnect', self)
             self.reconnect_vm_button.setEnabled(False)
             self.reconnect_vm_button.clicked.connect(self.on_reconnect_vm)
             self.extraControlsLayout.addStretch(1)
-            self.extraControlsLayout.addWidget(QtGui.QLabel("Desktop", self))
+            self.extraControlsLayout.addWidget(QtWidgets.QLabel("Desktop", self))
             self.extraControlsLayout.addWidget(self.reconnect_vm_button)
         else:
-            QtGui.QMessageBox.about(self, self.title, "Session start failed.")
+            QtWidgets.QMessageBox.about(self, self.title, "Session start failed.")
             return
+
+        # Setup job parameters
 
         self.job.name = self.job_name
         self.job.account = str(self.account)
@@ -765,9 +750,13 @@ class GfxLaunchWindow(QtGui.QMainWindow):
             self.job.add_constraint(self.selected_feature)
         self.job.update()
 
+        # Create a job submission thread
+
         self.submitThread = SubmitThread(self.job, self.cmd, self.vgl, self.vglrun, self.only_submit)
         self.submitThread.finished.connect(self.on_submit_finished)
         self.submitThread.start()
+
+        # Make sure we only manage a single job ;)
 
         self.startButton.setEnabled(False)
 
@@ -778,12 +767,6 @@ class GfxLaunchWindow(QtGui.QMainWindow):
         if self.job is not None:
             self.slurm.cancel_job(self.job)
         self.close()
-
-    def clearExtasPanel(self):
-        for i in reversed(range(self.extraControlsLayout.count())): 
-            widgetToRemove = self.extraControlsLayout.itemAt(i).widget()
-            self.extraControlsLayout.removeWidget(widgetToRemove)
-            widgetToRemove.setParent(None)        
 
     @QtCore.pyqtSlot()
     def on_cancelButton_clicked(self):
@@ -797,11 +780,12 @@ class GfxLaunchWindow(QtGui.QMainWindow):
         self.statusTimer.stop()
         self.update_controls()
 
-        self.clearExtasPanel()
+        self.clearExtrasPanel()
 
     @QtCore.pyqtSlot(str)
     def on_append_text(self, text):
         """Callback for to update status output from standard output"""
+
         now = datetime.now()        
         self.statusText.moveCursor(QtGui.QTextCursor.End)
         if text!="\n":
@@ -810,10 +794,3 @@ class GfxLaunchWindow(QtGui.QMainWindow):
             self.statusText.insertPlainText(text)
 
         self.statusText.moveCursor(QtGui.QTextCursor.StartOfLine)
-
-#    @QtCore.pyqtSlot(int)
-#    def on_featureCombo_currentIndexChanged(self, idx):
-#        """Handle feature selection"""
-#
-#        self.selected_feature = self.filtered_features[idx]
-#        print(self.selected_feature)

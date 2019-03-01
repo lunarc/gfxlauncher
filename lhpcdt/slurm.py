@@ -7,7 +7,7 @@ import subprocess
 
 def executeCmd(cmd):
     p = subprocess.Popen(
-        cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
     output = p.stdout.read()
     retval = p.wait()
     return output
@@ -61,4 +61,4 @@ if __name__ == "__main__":
 
     q = Queue()
     q.update()
-    print q.jobList
+    print(q.jobList)

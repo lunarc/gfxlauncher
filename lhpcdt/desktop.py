@@ -103,7 +103,7 @@ class Menu:
 
         dir_entries = []
 
-        for key in self.sub_menus.keys():
+        for key in list(self.sub_menus.keys()):
             self._begin_tag(f, "Menu")
             self._tag_value(f, "Name", key)
             self._tag_value(f, "Directory", key.replace(" ", "_")+".directory")
