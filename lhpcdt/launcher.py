@@ -502,6 +502,9 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
     def update_controls(self):
         """Update user interface from properties"""
 
+        if self.job_type=="":
+            self.launcherTabs.removeTab(1)
+
         self.slurm.query_partitions()
 
         self.filtered_features = []
@@ -567,16 +570,29 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         if self.args.title != "":
             self.setWindowTitle(self.args.title)
 
-    def clearExtrasPanel(self):
+    def enableExtrasPanel(self):
         """Clear user interface components in extras panel"""
 
-        try:
-            for i in reversed(list(range(self.extraControlsLayout.count()))): 
-                widgetToRemove = self.extraControlsLayout.itemAt(i).widget()
-                self.extraControlsLayout.removeWidget(widgetToRemove)
-                widgetToRemove.setParent(None)
-        except:
-            pass
+        print("enableExtrasPanel")
+
+        self.extraControlsWidget.setEnabled(True)
+
+        #for i in self.extraControlsLayout.count():
+        #    widget = self.extraControlsLayout.itemAt(i).widget()
+        #    if widget!=None:
+        #        widget.setEnabled(True)
+
+    def disableExtrasPanel(self):
+        """Clear user interface components in extras panel"""
+
+        print("disableExtrasPanel")
+
+        self.extraControlsWidget.setEnabled(False)
+
+        #for i in self.extraControlsLayout.count():
+        #    widget = self.extraControlsLayout.itemAt(i).widget()
+        #    if widget!=None:
+        #        widget.setEnabled(False)
 
     def closeEvent(self, event):
         """Handle window close event"""
@@ -603,7 +619,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         Popen("firefox %s" % url, shell=True)
 
-        self.reconnect_nb_button.setEnabled(True)
+        self.enableExtrasPanel()
+        #self.reconnect_nb_button.setEnabled(True)
 
     def on_vm_available(self, hostname):
         """Start an RDP session to host"""
@@ -613,7 +630,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.rdp = remote.XFreeRDP(hostname)
         self.rdp.execute()
 
-        self.reconnect_vm_button.setEnabled(True)
+        self.enableExtrasPanel()
+        #self.reconnect_vm_button.setEnabled(True)
 
     def on_status_timeout(self):
         """Status timer callback. Updates job status."""
@@ -661,7 +679,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
                 self.statusTimer.stop()
                 self.usageBar.setValue(0)
                 self.update_controls()
-                self.clearExtrasPanel()
+                self.disableExtrasPanel()
 
     def on_reconnect_notebook(self):
         """Reopen connection to notebook."""
@@ -694,6 +712,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         self.update_properties()
 
+        self.disableExtrasPanel()
+
         # Note - This should be modularised
 
         if self.job_type == "":
@@ -701,6 +721,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
             # Create a standard placeholder job
 
             self.job = jobs.PlaceHolderJob()
+
         elif self.job_type == "notebook":
 
             # Create a Jupyter notbook job
@@ -710,12 +731,15 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
             # Create extra user interface controls for reconnection
 
-            self.reconnect_nb_button = QtWidgets.QPushButton('Reconnect', self)
-            self.reconnect_nb_button.setEnabled(False)
-            self.reconnect_nb_button.clicked.connect(self.on_reconnect_notebook)
-            self.extraControlsLayout.addStretch(1)
-            self.extraControlsLayout.addWidget(QtWidgets.QLabel("Notebook", self))
-            self.extraControlsLayout.addWidget(self.reconnect_nb_button)
+            if self.extraControlsLayout.count()==0:
+                self.reconnect_nb_button = QtWidgets.QPushButton('Reconnect to notebook', self)
+                self.reconnect_nb_button.setEnabled(True)
+                self.reconnect_nb_button.clicked.connect(self.on_reconnect_notebook)
+                self.extraControlsLayout.addStretch(1)
+                self.extraControlsLayout.addWidget(self.reconnect_nb_button)
+                self.extraControlsLayout.addStretch(1)
+
+            self.launcherTabs.setCurrentIndex(1)
 
         elif self.job_type == "vm":
 
@@ -726,12 +750,16 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
             # Create extra user interface for reconnection to VM.
 
-            self.reconnect_vm_button = QtWidgets.QPushButton('Reconnect', self)
-            self.reconnect_vm_button.setEnabled(False)
-            self.reconnect_vm_button.clicked.connect(self.on_reconnect_vm)
-            self.extraControlsLayout.addStretch(1)
-            self.extraControlsLayout.addWidget(QtWidgets.QLabel("Desktop", self))
-            self.extraControlsLayout.addWidget(self.reconnect_vm_button)
+            if self.extraControlsLayout.count()==0:
+                self.reconnect_vm_button = QtWidgets.QPushButton('Reconnect to desktop', self)
+                self.reconnect_vm_button.setEnabled(True)
+                self.reconnect_vm_button.clicked.connect(self.on_reconnect_vm)
+                self.extraControlsLayout.addStretch(1)
+                self.extraControlsLayout.addWidget(self.reconnect_vm_button)
+                self.extraControlsLayout.addStretch(1)
+
+            self.launcherTabs.setCurrentIndex(1)
+
         else:
             QtWidgets.QMessageBox.about(self, self.title, "Session start failed.")
             return
@@ -780,7 +808,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.statusTimer.stop()
         self.update_controls()
 
-        self.clearExtrasPanel()
+        self.disableExtrasPanel()
 
     @QtCore.pyqtSlot(str)
     def on_append_text(self, text):

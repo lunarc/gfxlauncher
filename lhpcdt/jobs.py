@@ -31,6 +31,7 @@ class Job(object):
         self.submitNode = False
         self.constraints = []
         self.gres = ""
+        self.module_list = []
 
         self.scriptLines = []
         self.customLines = []
@@ -53,10 +54,14 @@ class Job(object):
     def add_option(self, option):
         self.add_script("#SBATCH " + option)
 
+    def add_module(self, name, version=""):
+        self.module_list.append([name, version])
+
     def clear_script(self):
         self.scriptLines = []
         self.customLines = []
         self.constraints = []
+        self.module_list = []
 
     def _create_script(self):
 
@@ -108,6 +113,15 @@ class Job(object):
         self.add_script('echo "Current path is $PATH"')
         self.add_script('')
 
+        for module in self.module_list:
+            module_name = module[0]
+            module_version = module[1]
+
+            if module_version == "":
+                self.add_script('ml %s' % (module_name))
+            else:
+                self.add_script('ml %s/%s' % (module_name, module_version))
+
         self.script = "\n".join(self.scriptLines + self.customLines)
 
     def add_custom_script(self, line):
@@ -149,9 +163,10 @@ class JupyterNotebookJob(Job):
         Job.__init__(self, account, partition, time)
         self.notebook_url = ""
         self.process_output = True
+
+        self.add_module("Anaconda3")
+
         self.add_custom_script("unset XDG_RUNTIME_DIR")
-        self.add_custom_script("ml purge")
-        self.add_custom_script('ml Anaconda3')
         self.add_custom_script('jupyter-notebook --no-browser --ip=$HOSTNAME')
         self.add_custom_script("ml")
         self.add_custom_script("which python")
