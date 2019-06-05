@@ -170,7 +170,7 @@ if __name__ == '__main__':
 
     # Show splash
 
-    splashWindow = launcher.SplashWindow(None, gfxlaunch_copyright % gfxlaunch_version)
+    splashWindow = splash_win.SplashWindow(None, gfxlaunch_copyright % gfxlaunch_version)
     splashWindow.show()
 
     # Show user interface

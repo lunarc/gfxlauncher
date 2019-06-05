@@ -21,6 +21,7 @@ class Job(object):
         self.name = "gui_interactive"
         self.nodes = ""
         self.tasksPerNode = 1
+        self.cpusPerNode = -1
         self.exclusive = False
         self.time = time
         self.nodeCount = 1

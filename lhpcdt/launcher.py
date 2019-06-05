@@ -11,9 +11,9 @@ from . import lrms
 from . import remote
 from . import settings
 from . import config
+from . import resource_win
 
 from subprocess import Popen, PIPE, STDOUT
-
 
 class WriteStream(object):
     """Class for synchronised stream writing"""
@@ -89,262 +89,6 @@ class SubmitThread(QtCore.QThread):
                 print("Executing command on node...")
                 self.ssh.execute(self.job.nodes, self.cmd)
                 self.active_connection = self.ssh
-
-
-class MonitorWindow(QtWidgets.QWidget):
-    def __init__(self, parent = None):
-        super(MonitorWindow, self).__init__(parent)
-        self.tool_path = settings.LaunchSettings.create().tool_path
-        self.hostname = settings.LaunchSettings.create().args[1]
-
-        ui_path = os.path.join(self.tool_path, "ui")
-
-        # Load appropriate user interface
-
-        uic.loadUi(os.path.join(ui_path, "monitor.ui"), self)
-
-        self.remote_probe = remote.StatusProbe()
-        self.remote_probe.check_all(self.hostname)
-
-        self.update_controls()
-
-    def update_controls(self):
-        self.progressMemory.setMaximum(self.remote_probe.total_mem)
-        self.progressMemory.setValue(self.remote_probe.used_mem)
-        self.progressCPU.setMaximum(100)
-        self.progressCPU.setValue(self.remote_probe.cpu_usage)
-        self.hostnameEdit.setText(self.hostname)
-
-        self.progressGPU1.setEnabled(False)
-        self.progressGPU2.setEnabled(False)
-        self.progressGPU3.setEnabled(False)
-        self.progressGPU4.setEnabled(False)
-        self.progressGPU5.setEnabled(False)
-        self.progressGPU6.setEnabled(False)
-        self.progressGPU7.setEnabled(False)
-        self.progressGPU8.setEnabled(False)
-
-        if len(self.remote_probe.gpu_usage)>=1:
-            self.progressGPU1.setEnabled(True)
-            self.progressGPU1.setValue(self.remote_probe.gpu_usage[0])
-        if len(self.remote_probe.gpu_usage)>=2:
-            self.progressGPU2.setEnabled(True)
-            self.progressGPU2.setValue(self.remote_probe.gpu_usage[1])
-        if len(self.remote_probe.gpu_usage)>=3:
-            self.progressGPU3.setEnabled(True)
-            self.progressGPU3.setValue(self.remote_probe.gpu_usage[2])
-        if len(self.remote_probe.gpu_usage)>=4:
-            self.progressGPU4.setEnabled(True)
-            self.progressGPU4.setValue(self.remote_probe.gpu_usage[3])
-        if len(self.remote_probe.gpu_usage)>=5:
-            self.progressGPU5.setEnabled(True)
-            self.progressGPU5.setValue(self.remote_probe.gpu_usage[4])
-        if len(self.remote_probe.gpu_usage)>=6:
-            self.progressGPU6.setEnabled(True)
-            self.progressGPU6.setValue(self.remote_probe.gpu_usage[4])
-        if len(self.remote_probe.gpu_usage)>=7:
-            self.progressGPU7.setEnabled(True)
-            self.progressGPU7.setValue(self.remote_probe.gpu_usage[7])
-        if len(self.remote_probe.gpu_usage)>=8:
-            self.progressGPU8.setEnabled(True)
-            self.progressGPU8.setValue(self.remote_probe.gpu_usage[8])
-
-
-class SessionWindow(QtWidgets.QWidget):
-    """Session Window class"""
-
-    def __init__(self, parent=None):
-        super(SessionWindow, self).__init__(parent)
-        self.slurm = lrms.Slurm()
-        self.queue = lrms.Queue()
-
-        #uic.loadUi("../session_manager.ui", self)
-
-        self.tool_path = settings.LaunchSettings.create().tool_path
-
-        ui_path = os.path.join(self.tool_path, "ui")
-
-        # Load appropriate user interface
-
-        uic.loadUi(os.path.join(ui_path, "session_manager.ui"), self)
-
-        self.update_table()
-
-    def update_table(self):
-        """Update session table"""
-
-        self.queue.update()
-
-        user = getpass.getuser()
-
-        self.sessionTable.setColumnCount(9)
-
-        if user in self.queue.userJobs:
-            self.sessionTable.setRowCount(
-                len(list(self.queue.userJobs[user].keys())))
-        else:
-            self.sessionTable.setRowCount(0)
-            return
-
-        self.sessionTable.setColumnCount(9)
-        self.sessionTable.setHorizontalHeaderLabels(
-            ["Id", "Name", "State", "Time",
-             "Requested", "Count", "Nodes", "", ""]
-            )
-
-        row = 0
-        for id in list(self.queue.userJobs[user].keys()):
-            self.sessionTable.setItem(row, 0, QtWidgets.QTableWidgetItem(str(id)))
-            self.sessionTable.setItem(row, 1, QtWidgets.QTableWidgetItem(
-                str(self.queue.userJobs[user][id]["name"])))
-            self.sessionTable.setItem(row, 2, QtWidgets.QTableWidgetItem(
-                str(self.queue.userJobs[user][id]["state"])))
-            self.sessionTable.setItem(row, 3, QtWidgets.QTableWidgetItem(
-                str(self.queue.userJobs[user][id]["time"])))
-            self.sessionTable.setItem(row, 4, QtWidgets.QTableWidgetItem(
-                str(self.queue.userJobs[user][id]["timelimit"])))
-            self.sessionTable.setItem(row, 5, QtWidgets.QTableWidgetItem(
-                str(self.queue.userJobs[user][id]["nodes"])))
-            self.sessionTable.setItem(row, 6, QtWidgets.QTableWidgetItem(
-                str(self.queue.userJobs[user][id]["nodelist"])))
-
-            cancelButton = QtWidgets.QPushButton("Cancel")
-            cancelButton.clicked.connect(self.cancel_button_clicked)
-            infoButton = QtWidgets.QPushButton("Info")
-            infoButton.clicked.connect(self.info_button_clicked)
-
-            self.sessionTable.setCellWidget(row, 7, cancelButton)
-            self.sessionTable.setCellWidget(row, 8, infoButton)
-            row += 1
-
-        self.sessionTable.resizeColumnsToContents()
-
-    def cancel_button_clicked(self):
-        button = self.sender()
-        index = self.sessionTable.indexAt(button.pos())
-        if index.isValid():
-            jobId = int(self.sessionTable.item(index.row(), 0).text())
-            self.slurm.cancel_job_with_id(jobId)
-            self.update_table()
-
-    def info_button_clicked(self):
-        button = self.sender()
-        index = self.sessionTable.indexAt(button.pos())
-        if index.isValid():
-            print(index.row(), index.column())
-
-    @QtCore.pyqtSlot()
-    def on_refreshButton_clicked(self):
-        self.update_table()
-
-class SplashWindow(QtWidgets.QWidget):
-    def __init__(self, parent = None, splash_text = ""):
-        super(SplashWindow, self).__init__(parent)
-
-        # Where can we find the user interface definitions (ui-files)
-
-        self.tool_path = settings.LaunchSettings.create().tool_path
-
-        ui_path = os.path.join(self.tool_path, "ui")
-        image_path = os.path.join(self.tool_path, "images")
-
-        # Load appropriate user interface
-
-        uic.loadUi(os.path.join(ui_path, "splash.ui"), self)
-
-        pixmap = QtGui.QPixmap(os.path.join(image_path, "lhpcdt_splash.png"))
-        self.splashLabel.setPixmap(pixmap)
-
-        #self.setWindowFlags(QtCore.Qt.SplashScreen)
-        self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
-        self.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
-
-        self.center()
-
-        self.versionLabel.setText(splash_text)
-
-        self.statusTimer = QtCore.QTimer()
-        self.statusTimer.timeout.connect(self.on_timeout)
-        self.statusTimer.setInterval(5000)
-        self.statusTimer.start()
-
-        self.closeButton.clicked.connect(self.on_close_button_clicked)
-
-    def center(self):
-        frameGm = self.frameGeometry()
-        screen = QtWidgets.QApplication.desktop().screenNumber(QtWidgets.QApplication.desktop().cursor().pos())
-        centerPoint = QtWidgets.QApplication.desktop().screenGeometry(screen).center()
-        frameGm.moveCenter(centerPoint)
-        self.move(frameGm.topLeft())
-
-    def on_timeout(self):
-        self.statusTimer.stop()
-        self.close()
-
-    def on_close_button_clicked(self):
-        self.statusTimer.stop()
-        self.close()
-
-class ResourceSpecWindow(QtWidgets.QWidget):
-    """Resource specification window"""
-
-    def __init__(self, parent=None):
-        """Resource window constructor"""
-
-        super(ResourceSpecWindow, self).__init__(parent, QtCore.Qt.Window)
-
-        self.tool_path = settings.LaunchSettings.create().tool_path
-        ui_path = os.path.join(self.tool_path, "ui")
-
-        uic.loadUi(os.path.join(ui_path, "resource_specification.ui"), self)
-
-        self.parent = parent
-
-        self.set_data()
-
-    def set_data(self):
-        """Assign values to controls"""
-
-        self.jobNameEdit.setText(self.parent.job_name)
-        self.memoryPerCpuEdit.setText(str(self.parent.memory))
-        self.exclusiveCheck.setChecked(self.parent.exclusive)
-        self.tasksPerNodeSpin.setValue(int(self.parent.tasks_per_node))
-        self.numberOfNodesSpin.setValue(int(self.parent.count))
-        self.cpuPerTaskSpin.setValue(int(self.parent.cpus_per_task))
-        self.noRequeueCheck.setChecked(self.parent.no_requeue)
-
-    def get_data(self):
-        """Get values from controls"""
-
-        try:
-            self.parent.job_name = self.jobNameEdit.text()
-            self.perent.memory = int(self.memoryPerCpuEdit.text())
-            self.parent.exclusive = self.exclusiveCheck.isChecked()
-            self.parent.tasks_per_node = self.tasksPerNodeSpin.value()
-            self.parent.number_of_nodes = self.numberOfNodesSpin.value()
-            self.parent.cpus_per_task = self.cpuPerTaskSpin.value()
-            self.parent.no_requeue = self.noRequeueCheck.isChecked()
-        except ValueError:
-            pass
-
-    @QtCore.pyqtSlot()
-    def on_okButton_clicked(self):
-        """Event method for OK button"""
-        self.get_data()
-
-        self.job.name = self.job_name
-        self.job.memory = self.memory_per_cpu
-        self.job.tasksPerNode = self.tasks_per_node
-        self.job.nodeCount = self.number_of_nodes
-        self.job.exclusive = self.exclusive
-
-        self.close()
-
-    @QtCore.pyqtSlot()
-    def on_cancelButton_clicked(self):
-        """Event method for Cancel button"""
-
-        self.close()
 
 
 class GfxLaunchWindow(QtWidgets.QMainWindow):
@@ -503,7 +247,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         """Update user interface from properties"""
 
         if self.job_type=="":
-            self.launcherTabs.removeTab(1)
+            self.launcherTabs.removeTab(2)
 
         self.slurm.query_partitions()
 
@@ -697,12 +441,52 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
             self.rdp = remote.XFreeRDP(self.job.hostname)
             self.rdp.execute()
 
+    @QtCore.pyqtSlot(int)
+    def on_launcherTabs_currentChanged(self, idx):
+        if idx == 1:
+            self.update_properties()
+
+            # Note - This should be modularised
+
+            if self.job_type == "":
+
+                # Create a standard placeholder job
+
+                self.job = jobs.PlaceHolderJob()
+
+            elif self.job_type == "notebook":
+
+                # Create a Jupyter notbook job
+
+                self.job = jobs.JupyterNotebookJob()
+
+            elif self.job_type == "vm":
+
+                # Create a VM job
+
+                self.job = jobs.VMJob()
+
+            # Setup job parameters
+
+            self.job.name = self.job_name
+            self.job.account = str(self.account)
+            self.job.partition = str(self.part)
+            self.job.time = str(self.time)
+            self.job.memory = int(self.memory)
+            self.job.nodeCount = int(self.count)
+            self.job.exclusive = self.exclusive
+            if self.selected_feature != "":
+                self.job.add_constraint(self.selected_feature)
+            self.job.update()
+
+            self.batchScriptText.clear()
+            self.batchScriptText.insertPlainText(str(self.job))
 
     @QtCore.pyqtSlot()
     def on_resourceDetailsButton_clicked(self):
         """Open resources specification window"""
 
-        self.resource_window = ResourceSpecWindow(self)
+        self.resource_window = resource_win.ResourceSpecWindow(self)
         self.resource_window.show()
 
 
@@ -739,7 +523,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
                 self.extraControlsLayout.addWidget(self.reconnect_nb_button)
                 self.extraControlsLayout.addStretch(1)
 
-            self.launcherTabs.setCurrentIndex(1)
+            self.launcherTabs.setCurrentIndex(2)
 
         elif self.job_type == "vm":
 
@@ -758,7 +542,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
                 self.extraControlsLayout.addWidget(self.reconnect_vm_button)
                 self.extraControlsLayout.addStretch(1)
 
-            self.launcherTabs.setCurrentIndex(1)
+            self.launcherTabs.setCurrentIndex(2)
 
         else:
             QtWidgets.QMessageBox.about(self, self.title, "Session start failed.")
@@ -768,7 +552,6 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         self.job.name = self.job_name
         self.job.account = str(self.account)
-        self.job.nodeCount = self.count
         self.job.partition = str(self.part)
         self.job.time = str(self.time)
         self.job.memory = int(self.memory)
@@ -777,6 +560,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         if self.selected_feature != "":
             self.job.add_constraint(self.selected_feature)
         self.job.update()
+
+        print(self.job)
 
         # Create a job submission thread
 

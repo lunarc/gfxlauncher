@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>325</width>
-    <height>385</height>
+    <width>359</width>
+    <height>447</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -282,6 +282,16 @@
            <enum>QTextEdit::NoWrap</enum>
           </property>
          </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab">
+       <attribute name="title">
+        <string>Script</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_5">
+        <item>
+         <widget class="QTextBrowser" name="batchScriptText"/>
         </item>
        </layout>
       </widget>

@@ -6,14 +6,14 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>741</width>
-    <height>605</height>
+    <width>836</width>
+    <height>726</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>Module selector</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout" stretch="0,1,1">
+  <layout class="QVBoxLayout" name="verticalLayout_3">
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
@@ -29,33 +29,76 @@
     </layout>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="1,1,0">
-     <item>
+    <widget class="QSplitter" name="splitter_3">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <widget class="QSplitter" name="splitter_2">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
       <widget class="QListWidget" name="module_list"/>
-     </item>
-     <item>
       <widget class="QListWidget" name="version_list"/>
-     </item>
-     <item>
-      <layout class="QVBoxLayout" name="verticalLayout_2">
-       <item>
-        <widget class="QComboBox" name="alt_list"/>
-       </item>
-       <item>
-        <widget class="QListWidget" name="parent_list"/>
-       </item>
-      </layout>
-     </item>
-    </layout>
-   </item>
-   <item>
-    <widget class="QTextEdit" name="module_help_text">
-     <property name="lineWrapMode">
-      <enum>QTextEdit::WidgetWidth</enum>
-     </property>
-     <property name="readOnly">
-      <bool>true</bool>
-     </property>
+      <widget class="QWidget" name="">
+       <layout class="QVBoxLayout" name="verticalLayout_2">
+        <item>
+         <widget class="QComboBox" name="alt_list"/>
+        </item>
+        <item>
+         <widget class="QListWidget" name="parent_list"/>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+     <widget class="QSplitter" name="splitter">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+      <widget class="QTextEdit" name="module_help_text">
+       <property name="font">
+        <font>
+         <family>DejaVu Sans Mono</family>
+        </font>
+       </property>
+       <property name="lineWrapMode">
+        <enum>QTextEdit::NoWrap</enum>
+       </property>
+       <property name="readOnly">
+        <bool>true</bool>
+       </property>
+      </widget>
+      <widget class="QWidget" name="verticalLayoutWidget">
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_2">
+          <item>
+           <widget class="QPushButton" name="copy_cmds_button">
+            <property name="text">
+             <string>Copy</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="start_term_button">
+            <property name="text">
+             <string>Terminal</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QPlainTextEdit" name="module_cmds_text">
+          <property name="font">
+           <font>
+            <family>DejaVu Sans Mono</family>
+           </font>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
     </widget>
    </item>
   </layout>
