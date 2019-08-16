@@ -145,7 +145,7 @@ if __name__ == '__main__':
 
     # Redirect standard output
 
-    redirect = False
+    redirect = True
 
     # Create Queue and redirect sys.stdout to this queue
 
