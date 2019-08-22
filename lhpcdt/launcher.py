@@ -177,6 +177,9 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
             grant_filename = self.config.grantfile_base % self.part
 
         print(grant_filename)
+
+        if self.grant_filename != "":
+            grant_filename = self.grant_filename
         
         grant_file = lrms.GrantFile(grant_filename)
 
@@ -200,6 +203,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.vglrun = False
         self.account = self.config.default_account
         self.part = self.config.default_part
+        self.grant_filename = ""
         self.cmd = "xterm"
         self.title = "Lunarc HPC Desktop Launcher"
         self.simplified = True
@@ -221,11 +225,12 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.exclusive = self.args.exclusive
         self.vgl = self.args.useVGL
         self.vglrun = self.args.use_vglrun
+        self.part = self.args.part
         self.account = self.args.account
+        self.grant_filename = self.args.grant_filename
         self.cmd = self.args.cmdLine
         self.time = self.args.time
         self.title = self.args.title
-        self.part = self.args.part
         self.simplified = True
         self.only_submit = self.args.only_submit
         self.job_type = self.args.job_type

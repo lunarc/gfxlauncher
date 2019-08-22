@@ -107,6 +107,9 @@ if __name__ == '__main__':
     parser.add_argument("--account", dest="account", action="store", default="",
         help = "Default account to use")
 
+    parser.add_argument("--grantfile", dest="grant_filename", action="store", default="",
+        help = "Default grantfile to use")
+
     parser.add_argument("--exclusive", dest="exclusive", action="store_true", default=False,
         help = "Use node exclusively")
 
