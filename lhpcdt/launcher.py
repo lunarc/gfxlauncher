@@ -461,35 +461,35 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
                 # Create a standard placeholder job
 
-                self.job = jobs.PlaceHolderJob()
+                job = jobs.PlaceHolderJob()
 
             elif self.job_type == "notebook":
 
                 # Create a Jupyter notbook job
 
-                self.job = jobs.JupyterNotebookJob()
+                job = jobs.JupyterNotebookJob()
 
             elif self.job_type == "vm":
 
                 # Create a VM job
 
-                self.job = jobs.VMJob()
+                job = jobs.VMJob()
 
             # Setup job parameters
 
-            self.job.name = self.job_name
-            self.job.account = str(self.account)
-            self.job.partition = str(self.part)
-            self.job.time = str(self.time)
-            self.job.memory = int(self.memory)
-            self.job.nodeCount = int(self.count)
-            self.job.exclusive = self.exclusive
+            job.name = self.job_name
+            job.account = str(self.account)
+            job.partition = str(self.part)
+            job.time = str(self.time)
+            job.memory = int(self.memory)
+            job.nodeCount = int(self.count)
+            job.exclusive = self.exclusive
             if self.selected_feature != "":
-                self.job.add_constraint(self.selected_feature)
-            self.job.update()
+                job.add_constraint(self.selected_feature)
+            job.update()
 
             self.batchScriptText.clear()
-            self.batchScriptText.insertPlainText(str(self.job))
+            self.batchScriptText.insertPlainText(str(job))
 
     @QtCore.pyqtSlot()
     def on_resourceDetailsButton_clicked(self):
