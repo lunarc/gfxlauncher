@@ -4,6 +4,7 @@
 import os
 import subprocess
 import time
+import datetime
 from subprocess import Popen, PIPE, STDOUT
 
 from . import hostlist
@@ -49,6 +50,29 @@ class GrantFile:
                 self.projects[name]["partition"] = items[4]
                 self.projects[name]["pi"] = items[5].split("#")[0]
                 self.projects[name]["users"] = items[5].split("#")[1].split()
+
+    def query_active_projects(self, user):
+        """Query for an active project for user"""
+
+        active_projects = []
+
+        for project in list(self.projects.keys()):
+            if user in self.projects[project]["users"]:
+                print("Found user %s in project %s in grantfile %s" % (user, project, self.filename))
+                start_date = datetime.datetime.strptime(self.projects[project]["start_date"], "%Y%m%d")
+                end_date = datetime.datetime.strptime(self.projects[project]["end_date"], "%Y%m%d")
+
+                current_date = datetime.datetime.today()
+
+                print("Project lifetime: %s-%s" % (start_date, end_date))
+
+                if (start_date < current_date) and (current_date < end_date):
+                    print("Project is ACTIVE")
+                    active_projects.append(project)
+                else:
+                    print("Project is EXPIRED")
+
+        return active_projects
 
 
 class Queue(object):

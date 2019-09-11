@@ -167,7 +167,10 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         print("has_project()")
 
-        user = getpass.getuser()
+        if self.user == "":
+            user = getpass.getuser()
+        else:
+            user = self.user
 
         grant_filename = self.config.grantfile
 
@@ -183,14 +186,13 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         
         grant_file = lrms.GrantFile(grant_filename)
 
-        for project in list(grant_file.projects.keys()):
-            if user in grant_file.projects[project]["users"]:
-                print("Found user %s in project %s in grantfile %s" % (user, project, grant_filename))
-                self.account = project
-                return True
+        active_projects = grant_file.query_active_projects(user)
 
-        return False
-
+        if len(active_projects)>0:
+            self.account = active_projects[0]
+            return True
+        else: 
+            return False
 
     def init_defaults(self):
         """Basic property defaults"""
@@ -216,6 +218,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.tasks_per_node = 1
         self.cpus_per_task = 1
         self.no_requeue = False
+        self.user = ""
 
     def get_defaults_from_cmdline(self):
         """Get properties from command line"""
@@ -238,6 +241,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.tasks_per_node = self.args.tasks_per_node
         self.cpus_per_task = self.args.cpus_per_task
         self.no_requeue = self.args.no_requeue
+        self.user = self.args.user
 
     def update_properties(self):
         """Get properties from user interface"""

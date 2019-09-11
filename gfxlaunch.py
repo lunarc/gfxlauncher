@@ -11,7 +11,7 @@ gfxlaunch_copyright = """LUNARC HPC Desktop On-Demand - Version %s
 Copyright (C) 2017-2019 LUNARC, Lund University
 """
 gfxlaunch_copyright_short = """LUNARC HPC Desktop On-Demand - %s"""
-gfxlaunch_version = "0.5-beta"
+gfxlaunch_version = "0.5.1-beta"
 
 # --- Fix search path for tool
 
@@ -131,9 +131,9 @@ if __name__ == '__main__':
     parser.add_argument("--tasks-per-node", dest="tasks_per_node", action="store", default="1", help="Number of tasks per node.")
     parser.add_argument("--cpus-per-task", dest="cpus_per_task", action="store", default="1", help="Number of cpus per task.")
     parser.add_argument("--no-requeue", dest="no_requeue", action="store_true", default=False, help="No requeuing of job.")
+    parser.add_argument("--user", dest="user", action="store", default="", help="Use the following user instead of default.")
 
     args = parser.parse_args()
-    print(args)
 
     launchSettings = settings.LaunchSettings.create()
     launchSettings.args = args
@@ -148,7 +148,7 @@ if __name__ == '__main__':
 
     # Redirect standard output
 
-    redirect = True
+    redirect = False
 
     # Create Queue and redirect sys.stdout to this queue
 
