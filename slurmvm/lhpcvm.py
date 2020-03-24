@@ -8,7 +8,7 @@ Contains classes for managing running VM resources
 import os, pwd, fcntl, json
 import sys, subprocess, pickle, socket, time
 import logging as log
-import ConfigParser as configparser
+import configparser
 
 
 from filelock import Timeout, FileLock
@@ -16,6 +16,9 @@ from filelock import Timeout, FileLock
 class SlurmVMConfig(object):
     def __init__(self):
 
+        self.__default_config_file = "/etc/slurm/lhpcvm.conf"
+        self.__fallback_config_file = "lhpcvm.conf"
+        self.__used_config_file = ""
         self.xen_server_hostname = "localhost"
         self.log_level="DEBUG"
         self.snapshot_prefix="ss"
@@ -27,13 +30,33 @@ class SlurmVMConfig(object):
 
     def __read_config(self):
 
+        print("read_config")
         self.config_valid = False
 
-        try:
-            self.config = configparser.ConfigParser()
-            self.config.read("/etc/slurm/lhpcvm.conf")
-        except:
-            print("Couldn't parse configuration file at /etc/slurm/lhpcvm.conf")
+        if os.path.exists(self.__default_config_file):
+            self.__used_config_file = self.__default_config_file
+        else:
+            print("Configuration file not found at: %s" % self.__default_config_file )
+        
+        if self.__used_config_file == "":
+            if os.path.exists(self.__fallback_config_file):
+                self.__used_config_file = self.__fallback_config_file
+            else:
+                print("Configuration file not found at: %s" % self.__fallback_config_file )
+
+        if self.__used_config_file == "":
+            self.config_valid = False
+            return
+
+        if self.__used_config_file!="":
+            try:
+                self.config = configparser.ConfigParser()
+                print("Reading", self.__used_config_file)
+                self.config.read(self.__used_config_file)
+            except:
+                print("Couldn't parse configuration file at /etc/slurm/lhpcvm.conf")
+                return
+        else:
             return
 
         default_params = self.config.defaults()
@@ -48,6 +71,8 @@ class SlurmVMConfig(object):
             self.snapshot_prefix = self.config.get("DEFAULT", "snapshotprefix")
 
         self.vm_dict = {}
+
+        print(self.config.sections())
 
         for vm in self.config.sections():
 
@@ -217,7 +242,7 @@ class XenServer(object):
         return snapshot_dict
 
 
-class VMTracker(Singleton, object):
+class VMTracker(Singleton, object): 
     """Class for tracking running vm:s"""
 
     def __init__(self, slurm_vm_config):
@@ -373,7 +398,11 @@ class VMTracker(Singleton, object):
 if __name__ == "__main__":
 
     slurm_vm_config = SlurmVMConfig()
-    slurm_vm_config.show_config()
+
+    if slurm_vm_config.config_valid:
+        slurm_vm_config.show_config()
+    else:
+        print("No valid config file.")
 
     #xen = XenServer('rviz-lab-xen.lunarc.lu.se')
 
