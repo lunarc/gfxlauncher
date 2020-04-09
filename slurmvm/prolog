@@ -1,15 +1,19 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # -*- coding: utf-8 -*-
 """
 Prolog/Epilog-script for managing VM:s through slurm.
 """
 
-import os, pwd, sys
+import os, pwd, sys, time 
 import logging as log
 
 from lhpcvm import VMTracker, XenServer, PortProber, SlurmVMConfig
 
 if __name__ == "__main__":
+
+    # --- Enable script to run without actually starting VMs
+
+    dry_run = False
 
     # --- Extract script name for determining if this script
     #     is executed as prolog or epilog
@@ -67,6 +71,7 @@ if __name__ == "__main__":
     log.info('Userid      :'+str(user_id))
     log.info('group_id    :'+str(group_id))
     log.info('home_dir    :'+home_dir)
+    log.info('script-uid  :'+str(os.getuid()))
     log.info('---------------------------------------------------------')
 
     # --- Script is executing as prolog (before job)
@@ -78,6 +83,7 @@ if __name__ == "__main__":
         # --- Get tracker object
 
         tracker = VMTracker(slurm_vm_config)
+        tracker.status()
 
         # tracker = create_tracker(state_filename, lock)
 
@@ -87,15 +93,16 @@ if __name__ == "__main__":
 
         # --- Aquire availble vm_host
 
-        vm_host = tracker.aquire_vm(job_id)
+        log.info("Request availble VM for job id %s." % job_id)
 
-        if vm_host!="":
+        vm_name, vm_host = tracker.aquire_vm(job_id)
 
-            log.info("Aquired VM: " + vm_host)
+        if vm_name!="":
+
+            log.info("Aquired %s for job id %s." % (vm_name, job_id))
 
             # --- Extract vm and related snapshot from hostname
 
-            vm_name = vm_host.split(".")[0]
             ss_name = "ss-"+vm_name
 
             # --- Connect to XenServer
@@ -104,23 +111,44 @@ if __name__ == "__main__":
 
             # --- Start selected VM
 
-            log.info("Starting VM: "+vm_name)
-            xen.vm_start(vm_name)
+            log.info("Starting %s." % vm_name)
+
+            if not dry_run:
+                xen.vm_start(vm_name)
+            else:
+                log.info("xe vm start " + vm_name)
 
             # --- Wait for VM to startup
 
-            prober = PortProber(vm_host)
-            
-            log.info("Waiting for VM to become available...")
-            while not prober.is_port_open(3389):
-                pass
+            log.info("Waiting for host %s to become available..." % (vm_host))
 
-            log.info("VM is available at %s:3389" % vm_host)
+            prober = PortProber(vm_host)
+
+            timeout = 60
+            
+            if not dry_run:
+                while not prober.is_port_open(3389) and timeout == 0:
+                    log.info("Still waiting for host %s to become available..." % (vm_host))
+                    time.sleep(1)
+                    timeout -= 1
+
+            log.info("%s is available at %s:3389" % (vm_name, vm_host))
 
             # --- Write ip file for client
 
-            tracker.write_job_hostfile(job_id, vm_host)
+            log.info("Forking process to write job_hostfile...")
+            pid = os.fork()
 
+            if pid == 0:
+                try:
+                    os.setgid(group_id)
+                    os.setuid(user_id)
+                    tracker.write_job_hostfile(job_id, vm_host)
+                finally:
+                    os._exit(0)
+            
+            os.waitpid(pid, 0)
+            log.info("... back from fork.")
         else:
             log.error("Failed to aquire VM.")
 
@@ -133,6 +161,7 @@ if __name__ == "__main__":
         # --- Get tracker object
 
         tracker = VMTracker(slurm_vm_config)
+        tracker.status()
 
         tracker.user_id = user_id
         tracker.group_id = group_id
@@ -140,29 +169,47 @@ if __name__ == "__main__":
 
         # --- Release vm from database
 
-        vm_host = tracker.release_vm(job_id)
+        vm_name, vm_host = tracker.release_vm(job_id)
 
-        log.info("Released VM: " + vm_host)
+        log.info("Released %s." % vm_name)
 
-        if vm_host!="":
+        if vm_name!="":
 
             # --- Remove client ip file
 
-            tracker.remove_job_hostfile(job_id, vm_host)
+            log.info("Removing client ip file for %s" % vm_name)
+
+            pid = os.fork()
+            
+            if pid == 0:
+                try:
+                    os.setgid(group_id)
+                    os.setuid(user_id)
+                    tracker.remove_job_hostfile(job_id, vm_host)
+                finally:
+                    os._exit(0)
+            
+            os.waitpid(pid, 0)
 
             # --- Extract vm and related snapshot from hostname
             
-            vm_name = vm_host.split(".")[0]
-            ss_name = snapshot_prefix+"-"+vm_name
+            ss_name = "ss-"+vm_name
 
             xen = XenServer(xen_server_host)
 
+            log.info("Is %s running?" % vm_name)
+
             if xen.is_vm_running(vm_name):
-                log.info("Shutting down VM: "+vm_name)
-                xen.vm_shutdown(vm_name)
-                xen.vm_snapshot_revert(vm_name, ss_name)
+                log.info("Shutting down "+vm_name)
+                if not dry_run:
+                    xen.vm_shutdown(vm_name)
+                    if slurm_vm_config.use_snapshot:
+                        xen.vm_snapshot_revert(vm_name, ss_name)
+                else:
+                    log.info("xe vm shutdown "+vm_name)
+                    log.info("xe snapshot revert "+vm_name)
             else:
-                log.error("Couldn't shut VM down.")
+                log.error("Couldn't shut VM %s down: " % vm_name)
 
     log.info(script_name + " completed.")
 

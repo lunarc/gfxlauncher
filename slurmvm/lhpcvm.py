@@ -22,6 +22,7 @@ class SlurmVMConfig(object):
         self.xen_server_hostname = "localhost"
         self.log_level="DEBUG"
         self.snapshot_prefix="ss"
+        self.use_snapshot = False
         self.vm_dict = {}
 
         self.config_valid = False
@@ -30,7 +31,6 @@ class SlurmVMConfig(object):
 
     def __read_config(self):
 
-        print("read_config")
         self.config_valid = False
 
         if os.path.exists(self.__default_config_file):
@@ -70,12 +70,16 @@ class SlurmVMConfig(object):
         if "snapshotprefix" in default_params:
             self.snapshot_prefix = self.config.get("DEFAULT", "snapshotprefix")
 
+        if "use_snapshot" in default_params:
+            value = self.config.get("DEFAULT", "use_snapshot")
+            if value == "yes":
+                self.use_snapshot = True
+            else:
+                self.use_snapshot = False
+
         self.vm_dict = {}
 
-        print(self.config.sections())
-
         for vm in self.config.sections():
-
             options = self.config.options(vm)
 
             vm_name = ""
@@ -93,14 +97,20 @@ class SlurmVMConfig(object):
         self.config_valid = True
 
     def show_config(self):
-        print(self.xen_server_hostname)
-        print(self.log_level)
-        print(self.snapshot_prefix)
-
+        print("XenServer host  :", self.xen_server_hostname)
+        print("Log level       :", self.log_level)
+        print("Snapshot prefix :", self.snapshot_prefix)
+        print("Using snapshot  :", self.use_snapshot)
+        print()
+        print("Configured VM:s:")
         for vm in self.vm_dict.keys():
-            print(vm, self.vm_dict[vm])
+            print("VM:", vm, "ip =", self.vm_dict[vm])
 
-        print(self.config_valid)
+        if self.config_valid:
+            print("Configuration is valid.")
+        else:
+            print("Configuration is not valid.")
+
 
 
 class Singleton(object):
@@ -126,7 +136,8 @@ class PortProber(object):
 
         Returns True if port is open otherwise False"""
 
-        server_ip = socket.gethostbyname(self.hostname)
+        #server_ip = socket.gethostbyname(self.hostname)
+        server_ip = self.hostname
 
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -139,7 +150,7 @@ class PortProber(object):
             sock.close()
 
         except socket.timeout:
-            log.error("Connection timeout.")
+            log.error("Connection timed out to %s." % server_ip)
             return False
 
         except KeyboardInterrupt:
@@ -147,11 +158,11 @@ class PortProber(object):
             return False
 
         except socket.gaierror:
-            log.error('Hostname could not be resolved. Exiting')
+            log.error('Hostname %s could not be resolved. Exiting' % server_ip)
             return False
 
         except socket.error:
-            log.error("Couldn't connect to server")
+            log.error("Couldn't connect to server %s." % server_ip )
             return False
 
 class XenServer(object):
@@ -163,15 +174,18 @@ class XenServer(object):
     def exec_cmd(self, cmd):
         """Execute a command and return output"""
         output = subprocess.check_output(cmd, shell=True)
-        return output
+        return output.decode('ascii')
 
     def xe(self, cmd):
         """Execute a xe command on the XenServer"""
-        log.debug("Executing: "+cmd)
+        log.debug("XenServer.xe(%s)" % cmd)
+
         return self.exec_cmd("ssh %s 'xe %s'" % (self.hostname, cmd))
     
     def vm_list(self):
         """Return a dict of vm:s"""
+
+        log.debug("XenServer.vm_list()")
 
         output = self.xe("vm-list")
 
@@ -193,30 +207,43 @@ class XenServer(object):
     def is_vm_running(self, vm_name):
         """Check if a vm is running"""
 
-        vm_dict = self.vm_list()
+        log.debug("XenServer.is_vm_running(%s)" % vm_name)
 
+        vm_dict = self.vm_list()
+        
         if vm_name in vm_dict:
+            log.debug("vm in dict with state: %s" % vm_dict[vm_name]["state"])
             return vm_dict[vm_name]["state"] == "running"
         else:
+            log.debug("vm not found in vm_list.")
             return False
 
     def vm_start(self, vm_name):
         """Start a named vm"""
+
+        log.debug("XenServer.vm_start(%s)" % vm_name)
+
         output = self.xe("vm-start vm=%s" % vm_name)
         log.debug(output)
 
     def vm_shutdown(self, vm_name):
         """Shutdown a named vm"""
+        
+        log.debug("vm_shutdown(%s)" % vm_name)
+
         output = self.xe("vm-shutdown vm=%s" % vm_name)
         log.debug(output)
 
     def vm_snapshot(self, vm_name, snapshot_name):
         """Take a snapshot of named vm"""
+        log.debug("XenServer.vm_shapshot(%s, %s)" % (vm_name, snapshot_name))
 
         output = self.xe('vm-snapshot new-name-label=%s vm=%s' % (snapshot_name, vm_name))
 
     def vm_snapshot_revert(self, vm_name, snapshot_name):
         """Revert to a named snapshot"""
+
+        log.debug("XenServer.vm_shapshot_revert(%s, %s)" % (vm_name, snapshot_name))
 
         snapshots = self.snapshot_list()
 
@@ -226,6 +253,9 @@ class XenServer(object):
 
     def snapshot_list(self):
         """Return a dict of snapshots"""
+
+        log.debug("XenServer.snapshot_list()")
+
         output = self.xe("snapshot-list")
 
         lines = output.split("\n")
@@ -242,11 +272,11 @@ class XenServer(object):
         return snapshot_dict
 
 
-class VMTracker(Singleton, object): 
+class VMTracker(object): 
     """Class for tracking running vm:s"""
 
     def __init__(self, slurm_vm_config):
-        Singleton.__init__(self)
+        #Singleton.__init__(self)
 
         self.slurm_vm_config = slurm_vm_config
         self.idle_list = []
@@ -271,6 +301,8 @@ class VMTracker(Singleton, object):
     def create(self):
         """Create or load tracker database"""
 
+        log.debug("VMTracker.create()")
+
         if not os.path.exists(self.state_filename):
             log.debug("No tracker state found. Creating.")
             self.init_tracker()
@@ -292,56 +324,70 @@ class VMTracker(Singleton, object):
     def save(self):
         """Save current database to disk"""
 
+        log.debug("VMTracker.save()")
+
         with self.lock:
             with open(self.state_filename, "wb+") as f:
                 tmp_dict = self.__dict__.copy()
                 del tmp_dict["lock"]
                 pickle.dump(tmp_dict, f)
 
-    def add_vm(self, hostname):
+    def add_vm(self, name, hostname):
         """Add a vm to list of resources."""
 
-        self.idle_list.append(hostname)
+        log.debug("VMTracker.add_vm(%s, %s)" % (name, hostname))
+
+        self.idle_list.append([name, hostname])
 
     def init_tracker(self):
         """Initialise initial resources."""
 
+        log.debug("VMTracker.init_tracker()")
+
         vm_dict = self.slurm_vm_config.vm_dict
 
         for vm in vm_dict.keys():
-            log.debug("Adding VM "+vm_dict[vm]+" to initial configuration.")
-            self.add_vm(vm_dict[vm])
+            log.debug("Adding VM " + vm + "(" + vm_dict[vm] + ") to initial configuration.")
+            self.add_vm(vm, vm_dict[vm])
 
     def aquire_vm(self, job_id):
         """Aquire a vm for a specific job_id"""
 
+        log.debug("VMTracker.aquire_vm(%s)" % job_id)
+
         if len(self.idle_list)>0:
-            vm_host = self.idle_list.pop()
-            self.running_dict[job_id] = vm_host
+            vm_info = self.idle_list.pop()
+            self.running_dict[job_id] = [vm_info[0], vm_info[1]]
             self.save()
-            return vm_host
+            return vm_info[0], vm_info[1]
         else:
-            return ""
+            return "", ""
 
     def release_vm(self, job_id):
         """Release a vm from a job_id"""
 
+        log.debug("VMTracker.release_vm(%s)" % job_id)
+
         if job_id in self.running_dict:
-            vm_host = self.running_dict.pop(job_id)
-            self.add_vm(vm_host)
+            vm_info = self.running_dict.pop(job_id)
+            self.add_vm(vm_info[0], vm_info[1])
             self.save()
-            return vm_host
+            return vm_info[0], vm_info[1]
         else:
-            return ""
+            return "", ""
 
     def has_user_store(self):
         """Return state of user store directory"""
+
+        log.debug("VMTracker.has_user_store()")
 
         self.store_dir = os.path.join(self.home_dir, ".lhpc")
         return os.path.exists(self.store_dir)
 
     def setup_user_store(self):
         """Setup user store directory with correct permissions"""
+
+        log.debug("VMTracker.setup_user_store()")
 
         if not self.has_user_store():
             log.debug("Creating user store directory.")
@@ -352,6 +398,8 @@ class VMTracker(Singleton, object):
     def user_store_dir(self):
         """Return user store directory"""
 
+        log.debug("VMTracker.user_store_dir()")
+
         if not self.has_user_store():
             self.setup_user_store()
         return self.store_dir
@@ -359,10 +407,12 @@ class VMTracker(Singleton, object):
     def write_job_hostfile(self, job_id, vm_host):
         """Write job host file containing ip of running VM"""
 
+        log.debug("VMTracker.write_job_hostfile(%s, %s)" % (job_id, vm_host))
+
         store_dir = self.user_store_dir()
         job_host_filename = os.path.join(store_dir, "vm_host_%s.ip" % job_id.strip())
 
-        log.debug("Creating job ip-file: "+job_host_filename)
+        log.debug("Creating job ip-file: " + job_host_filename)
 
         with open(job_host_filename, "w") as f:
             f.write(vm_host+"\n")
@@ -372,6 +422,8 @@ class VMTracker(Singleton, object):
 
     def remove_job_hostfile(self, job_id, vm_host):
         """Remove a job host file when not needed anymore"""
+
+        log.debug("VMTracker.remove_job_hostfile(%s, %s)" % (job_id, vm_host))
 
         store_dir = self.user_store_dir()
         job_host_filename = os.path.join(store_dir, "vm_host_%s.ip" % job_id.strip())
@@ -384,6 +436,8 @@ class VMTracker(Singleton, object):
     def status(self):
         """Print status of data base"""
 
+        log.debug("VMTracker.status()")
+
         log.debug("Idle VMs:")
     
         for idle_vm in self.idle_list:
@@ -392,10 +446,32 @@ class VMTracker(Singleton, object):
         log.debug("Jobs with running VMs:")
 
         for job_id in self.running_dict.keys():
-            log.debug(job_id, self.running_dict[job_id])
+            log.debug(job_id + " " + str(self.running_dict[job_id]))
 
 
 if __name__ == "__main__":
+
+    # --- Configure logging - All messages from prolog/epilog uses Python logging.
+
+    root = log.getLogger()
+    root.setLevel(log.DEBUG)
+
+    handler = log.StreamHandler(sys.stdout)
+    handler.setLevel(log.DEBUG)
+    formatter = log.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
+    root.addHandler(handler)
+
+    # prober = PortProber("10.18.50.22")
+
+    # timeout = 60
+    
+    # while not prober.is_port_open(3389) and timeout > 0:
+    #     log.info("Still waiting for host %s to become available..." % ("10.18.50.22"))
+    #     time.sleep(1)
+    #     timeout -= 1
+
+    # sys.exit(0)
 
     slurm_vm_config = SlurmVMConfig()
 
@@ -404,25 +480,43 @@ if __name__ == "__main__":
     else:
         print("No valid config file.")
 
-    #xen = XenServer('rviz-lab-xen.lunarc.lu.se')
+    vm_tracker = VMTracker(slurm_vm_config)
+    vm_tracker.status()
 
-    #xen.vm_stop("win10m-1")
-    #xen.vm_snapshot("win10m-1", "ss-win10m-1")
+    sys.exit(0)
 
-    #xen.vm_start("win10m-1")
+    print()
+    print("Querying XenServer...")
+    print()
 
-    #if xen.is_vm_running("win10m-1"):
-    #    print("VM is running.")
-    #else:
-    #    print("VM is not running.")
+    xen = XenServer(slurm_vm_config.xen_server_hostname)
+    vm_dict = xen.vm_list()
 
-    #xen.vm_snapshot_revert("win10m-1", "ss-win10m-1")
-    #xen.vm_start("win10m-1")
+    for vm in vm_dict.keys():
+        print(vm)
+        print("\t",vm_dict[vm]["uuid"])
+        print("\t",vm_dict[vm]["state"])
 
-    #prober = PortProber("win10m-1.lunarc.lu.se")
+    vm_name = "win10m-ip22"
+    vm_host = "10.18.50.22"
+
+    sys.exit(0)
+
+    print()
+    print("Starting:", vm_name)
+    xen.vm_start(vm_name)
+
+    # --- Wait for VM to startup
+
+    prober = PortProber(vm_host)
     
-    #print("Waiting for VM to become available...")
-    #while not prober.is_port_open(3389):
-    #    pass
+    print("Waiting for VM to become available...")
+    while not prober.is_port_open(3389):
+        pass
 
-    #print("VM is available at 3389")
+    log.info("VM is available at %s:3389" % vm_host)
+
+    print("Stopping VM...")
+    xen.vm_shutdown(vm_name)
+    print("Revert to snapshot...")
+    xen.vm_snapshot_revert(vm_name, "ss-"+vm_name)
