@@ -195,7 +195,7 @@ class VMJob(Job):
     """Special Job for starting VM:s"""
     def __init__(self, account="", partition="", time="00:30:00"):
         """Class constructor"""
-        Job.__init__(self, account, partition, time)
+        super().__init__(account, partition, time)
         self.notebook_url = ""
         self.process_output = False
         self.update_processing = True
