@@ -32,6 +32,7 @@ class Job(object):
         self.submitNode = False
         self.constraints = []
         self.gres = ""
+        self.oversubscribe = False
         self.module_list = []
 
         self.scriptLines = []
@@ -80,8 +81,12 @@ class Job(object):
             if self.partition != "":
                 self.add_option("-p %s" % self.partition)
 
-        self.add_option("-N %d" % self.nodeCount)
-        self.add_option("--ntasks-per-node=%d" % self.tasksPerNode)
+        if self.nodeCount >= 0:
+            self.add_option("-N %d" % self.nodeCount)
+        
+        if self.tasksPerNode >= 0:
+            self.add_option("--ntasks-per-node=%d" % self.tasksPerNode)
+        
         self.add_option("--time=%s" % self.time)
 
         if self.gres != "":
@@ -92,6 +97,9 @@ class Job(object):
 
         if self.exclusive:
             self.add_option("--exclusive")
+
+        if self.oversubscribe:
+            self.add_option("--oversubscribe")
 
         if len(self.constraints) > 0:
             if len(self.constraints) == 1:
@@ -201,6 +209,11 @@ class VMJob(Job):
         self.update_processing = True
         self.add_custom_script("sleep infinity")
         self.hostname = ""
+        self.oversubscribe = True
+        self.memory = 500
+        self.gres = "win10m"
+        self.nodeCount = -1
+        self.tasksPerNode = -1
 
     def do_update_processing(self):
         """Check for vm job ip file"""

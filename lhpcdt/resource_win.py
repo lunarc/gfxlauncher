@@ -88,7 +88,7 @@ class ResourceSpecWindow(QtWidgets.QWidget):
             self.parent.memory = int(self.memoryPerCpuEdit.text())
             self.parent.exclusive = self.exclusiveCheck.isChecked()
             self.parent.tasks_per_node = self.tasksPerNodeSpin.value()
-            self.parent.number_of_nodes = self.numberOfNodesSpin.value()
+            self.parent.count = self.numberOfNodesSpin.value()
             self.parent.cpus_per_task = self.cpuPerTaskSpin.value()
             self.parent.no_requeue = self.noRequeueCheck.isChecked()
         except ValueError:

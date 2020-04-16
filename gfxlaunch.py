@@ -132,6 +132,7 @@ if __name__ == '__main__':
     parser.add_argument("--cpus-per-task", dest="cpus_per_task", action="store", default="1", help="Number of cpus per task.")
     parser.add_argument("--no-requeue", dest="no_requeue", action="store_true", default=False, help="No requeuing of job.")
     parser.add_argument("--user", dest="user", action="store", default="", help="Use the following user instead of default.")
+    parser.add_argument("--ignore-grantfile", dest="ignore_grantfile", action="store_true", default=False, help="Ignore grantfile checking.")
 
     args = parser.parse_args()
 

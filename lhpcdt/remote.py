@@ -355,9 +355,12 @@ class XFreeRDP(object):
         """Execute command on a node/host"""
         #self._update_options()
 
-        cmd_line = 'xfreerdp -u $(zenity --entry --title="%s" --text="Enter your username") -p $(zenity --entry --title="Password" --text="Enter your _password:" --hide-text) --ignore-certificate %s'
+        #cmd_line = 'xfreerdp -u $(zenity --entry --title="%s" --text="Enter your username") -p $(zenity --entry --title="Password" --text="Enter your _password:" --hide-text) --ignore-certificate %s'
 
-        self.process = Popen(cmd_line % (self.hostname, self.hostname), shell=True)
+        #cmd_line = 'xfreerdp --ignore-certificate %s'
+        cmd_line = '/sw/pkg/freerdp/2.0.0-rc4/bin/xfreerdp /v:%s /u:$USER /d:ad.lunarc /sec:tls -themes -wallpaper /size:1280x1024 /dynamic-resolution /cert-ignore'
+
+        self.process = Popen(cmd_line % (self.hostname), shell=True)
 
     def execute_with_output(self, node, command):
         #self._update_options()

@@ -165,7 +165,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
     def has_project(self):
         """Check for user in grantfile"""
 
-        print("has_project()")
+        if self.args.ignore_grantfile:
+            return False
 
         if self.user == "":
             user = getpass.getuser()
@@ -481,8 +482,9 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
             job.account = str(self.account)
             job.partition = str(self.part)
             job.time = str(self.time)
-            job.memory = int(self.memory)
-            job.nodeCount = int(self.count)
+            if self.job_type != "vm":
+                self.job.memory = int(self.memory)
+                self.job.nodeCount = int(self.count)
             job.exclusive = self.exclusive
             if self.selected_feature != "":
                 job.add_constraint(self.selected_feature)
@@ -563,8 +565,9 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.job.account = str(self.account)
         self.job.partition = str(self.part)
         self.job.time = str(self.time)
-        self.job.memory = int(self.memory)
-        self.job.nodeCount = int(self.count)
+        if self.job_type != "vm":
+            self.job.memory = int(self.memory)
+            self.job.nodeCount = int(self.count)
         self.job.exclusive = self.exclusive
         if self.selected_feature != "":
             self.job.add_constraint(self.selected_feature)
