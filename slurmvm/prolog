@@ -127,14 +127,14 @@ if __name__ == "__main__":
             timeout = 60
             
             if not dry_run:
-                while not prober.is_port_open(3389) and timeout == 0:
+                while not prober.is_port_open(3389) and timeout != 0:
                     log.info("Still waiting for host %s to become available..." % (vm_host))
                     time.sleep(1)
                     timeout -= 1
 
             # --- Wait some more to make sure RDP connection is up.
 
-            time.sleep(5)
+            #time.sleep(5)
 
             log.info("%s is available at %s:3389" % (vm_name, vm_host))
 
