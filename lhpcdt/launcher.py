@@ -106,6 +106,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.copyright_info = settings.LaunchSettings.create().copyright_info
         self.copyright_short_info = settings.LaunchSettings.create().copyright_short_info
         self.version_info = settings.LaunchSettings.create().version_info
+        self.rdp = None
 
         self.config = config.GfxConfig.create()
 
@@ -381,8 +382,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         print("Starting RDP: " + hostname)
 
-        self.rdp = remote.XFreeRDP(hostname)
-        self.rdp.execute()
+        #self.rdp = remote.XFreeRDP(hostname)
+        #self.rdp.execute()
 
         self.enableExtrasPanel()
         #self.reconnect_vm_button.setEnabled(True)
