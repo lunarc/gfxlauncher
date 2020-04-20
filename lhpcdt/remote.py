@@ -337,6 +337,7 @@ class XFreeRDP(object):
         self.process = None
         self.output = ""
         self.error = ""
+        self.xfreerdp_binary = "/sw/pkg/freerdp/2.0.0-rc4/bin/xfreerdp"
 
     def terminate(self):
         """Terminate RDP connection process"""
@@ -360,14 +361,12 @@ class XFreeRDP(object):
         #cmd_line = 'xfreerdp --ignore-certificate %s'
         #cmd_line = '/sw/pkg/freerdp/2.0.0-rc4/bin/xfreerdp /v:%s /u:$USER /d:ad.lunarc /sec:tls -themes -wallpaper /size:1280x1024 /dynamic-resolution /cert-ignore'
 
-        cmd_line = '/sw/pkg/freerdp/2.0.0-rc4/bin/xfreerdp /v:%s /u:anfo /d:ad.lunarc /sec:tls /audio-mode:1 /gfx +gfx-progressive -bitmap-cache -offscreen-cache -glyph-cache +clipboard -themes -wallpaper /size:1280x1024 /dynamic-resolution /t:"LUNARC HPC Desktop Windows 10 (NVIDA V100)"'
+        cmd_line = '%s /v:%s /u:$USER /d:ad.lunarc /sec:tls /cert-tofu /audio-mode:1 /gfx +gfx-progressive -bitmap-cache -offscreen-cache -glyph-cache +clipboard -themes -wallpaper /size:1280x1024 /dynamic-resolution /t:"LUNARC HPC Desktop Windows 10 (NVIDA V100)"'
 
         #cmd_line = '/sw/pkg/freerdp/2.0.0-rc4/bin/xfreerdp /v:%s /audio-mode:1 /gfx +gfx-progressive -bitmap-cache -offscreen-cache -glyph-cache +clipboard -themes -wallpaper /size:1280x1024 /dynamic-resolution /t:"LUNARC HPC Desktop Windows 10 (NVIDA V100)"'
-        print(cmd_line % self.hostname)
-        self.process = Popen(cmd_line % (self.hostname), shell=True)
+        self.process = Popen(cmd_line % (self.xfreerdp_binary, self.hostname), shell=True)
 
     def execute_with_output(self, node, command):
-        #self._update_options()
         self.process = Popen("ssh %s %s '%s'" %
                              (self._options, node, command), shell=self.shell, stdout=PIPE)
 

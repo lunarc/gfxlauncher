@@ -113,12 +113,10 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         # Setup default launch properties
 
         self.init_defaults()
-        print(self.part)
 
         # Get changes from command line
 
         self.get_defaults_from_cmdline()
-        print(self.part)
 
         # Query partition features
 
@@ -128,7 +126,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         # Check for available project
 
-        if not self.has_project():
+        if not self.has_project() and not self.args.ignore_grantfile:
             QtWidgets.QMessageBox.information(self, self.title, "No project allocation found. Please apply for a project in SUPR.")
 
         # Where can we find the user interface definitions (ui-files)
@@ -176,12 +174,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         grant_filename = self.config.grantfile
 
-        print(grant_filename)
-
         if self.config.grantfile_base!="":
             grant_filename = self.config.grantfile_base % self.part
-
-        print(grant_filename)
 
         if self.grant_filename != "":
             grant_filename = self.grant_filename
@@ -328,19 +322,11 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
     def enableExtrasPanel(self):
         """Clear user interface components in extras panel"""
 
-        print("enableExtrasPanel")
-
         self.extraControlsWidget.setEnabled(True)
 
-        #for i in self.extraControlsLayout.count():
-        #    widget = self.extraControlsLayout.itemAt(i).widget()
-        #    if widget!=None:
-        #        widget.setEnabled(True)
 
     def disableExtrasPanel(self):
         """Clear user interface components in extras panel"""
-
-        print("disableExtrasPanel")
 
         self.extraControlsWidget.setEnabled(False)
 
@@ -382,11 +368,10 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         print("Starting RDP: " + hostname)
 
-        #self.rdp = remote.XFreeRDP(hostname)
-        #self.rdp.execute()
+        self.rdp = remote.XFreeRDP(hostname)
+        self.rdp.execute()
 
         self.enableExtrasPanel()
-        #self.reconnect_vm_button.setEnabled(True)
 
     def on_status_timeout(self):
         """Status timer callback. Updates job status."""
@@ -573,8 +558,6 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         if self.selected_feature != "":
             self.job.add_constraint(self.selected_feature)
         self.job.update()
-
-        print(self.job)
 
         # Create a job submission thread
 

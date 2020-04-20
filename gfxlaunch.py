@@ -8,17 +8,15 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 # --- Version information
 
 gfxlaunch_copyright = """LUNARC HPC Desktop On-Demand - Version %s
-Copyright (C) 2017-2019 LUNARC, Lund University
+Copyright (C) 2017-2020 LUNARC, Lund University
 """
 gfxlaunch_copyright_short = """LUNARC HPC Desktop On-Demand - %s"""
-gfxlaunch_version = "0.5.1-beta"
+gfxlaunch_version = "0.5.2"
 
 # --- Fix search path for tool
 
 tool_path = os.path.dirname(os.path.abspath(sys.argv[0]))
 sys.path.append(tool_path)
-
-print(tool_path)
 
 from lhpcdt import *
 
@@ -158,8 +156,6 @@ if __name__ == '__main__':
         sys.stdout = launcher.WriteStream(queue)    
 
     # Create application object
-
-    print(QtWidgets.QStyleFactory.keys())
 
     app = QtWidgets.QApplication(sys.argv)
 
