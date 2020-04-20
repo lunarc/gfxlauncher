@@ -114,6 +114,15 @@ if __name__ == "__main__":
             log.info("Starting %s." % vm_name)
 
             if not dry_run:
+                
+                # --- Shut down VM is already running
+
+                if xen.is_vm_running(vm_name):
+                    log.info("Shutting down "+vm_name)
+                    xen.vm_shutdown(vm_name)
+
+                # --- Start VM
+
                 xen.vm_start(vm_name)
             else:
                 log.info("xe vm start " + vm_name)
