@@ -2,7 +2,7 @@
 
 import os, sys, getpass
 
-from lhpcdt import *
+from lhpcdt import config, desktop
 
 # --- Version information
 
@@ -165,7 +165,7 @@ if __name__ == '__main__':
 
     print(("LUNARC HPC Desktop - Wrapper script  - Version %s" % gfxconvert_version))
     print("Written by Jonas Lindemann (jonas.lindemann@lunarc.lu.se)")
-    print("Copyright (C) 2018 LUNARC, Lund University")
+    print("Copyright (C) 2018-2020 LUNARC, Lund University")
 
     cfg = config.GfxConfig.create()
     cfg.print_config()

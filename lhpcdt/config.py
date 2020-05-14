@@ -72,7 +72,7 @@ class GfxConfig(object):
         print("script_dir = %s" % self.script_dir)
         print("client_script_dir = %s" % self.client_script_dir)
         print("only_submit = %s" % str(self.only_submit))
-        print("modules_json_file = %" % (self.module_json_file))
+        print("modules_json_file = %s" % (self.module_json_file))
 
         print("")
         print("SLURM settings")
