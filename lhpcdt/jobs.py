@@ -199,6 +199,41 @@ class JupyterNotebookJob(Job):
 
                         self.on_notebook_url_found(self.notebook_url)
 
+class JupyterLabJob(Job):
+    """Jupyter lab job"""
+
+    def __init__(self, account="", partition="", time="00:30:00"):
+        Job.__init__(self, account, partition, time)
+        self.notebook_url = ""
+        self.process_output = True
+
+        self.add_module("Anaconda3")
+
+        self.add_custom_script("unset XDG_RUNTIME_DIR")
+        self.add_custom_script('jupyter-lab --no-browser --ip=$HOSTNAME')
+        self.add_custom_script("ml")
+        self.add_custom_script("which python")
+
+    def on_notebook_url_found(self, url):
+        """Event method called when notebook has been found"""
+        print("Lab found: "+url)
+
+    def do_process_output(self, output_lines):
+        """Process job output"""
+
+        Job.do_process_output(self, output_lines)
+
+        if self.process_output:
+            for line in output_lines:
+                if line.find("?token=")!=-1:
+                    parts = line.split()
+                    if len(parts)==4:
+                        self.notebook_url = parts[3]
+                        self.process_output = False
+
+                        self.on_notebook_url_found(self.notebook_url)
+
+
 class VMJob(Job):
     """Special Job for starting VM:s"""
     def __init__(self, account="", partition="", time="00:30:00"):

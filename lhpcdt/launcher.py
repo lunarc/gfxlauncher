@@ -522,6 +522,25 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
             self.launcherTabs.setCurrentIndex(2)
 
+        elif self.job_type == "jupyterlab":
+
+            # Create a Jupyter lab job
+
+            self.job = jobs.JupyterLabJob()
+            self.job.on_notebook_url_found = self.on_notebook_url_found
+
+            # Create extra user interface controls for reconnection
+
+            if self.extraControlsLayout.count()==0:
+                self.reconnect_nb_button = QtWidgets.QPushButton('Reconnect to Lab', self)
+                self.reconnect_nb_button.setEnabled(True)
+                self.reconnect_nb_button.clicked.connect(self.on_reconnect_notebook)
+                self.extraControlsLayout.addStretch(1)
+                self.extraControlsLayout.addWidget(self.reconnect_nb_button)
+                self.extraControlsLayout.addStretch(1)
+
+            self.launcherTabs.setCurrentIndex(2)
+
         elif self.job_type == "vm":
 
             # Create a VM job
