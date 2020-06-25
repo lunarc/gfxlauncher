@@ -7,6 +7,7 @@ import subprocess
 import time
 from subprocess import Popen, PIPE, STDOUT
 
+
 class Job(object):
     """Class describing a SLURM jobs"""
 
@@ -83,10 +84,10 @@ class Job(object):
 
         if self.nodeCount >= 0:
             self.add_option("-N %d" % self.nodeCount)
-        
+
         if self.tasksPerNode >= 0:
             self.add_option("--ntasks-per-node=%d" % self.tasksPerNode)
-        
+
         self.add_option("--time=%s" % self.time)
 
         if self.gres != "":
@@ -165,6 +166,7 @@ class PlaceHolderJob(Job):
         self.add_custom_script('while true; do date; sleep 5; done')
         self.update()
 
+
 class JupyterNotebookJob(Job):
     """Jupyter notebook job"""
 
@@ -191,13 +193,14 @@ class JupyterNotebookJob(Job):
 
         if self.process_output:
             for line in output_lines:
-                if line.find("?token=")!=-1:
+                if line.find("?token=") != -1:
                     parts = line.split()
-                    if len(parts)==4:
+                    if len(parts) == 4:
                         self.notebook_url = parts[3]
                         self.process_output = False
 
                         self.on_notebook_url_found(self.notebook_url)
+
 
 class JupyterLabJob(Job):
     """Jupyter lab job"""
@@ -225,9 +228,9 @@ class JupyterLabJob(Job):
 
         if self.process_output:
             for line in output_lines:
-                if line.find("?token=")!=-1:
+                if line.find("?token=") != -1:
                     parts = line.split()
-                    if len(parts)==4:
+                    if len(parts) == 4:
                         self.notebook_url = parts[3]
                         self.process_output = False
 
@@ -236,6 +239,7 @@ class JupyterLabJob(Job):
 
 class VMJob(Job):
     """Special Job for starting VM:s"""
+
     def __init__(self, account="", partition="", time="00:30:00"):
         """Class constructor"""
         super().__init__(account, partition, time)
@@ -256,7 +260,8 @@ class VMJob(Job):
         home_dir = os.getenv("HOME")
 
         store_dir = os.path.join(home_dir, ".lhpc")
-        job_host_filename = os.path.join(store_dir, "vm_host_%s.ip" % str(self.id))
+        job_host_filename = os.path.join(
+            store_dir, "vm_host_%s.ip" % str(self.id))
 
         if os.path.exists(job_host_filename):
             with open(job_host_filename) as f:
@@ -269,9 +274,3 @@ class VMJob(Job):
     def on_vm_available(self, hostname):
         """Callback when job ib file found."""
         print("VM vailable: "+hostname)
-
-
-
-
-
-

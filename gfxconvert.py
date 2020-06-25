@@ -1,6 +1,8 @@
 #!/bin/env python
 
-import os, sys, getpass
+import os
+import sys
+import getpass
 
 from lhpcdt import config, desktop
 
@@ -22,21 +24,19 @@ def create_direct_script(server_fname, direct_fname, descr):
     cfg = config.GfxConfig.create()
 
     client_script_filename = os.path.join(cfg.client_script_dir, direct_fname)
-    server_script_filename = os.path.join(cfg.script_dir, server_fname)
-    
-    username = getpass.getuser()
 
     client_file = open(client_script_filename, "w")
 
     # vglconnect_template = '%s/vglconnect %s@%s %s/%s'
 
-    client_file.write(cfg.vgl_connect_template % (cfg.vgl_bin, cfg.backend_node, cfg.script_dir, server_fname))
+    client_file.write(cfg.vgl_connect_template % (
+        cfg.vgl_bin, cfg.backend_node, cfg.script_dir, server_fname))
     client_file.close()
 
     os.chmod(client_script_filename, 0o755)
 
 
-def create_slurm_script(server_fname, slurm_fname, descr, metadata = {}, dryrun = False):
+def create_slurm_script(server_fname, slurm_fname, descr, metadata={}, dryrun=False):
     """Create script for running through SLURM"""
 
     cfg = config.GfxConfig.create()
@@ -57,16 +57,18 @@ def create_slurm_script(server_fname, slurm_fname, descr, metadata = {}, dryrun 
 
     if "job" in metadata:
         job = metadata["job"]
-        client_file.write(cfg.submit_only_slurm_template % (descr, part, cfg.default_account, job))
+        client_file.write(cfg.submit_only_slurm_template %
+                          (descr, part, cfg.default_account, job))
     else:
-        client_file.write(cfg.simple_slurm_template % (descr, part, cfg.default_account, server_script_filename))
+        client_file.write(cfg.simple_slurm_template % (
+            descr, part, cfg.default_account, server_script_filename))
 
     if not dryrun:
         client_file.close()
         os.chmod(client_script_filename, 0o755)
 
 
-def create_desktop_entry(script, descr, metadata = {}, dryrun = False):
+def create_desktop_entry(script, descr, metadata={}, dryrun=False):
     """Create desktop entry for script"""
 
     print(("Creating desktop entry '%s'" % script))
@@ -86,13 +88,14 @@ def create_desktop_entry(script, descr, metadata = {}, dryrun = False):
 
     return entry
 
+
 def parse_script_metadata(filename):
     """Parse run-script for metadata"""
 
-    ##LDT category = "Post Processing"
-    ##LDT title = "ParaView 5.4.1"
-    ##LDT part = "snic"
-    ##LDT job = "notebook"
+    # LDT category = "Post Processing"
+    # LDT title = "ParaView 5.4.1"
+    # LDT part = "snic"
+    # LDT job = "notebook"
 
     variables = {}
 
@@ -101,7 +104,7 @@ def parse_script_metadata(filename):
     script_file.close()
 
     for line in lines:
-        if line.find("##LDT")!=-1:
+        if line.find("##LDT") != -1:
             commands = line.split("##LDT")[1]
             variable_name = commands.split("=")[0].strip()
             variable_value = commands.split("=")[1].strip().strip('"')
@@ -109,7 +112,8 @@ def parse_script_metadata(filename):
 
     return variables
 
-def parse_script_dir(dryrun = False):
+
+def parse_script_dir(dryrun=False):
     """Parse script directory for run-scripts"""
 
     cfg = config.GfxConfig.create()
@@ -119,7 +123,7 @@ def parse_script_dir(dryrun = False):
     menu.directory_dir = cfg.directories_dir
 
     for script in os.listdir(script_dir):
-        if script.endswith('.sh') and script.startswith('run_') and script.find('rviz-server')!=-1:
+        if script.endswith('.sh') and script.startswith('run_') and script.find('rviz-server') != -1:
             filename = os.path.join(script_dir, script)
 
             metadata = parse_script_metadata(filename)
@@ -133,12 +137,16 @@ def parse_script_dir(dryrun = False):
             slurm_client_filename = 'run_%s_rviz-slurm.sh' % app_name
             slurm_client_descr = app_name.title()
 
-            create_slurm_script(server_filename, slurm_client_filename, slurm_client_descr, metadata, dryrun)
-            slurm_entry = create_desktop_entry(slurm_client_filename, slurm_client_descr, metadata, dryrun)
+            create_slurm_script(
+                server_filename, slurm_client_filename, slurm_client_descr, metadata, dryrun)
+            slurm_entry = create_desktop_entry(
+                slurm_client_filename, slurm_client_descr, metadata, dryrun)
 
             if cfg.direct_scripts:
-                create_direct_script(server_filename, direct_client_filename, direct_client_descr)
-                direct_entry = create_desktop_entry(direct_client_filename, direct_client_descr)
+                create_direct_script(
+                    server_filename, direct_client_filename, direct_client_descr)
+                direct_entry = create_desktop_entry(
+                    direct_client_filename, direct_client_descr)
 
             if cfg.direct_scripts:
                 menu.items.append(os.path.basename(direct_entry.filename))
@@ -150,7 +158,8 @@ def parse_script_dir(dryrun = False):
                 if not category in menu.sub_menus:
                     menu.sub_menus[category] = []
 
-                menu.sub_menus[category].append(os.path.basename(slurm_entry.filename))
+                menu.sub_menus[category].append(
+                    os.path.basename(slurm_entry.filename))
 
             else:
                 menu.items.append(os.path.basename(slurm_entry.filename))
@@ -171,7 +180,7 @@ if __name__ == '__main__':
     cfg.print_config()
 
     if cfg.is_ok:
-        if len(sys.argv)>1:
-            parse_script_dir(dryrun = True)
+        if len(sys.argv) > 1:
+            parse_script_dir(dryrun=True)
         else:
-            parse_script_dir(dryrun = False)
+            parse_script_dir(dryrun=False)

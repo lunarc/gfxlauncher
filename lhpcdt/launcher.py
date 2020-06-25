@@ -15,6 +15,7 @@ from . import resource_win
 
 from subprocess import Popen, PIPE, STDOUT
 
+
 class WriteStream(object):
     """Class for synchronised stream writing"""
 
@@ -23,6 +24,9 @@ class WriteStream(object):
 
     def write(self, text):
         self.queue.put(text)
+
+    def flush(self):
+        pass
 
 
 class OutputReceiver(QtCore.QObject):
@@ -73,8 +77,10 @@ class SubmitThread(QtCore.QThread):
             print("Session %d submitted." % self.job.id)
 
         print("Waiting for session to start...")
+
         self.slurm.wait_for_start(self.job)
         self.slurm.job_status(self.job)
+
         print("Session has started on node %s." % self.job.nodes)
 
         if not self.only_submit:
@@ -83,10 +89,12 @@ class SubmitThread(QtCore.QThread):
 
             if self.opengl:
                 print("Executing command on node (OpenGL)...")
+
                 self.vgl.execute(self.job.nodes, self.cmd)
                 self.active_connection = self.vgl
             else:
                 print("Executing command on node...")
+
                 self.ssh.execute(self.job.nodes, self.cmd)
                 self.active_connection = self.ssh
 
@@ -108,6 +116,9 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.version_info = settings.LaunchSettings.create().version_info
         self.rdp = None
 
+        self.reconnect_nb_button = None
+        self.reconnect_vm_button = None
+
         self.config = config.GfxConfig.create()
 
         # Setup default launch properties
@@ -127,7 +138,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         # Check for available project
 
         if not self.has_project() and not self.args.ignore_grantfile:
-            QtWidgets.QMessageBox.information(self, self.title, "No project allocation found. Please apply for a project in SUPR.")
+            QtWidgets.QMessageBox.information(
+                self, self.title, "No project allocation found. Please apply for a project in SUPR.")
 
         # Where can we find the user interface definitions (ui-files)
 
@@ -146,7 +158,13 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.statusTimer = QtCore.QTimer()
         self.statusTimer.timeout.connect(self.on_status_timeout)
 
-        self.versionLabel.setText(self.copyright_short_info % self.version_info)
+        self.versionLabel.setText(
+            self.copyright_short_info % self.version_info)
+
+        # Hide detail tabs
+
+        self.launcherTabs.setHidden(True)
+        self.adjustSize()
 
     def time_to_decimal(self, time_string):
         """Time to decimal conversion routine"""
@@ -174,20 +192,20 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         grant_filename = self.config.grantfile
 
-        if self.config.grantfile_base!="":
+        if self.config.grantfile_base != "":
             grant_filename = self.config.grantfile_base % self.part
 
         if self.grant_filename != "":
             grant_filename = self.grant_filename
-        
+
         grant_file = lrms.GrantFile(grant_filename)
 
         active_projects = grant_file.query_active_projects(user)
 
-        if len(active_projects)>0:
+        if len(active_projects) > 0:
             self.account = active_projects[0]
             return True
-        else: 
+        else:
             return False
 
     def init_defaults(self):
@@ -218,7 +236,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
     def get_defaults_from_cmdline(self):
         """Get properties from command line"""
-        
+
         self.memory = self.args.memory
         self.count = self.args.count
         self.exclusive = self.args.exclusive
@@ -244,14 +262,15 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.time = self.wallTimeEdit.currentText()
 
         if self.featureCombo.currentIndex() != -1:
-            self.selected_feature = self.filtered_features[self.featureCombo.currentIndex()]
+            self.selected_feature = self.filtered_features[self.featureCombo.currentIndex(
+            )]
         else:
             self.selected_feature = ""
 
     def update_controls(self):
         """Update user interface from properties"""
 
-        if self.job_type=="":
+        if self.job_type == "":
             self.launcherTabs.removeTab(2)
 
         self.slurm.query_partitions()
@@ -265,19 +284,22 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         for feature in self.features:
             if feature.find("mem") != -1:
                 if feature.lower() in self.config.feature_descriptions:
-                    self.featureCombo.addItem(self.config.feature_descriptions[feature.lower()])
+                    self.featureCombo.addItem(
+                        self.config.feature_descriptions[feature.lower()])
                 else:
                     self.featureCombo.addItem(feature)
                 self.filtered_features.append(feature)
             elif feature.find("gpu") != -1:
                 if feature.lower() in self.config.feature_descriptions:
-                    self.featureCombo.addItem(self.config.feature_descriptions[feature.lower()])
+                    self.featureCombo.addItem(
+                        self.config.feature_descriptions[feature.lower()])
                 else:
                     self.featureCombo.addItem(feature)
                 self.filtered_features.append(feature)
             elif feature.find("win") != -1:
                 if feature.lower() in self.config.feature_descriptions:
-                    self.featureCombo.addItem(self.config.feature_descriptions[feature.lower()])
+                    self.featureCombo.addItem(
+                        self.config.feature_descriptions[feature.lower()])
                 else:
                     self.featureCombo.addItem(feature)
                 self.filtered_features.append(feature)
@@ -302,7 +324,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
             p = self.runningFrame.palette()
             p.setColor(self.runningFrame.backgroundRole(), QtCore.Qt.green)
             self.runningFrame.setPalette(p)
-            self.wallTimeEdit.setEnabled(False)    
+            self.wallTimeEdit.setEnabled(False)
         else:
             self.cancelButton.setEnabled(False)
             self.startButton.setEnabled(True)
@@ -311,7 +333,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
             p = self.runningFrame.palette()
             p.setColor(self.runningFrame.backgroundRole(), QtCore.Qt.gray)
             self.runningFrame.setPalette(p)
-            self.wallTimeEdit.setEnabled(True)            
+            self.wallTimeEdit.setEnabled(True)
 
         self.wallTimeEdit.setEditText(str(self.time))
         self.projectEdit.setText(str(self.account))
@@ -322,18 +344,22 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
     def enableExtrasPanel(self):
         """Clear user interface components in extras panel"""
 
-        self.extraControlsWidget.setEnabled(True)
+        self.extraControlsLayout.setEnabled(True)
 
+        if not self.reconnect_vm_button is None:
+            self.reconnect_vm_button.setEnabled(True)
+        if not self.reconnect_nb_button is None:
+            self.reconnect_nb_button.setEnabled(True)
 
     def disableExtrasPanel(self):
         """Clear user interface components in extras panel"""
 
-        self.extraControlsWidget.setEnabled(False)
+        self.extraControlsLayout.setEnabled(False)
 
-        #for i in self.extraControlsLayout.count():
-        #    widget = self.extraControlsLayout.itemAt(i).widget()
-        #    if widget!=None:
-        #        widget.setEnabled(False)
+        if not self.reconnect_vm_button is None:
+            self.reconnect_vm_button.setEnabled(False)
+        if not self.reconnect_nb_button is None:
+            self.reconnect_nb_button.setEnabled(False)
 
     def closeEvent(self, event):
         """Handle window close event"""
@@ -349,7 +375,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.active_connection = self.submitThread.active_connection
 
         if self.submitThread.error_status == SubmitThread.SUBMIT_FAILED:
-            QtWidgets.QMessageBox.about(self, self.title, "Session start failed.")
+            QtWidgets.QMessageBox.about(
+                self, self.title, "Session start failed.")
             self.running = False
             self.statusTimer.stop()
             self.update_controls()
@@ -361,7 +388,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         Popen("firefox %s" % url, shell=True)
 
         self.enableExtrasPanel()
-        #self.reconnect_nb_button.setEnabled(True)
+        # self.reconnect_nb_button.setEnabled(True)
 
     def on_vm_available(self, hostname):
         """Start an RDP session to host"""
@@ -424,14 +451,14 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
     def on_reconnect_notebook(self):
         """Reopen connection to notebook."""
 
-        if self.job!=None:
+        if self.job != None:
             Popen("firefox %s" % self.job.notebook_url, shell=True)
 
     def on_reconnect_vm(self):
         """Reopen connection to vm"""
 
-        if self.job!=None:
-            if self.rdp!=None:
+        if self.job != None:
+            if self.rdp != None:
                 self.rdp.terminate()
 
             self.rdp = remote.XFreeRDP(self.job.hostname)
@@ -456,6 +483,12 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
                 job = jobs.JupyterNotebookJob()
 
+            elif self.job_type == "jupyterlab":
+
+                # Create a Jupyter notbook job
+
+                job = jobs.JupyterLabJob()
+
             elif self.job_type == "vm":
 
                 # Create a VM job
@@ -469,9 +502,10 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
             job.partition = str(self.part)
             job.time = str(self.time)
             if self.job_type != "vm":
-                self.job.memory = int(self.memory)
-                self.job.nodeCount = int(self.count)
-            job.exclusive = self.exclusive
+                job.memory = int(self.memory)
+                job.nodeCount = int(self.count)
+                job.exclusive = self.exclusive
+                job.tasksPerNode = int(self.tasks_per_node)
             if self.selected_feature != "":
                 job.add_constraint(self.selected_feature)
             job.update()
@@ -484,8 +518,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         """Open resources specification window"""
 
         self.resource_window = resource_win.ResourceSpecWindow(self)
+        self.resource_window.setGeometry(self.x()+self.width(), self.y(), self.resource_window.width(), self.resource_window.height())
         self.resource_window.show()
-
 
     @QtCore.pyqtSlot()
     def on_startButton_clicked(self):
@@ -512,13 +546,13 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
             # Create extra user interface controls for reconnection
 
-            if self.extraControlsLayout.count()==0:
-                self.reconnect_nb_button = QtWidgets.QPushButton('Reconnect to notebook', self)
+            if self.extraControlsLayout.count() == 0:
+                self.reconnect_nb_button = QtWidgets.QPushButton(
+                    'Reconnect to notebook', self)
                 self.reconnect_nb_button.setEnabled(True)
-                self.reconnect_nb_button.clicked.connect(self.on_reconnect_notebook)
-                self.extraControlsLayout.addStretch(1)
+                self.reconnect_nb_button.clicked.connect(
+                    self.on_reconnect_notebook)
                 self.extraControlsLayout.addWidget(self.reconnect_nb_button)
-                self.extraControlsLayout.addStretch(1)
 
             self.launcherTabs.setCurrentIndex(2)
 
@@ -531,13 +565,13 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
             # Create extra user interface controls for reconnection
 
-            if self.extraControlsLayout.count()==0:
-                self.reconnect_nb_button = QtWidgets.QPushButton('Reconnect to Lab', self)
+            if self.extraControlsLayout.count() == 0:
+                self.reconnect_nb_button = QtWidgets.QPushButton(
+                    'Reconnect to Lab', self)
                 self.reconnect_nb_button.setEnabled(True)
-                self.reconnect_nb_button.clicked.connect(self.on_reconnect_notebook)
-                self.extraControlsLayout.addStretch(1)
+                self.reconnect_nb_button.clicked.connect(
+                    self.on_reconnect_notebook)
                 self.extraControlsLayout.addWidget(self.reconnect_nb_button)
-                self.extraControlsLayout.addStretch(1)
 
             self.launcherTabs.setCurrentIndex(2)
 
@@ -550,8 +584,9 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
             # Create extra user interface for reconnection to VM.
 
-            if self.extraControlsLayout.count()==0:
-                self.reconnect_vm_button = QtWidgets.QPushButton('Reconnect to desktop', self)
+            if self.extraControlsLayout.count() == 0:
+                self.reconnect_vm_button = QtWidgets.QPushButton(
+                    'Reconnect to desktop', self)
                 self.reconnect_vm_button.setEnabled(True)
                 self.reconnect_vm_button.clicked.connect(self.on_reconnect_vm)
                 self.extraControlsLayout.addStretch(1)
@@ -561,7 +596,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
             self.launcherTabs.setCurrentIndex(2)
 
         else:
-            QtWidgets.QMessageBox.about(self, self.title, "Session start failed.")
+            QtWidgets.QMessageBox.about(
+                self, self.title, "Session start failed.")
             return
 
         # Setup job parameters
@@ -573,14 +609,16 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         if self.job_type != "vm":
             self.job.memory = int(self.memory)
             self.job.nodeCount = int(self.count)
-        self.job.exclusive = self.exclusive
+            self.job.exclusive = self.exclusive
+            self.job.tasksPerNode = int(self.tasks_per_node)
         if self.selected_feature != "":
             self.job.add_constraint(self.selected_feature)
         self.job.update()
 
         # Create a job submission thread
 
-        self.submitThread = SubmitThread(self.job, self.cmd, self.vgl, self.vglrun, self.only_submit)
+        self.submitThread = SubmitThread(
+            self.job, self.cmd, self.vgl, self.vglrun, self.only_submit)
         self.submitThread.finished.connect(self.on_submit_finished)
         self.submitThread.start()
 
@@ -610,13 +648,27 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         self.disableExtrasPanel()
 
+    @QtCore.pyqtSlot()
+    def on_showDetails_clicked(self):
+        """Show details on job and script"""
+
+        # Hide detail tabs
+
+        if self.launcherTabs.isHidden():
+            self.launcherTabs.setHidden(False)
+        else:
+            self.launcherTabs.setHidden(True)
+            self.resize(0,0)
+            self.adjustSize()
+
+
     @QtCore.pyqtSlot(str)
     def on_append_text(self, text):
         """Callback for to update status output from standard output"""
 
-        now = datetime.now()        
+        now = datetime.now()
         self.statusText.moveCursor(QtGui.QTextCursor.End)
-        if text!="\n":
+        if text != "\n":
             self.statusText.insertPlainText(now.strftime("[%H:%M:%S] ") + text)
         else:
             self.statusText.insertPlainText(text)

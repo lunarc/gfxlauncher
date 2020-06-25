@@ -44,41 +44,45 @@ class ResourceSpecWindow(QtWidgets.QWidget):
 
         if int(self.parent.memory)>=0:
             self.memoryPerCpuEdit.setText(str(self.parent.memory))
+            self.memoryPerCpuEdit.setVisible(True)
             self.memoryPerCpuEdit.setEnabled(True)
             self.specifyMemoryCheck.setChecked(True)
         else:
             self.memoryPerCpuEdit.setText('-1')
+            self.memoryPerCpuEdit.setVisible(False)
             self.memoryPerCpuEdit.setEnabled(False)
             self.specifyMemoryCheck.setChecked(False)
 
         if int(self.parent.tasks_per_node)>=0:
             self.tasksPerNodeSpin.setValue(int(self.parent.tasks_per_node))
+            self.tasksPerNodeSpin.setVisible(True)
             self.tasksPerNodeSpin.setEnabled(True)
             self.specifyTasksPerNodeCheck.setChecked(True)
         else:
             self.tasksPerNodeSpin.setValue(-1)
+            self.tasksPerNodeSpin.setVisible(False)
             self.tasksPerNodeSpin.setEnabled(False)
             self.specifyTasksPerNodeCheck.setChecked(False)
 
-        if int(self.parent.count)>=0:
-            self.numberOfNodesSpin.setValue(int(self.parent.count))
-            self.numberOfNodesSpin.setEnabled(True)
-            self.specifyNumberOfNodesCheck.setChecked(True)
-        else:
-            self.numberOfNodesSpin.setValue(-1)
-            self.numberOfNodesSpin.setEnabled(False)
-            self.specifyNumberOfNodesCheck.setChecked(False)
+        #if int(self.parent.count)>=0:
+        #    self.numberOfNodesSpin.setValue(int(self.parent.count))
+        #    self.numberOfNodesSpin.setEnabled(True)
+        #    self.specifyNumberOfNodesCheck.setChecked(True)
+        #else:
+        #    self.numberOfNodesSpin.setValue(-1)
+        #    self.numberOfNodesSpin.setEnabled(False)
+        #    self.specifyNumberOfNodesCheck.setChecked(False)
 
-        if int(self.parent.cpus_per_task)>=0:
-            self.cpuPerTaskSpin.setValue(int(self.parent.cpus_per_task))
-            self.cpuPerTaskSpin.setEnabled(True)
-            self.specifyCPUsPerTaskCheck.setChecked(True)
-        else:
-            self.cpuPerTaskSpin.setValue(-1)
-            self.cpuPerTaskSpin.setEnabled(False)
-            self.specifyCPUsPerTaskCheck.setChecked(False)
+        #if int(self.parent.cpus_per_task)>=0:
+        #    self.cpuPerTaskSpin.setValue(int(self.parent.cpus_per_task))
+        #    self.cpuPerTaskSpin.setEnabled(True)
+        #    self.specifyCPUsPerTaskCheck.setChecked(True)
+        #else:
+        #    self.cpuPerTaskSpin.setValue(-1)
+        #    self.cpuPerTaskSpin.setEnabled(False)
+        #    self.specifyCPUsPerTaskCheck.setChecked(False)
 
-        self.noRequeueCheck.setChecked(self.parent.no_requeue) 
+        #self.noRequeueCheck.setChecked(self.parent.no_requeue) 
 
     def get_data(self):
         """Get values from controls"""
@@ -88,9 +92,9 @@ class ResourceSpecWindow(QtWidgets.QWidget):
             self.parent.memory = int(self.memoryPerCpuEdit.text())
             self.parent.exclusive = self.exclusiveCheck.isChecked()
             self.parent.tasks_per_node = self.tasksPerNodeSpin.value()
-            self.parent.count = self.numberOfNodesSpin.value()
-            self.parent.cpus_per_task = self.cpuPerTaskSpin.value()
-            self.parent.no_requeue = self.noRequeueCheck.isChecked()
+            #self.parent.count = self.numberOfNodesSpin.value()
+            #self.parent.cpus_per_task = self.cpuPerTaskSpin.value()
+            #self.parent.no_requeue = self.noRequeueCheck.isChecked()
         except ValueError:
             pass
 
@@ -98,37 +102,42 @@ class ResourceSpecWindow(QtWidgets.QWidget):
     def on_specifyMemoryCheck_clicked(self):
         if self.specifyMemoryCheck.isChecked():
             self.memoryPerCpuEdit.setEnabled(True)
+            self.memoryPerCpuEdit.setVisible(True)
             self.memoryPerCpuEdit.setText(str(self.default_job.memory))
         else:
-            self.tasksPerNodeSpin.setEnabled(False)
-            self.tasksPerNodeSpin.setText("-1")
+            self.memoryPerCpuEdit.setEnabled(False)
+            self.memoryPerCpuEdit.setVisible(False)
+            self.memoryPerCpuEdit.setText("-1")
 
     @QtCore.pyqtSlot()
     def on_specifyTasksPerNodeCheck_clicked(self):
         if self.specifyTasksPerNodeCheck.isChecked():
             self.tasksPerNodeSpin.setEnabled(True)
+            self.tasksPerNodeSpin.setVisible(True)
             self.tasksPerNodeSpin.setValue(self.default_job.tasksPerNode)
         else:
             self.tasksPerNodeSpin.setEnabled(False)
+            self.tasksPerNodeSpin.setVisible(False)
             self.tasksPerNodeSpin.setValue(-1)
 
-    @QtCore.pyqtSlot()
-    def on_specifyNumberOfNodesCheck_clicked(self):
-        if self.specifyNumberOfNodesCheck.isChecked():
-            self.numberOfNodesSpin.setEnabled(True)
-            self.numberOfNodesSpin.setValue(self.default_job.nodeCount)
-        else:
-            self.numberOfNodesSpin.setEnabled(False)
-            self.numberOfNodesSpin.setValue(-1)
-
-    @QtCore.pyqtSlot()
-    def on_specifyCPUsPerTaskCheck_clicked(self):
-        if self.specifyCPUsPerTaskCheck.isChecked():
-            self.cpuPerTaskSpin.setEnabled(True)
-            self.cpuPerTaskSpin.setValue(self.default_job.cpusPerNode)
-        else:
-            self.cpuPerTaskSpin.setEnabled(False)
-            self.cpuPerTaskSpin.setValue(-1)
+    """     @QtCore.pyqtSlot()
+        def on_specifyNumberOfNodesCheck_clicked(self):
+            if self.specifyNumberOfNodesCheck.isChecked():
+                self.numberOfNodesSpin.setEnabled(True)
+                self.numberOfNodesSpin.setValue(self.default_job.nodeCount)
+            else:
+                self.numberOfNodesSpin.setEnabled(False)
+                self.numberOfNodesSpin.setValue(-1)
+    """
+    """     @QtCore.pyqtSlot()
+        def on_specifyCPUsPerTaskCheck_clicked(self):
+            if self.specifyCPUsPerTaskCheck.isChecked():
+                self.cpuPerTaskSpin.setEnabled(True)
+                self.cpuPerTaskSpin.setValue(self.default_job.cpusPerNode)
+            else:
+                self.cpuPerTaskSpin.setEnabled(False)
+                self.cpuPerTaskSpin.setValue(-1)
+    """
 
     @QtCore.pyqtSlot()
     def on_okButton_clicked(self):
