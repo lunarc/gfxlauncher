@@ -1,8 +1,8 @@
 #!/bin/env python
 
-import os, ConfigParser
+import os, configparser
 
-from singleton import *
+from . singleton import *
 
 def print_error(msg):
     """Print error message"""
@@ -38,8 +38,8 @@ class GfxConfig(object):
         """Assign default properties"""
         self.debug_mode = False
         self.script_dir = "/sw/pkg/rviz/sbin/run"
-        self.default_part = "lvis"
-        self.default_account = "lvis-test"
+        self.default_part = "rviz"
+        self.default_account = "rviz"
         self.grantfile = ""
         self.grantfile_base = ""
         self.client_script_dir = "/home/bmjl/Development/gfxlauncher/scripts/client"
@@ -56,6 +56,7 @@ class GfxConfig(object):
         self.direct_scripts = False
         self.feature_descriptions = {}
         self.only_submit = False
+        self.module_json_file = "/sw/pkg/rviz/share/modules.json"
 
     def print_config(self):
         """Print configuration"""
@@ -71,6 +72,7 @@ class GfxConfig(object):
         print("script_dir = %s" % self.script_dir)
         print("client_script_dir = %s" % self.client_script_dir)
         print("only_submit = %s" % str(self.only_submit))
+        print("modules_json_file = %s" % (self.module_json_file))
 
         print("")
         print("SLURM settings")
@@ -126,7 +128,7 @@ class GfxConfig(object):
 
         print("Using configuration file : %s" % self.config_filename)
 
-        config = ConfigParser.ConfigParser()
+        config = configparser.RawConfigParser()
         config.read(self.config_filename)
 
         # Check for correct sections
@@ -136,6 +138,7 @@ class GfxConfig(object):
             self.client_script_dir = self._config_get(config, "general", "client_script_dir")
             self.debug_mode = self._config_getboolean(config, "general", "debug_mode")
             self.only_submit = self._config_getboolean(config, "general", "only_submit")
+            self.modules_json_file = self._config_get(config, "general", "modules_json_file")
 
             self.default_part = self._config_get(config, "slurm", "default_part")
             self.default_account = self._config_get(config, "slurm", "default_account")
@@ -154,8 +157,8 @@ class GfxConfig(object):
             self.vgl_bin = self._config_get(config, "vgl", "vgl_bin")
             self.backend_node = self._config_get(config, "vgl", "backend_node")
             self.vgl_connect_template = self._config_get(config, "vgl", "vglconnect_template")
-        except ConfigParser.Error:
-            print_error("Failed to read configuration.")
+        except configparser.Error as e:
+            print_error(e)
             return False
 
         # Check for feature descriptions
@@ -167,8 +170,8 @@ class GfxConfig(object):
                     descr = self._config_get(config, "slurm", option)
                     feature = option.split("_")[1]
                     self.feature_descriptions[feature] = descr.strip('"')
-        except ConfigParser.Error:
-            print_error("Failed to read configuration.")
+        except configparser.Error as e:
+            print_error(e)
             return False
 
         return True

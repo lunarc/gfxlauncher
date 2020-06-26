@@ -329,6 +329,47 @@ class StatusProbe(SSH):
         self.check_memory(node)
         self.check_gpu_usage(node)
 
+class XFreeRDP(object):
+    """Implements a RDP connection"""
 
+    def __init__(self, hostname):
+        self.hostname = hostname
+        self.process = None
+        self.output = ""
+        self.error = ""
+        self.xfreerdp_binary = "/sw/pkg/freerdp/2.0.0-rc4/bin/xfreerdp"
 
+    def terminate(self):
+        """Terminate RDP connection process"""
+        if self.process != None:
+            self.process.terminate()
 
+    def is_active(self):
+        """Return RDP connection status"""
+        self.process.poll()
+        return self.process.returncode == None
+
+    def wait(self):
+        self.process.wait()        
+
+    def execute(self):
+        """Execute command on a node/host"""
+        #self._update_options()
+
+        #cmd_line = 'xfreerdp -u $(zenity --entry --title="%s" --text="Enter your username") -p $(zenity --entry --title="Password" --text="Enter your _password:" --hide-text) --ignore-certificate %s'
+
+        #cmd_line = 'xfreerdp --ignore-certificate %s'
+        #cmd_line = '/sw/pkg/freerdp/2.0.0-rc4/bin/xfreerdp /v:%s /u:$USER /d:ad.lunarc /sec:tls -themes -wallpaper /size:1280x1024 /dynamic-resolution /cert-ignore'
+
+        cmd_line = '%s /v:%s /u:$USER /d:ad.lunarc /sec:tls /cert-tofu /audio-mode:1 /gfx +gfx-progressive -bitmap-cache -offscreen-cache -glyph-cache +clipboard -themes -wallpaper /size:1280x1024 /dynamic-resolution /t:"LUNARC HPC Desktop Windows 10 (NVIDA V100)"'
+
+        #cmd_line = '/sw/pkg/freerdp/2.0.0-rc4/bin/xfreerdp /v:%s /audio-mode:1 /gfx +gfx-progressive -bitmap-cache -offscreen-cache -glyph-cache +clipboard -themes -wallpaper /size:1280x1024 /dynamic-resolution /t:"LUNARC HPC Desktop Windows 10 (NVIDA V100)"'
+        self.process = Popen(cmd_line % (self.xfreerdp_binary, self.hostname), shell=True)
+
+    def execute_with_output(self, node, command):
+        self.process = Popen("ssh %s %s '%s'" %
+                             (self._options, node, command), shell=self.shell, stdout=PIPE)
+
+        output, error = self.process.communicate()
+
+        return output

@@ -1,0 +1,230 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+"""
+Prolog/Epilog-script for managing VM:s through slurm.
+"""
+
+import os, pwd, sys, time 
+import logging as log
+
+from lhpcvm import VMTracker, XenServer, PortProber, SlurmVMConfig
+
+if __name__ == "__main__":
+
+    # --- Enable script to run without actually starting VMs
+
+    dry_run = False
+
+    # --- Extract script name for determining if this script
+    #     is executed as prolog or epilog
+
+    script_name = sys.argv[0].split('/')[-1]
+
+    # --- Read configuration
+
+    print("Reading configuration file")
+    slurm_vm_config = SlurmVMConfig()
+
+    log_level = log.DEBUG
+    
+    if slurm_vm_config.log_level == "DEBUG":
+        log_level = log.DEBUG
+    if slurm_vm_config.log_level == "INFO":
+        log_level = log.INFO
+    if slurm_vm_config.log_level == "WARNING":
+        log_level = log.WARNING
+    if slurm_vm_config.log_level == "ERROR":
+        log_level = log.ERROR
+
+    xen_server_host = slurm_vm_config.xen_server_hostname
+    snapshot_prefix = slurm_vm_config.snapshot_prefix
+
+    # --- Get environment variables from SLURM epilog/prolog
+
+    try:
+        job_id = os.environ["SLURM_JOBID"]
+        user_name = os.environ["SLURM_JOB_USER"]
+        user_id = int(os.environ["SLURM_JOB_UID"])
+        pwd_entry = pwd.getpwuid(user_id)
+        group_id = pwd_entry.pw_gid
+        home_dir = pwd_entry.pw_dir
+    except KeyError:
+        print("Script not running as a prolog script in SLUMR.")
+
+    # --- Configure logging - All messages from prolog/epilog uses Python logging.
+
+    log.basicConfig(filename="%s-%s.log" % ("lhpc-proepi", job_id), 
+        level=log.DEBUG, format='%(asctime)s : %(levelname)-8s : %(message)s')
+
+    # --- Redirect stderr and stdout output to catch other error messages.
+
+    sys.stdout = open("%s-%s.out" % ("lhpc-proepi", job_id), 'a')
+    sys.stderr = sys.stdout
+
+    # --- Print job information
+
+    log.info('---------------------------------------------------------')
+    log.info('Job information')
+    log.info('---------------------------------------------------------')
+    log.info('Job ID      :'+job_id)
+    log.info('Username    :'+user_name)
+    log.info('Userid      :'+str(user_id))
+    log.info('group_id    :'+str(group_id))
+    log.info('home_dir    :'+home_dir)
+    log.info('script-uid  :'+str(os.getuid()))
+    log.info('---------------------------------------------------------')
+
+    # --- Script is executing as prolog (before job)
+
+    if script_name == "prolog":
+
+        log.info("Running prolog-skript.")
+
+        # --- Get tracker object
+
+        tracker = VMTracker(slurm_vm_config)
+        tracker.status()
+
+        # tracker = create_tracker(state_filename, lock)
+
+        tracker.user_id = user_id
+        tracker.group_id = group_id
+        tracker.home_dir = home_dir
+
+        # --- Aquire availble vm_host
+
+        log.info("Request availble VM for job id %s." % job_id)
+
+        vm_name, vm_host = tracker.aquire_vm(job_id)
+
+        if vm_name!="":
+
+            log.info("Aquired %s for job id %s." % (vm_name, job_id))
+
+            # --- Extract vm and related snapshot from hostname
+
+            ss_name = "ss-"+vm_name
+
+            # --- Connect to XenServer
+
+            xen = XenServer(xen_server_host)
+
+            # --- Start selected VM
+
+            log.info("Starting %s." % vm_name)
+
+            if not dry_run:
+                
+                # --- Shut down VM is already running
+
+                if xen.is_vm_running(vm_name):
+                    log.info("Shutting down "+vm_name)
+                    xen.vm_shutdown(vm_name)
+
+                # --- Start VM
+
+                xen.vm_start(vm_name)
+            else:
+                log.info("xe vm start " + vm_name)
+
+            # --- Wait for VM to startup
+
+            log.info("Waiting for host %s to become available..." % (vm_host))
+
+            prober = PortProber(vm_host)
+
+            timeout = 60
+            
+            if not dry_run:
+                while not prober.is_port_open(3389) and timeout != 0:
+                    log.info("Still waiting for host %s to become available..." % (vm_host))
+                    time.sleep(1)
+                    timeout -= 1
+
+            # --- Wait some more to make sure RDP connection is up.
+
+            #time.sleep(5)
+
+            log.info("%s is available at %s:3389" % (vm_name, vm_host))
+
+            # --- Write ip file for client
+
+            log.info("Forking process to write job_hostfile...")
+            pid = os.fork()
+
+            if pid == 0:
+                try:
+                    os.setgid(group_id)
+                    os.setuid(user_id)
+                    tracker.write_job_hostfile(job_id, vm_host)
+                finally:
+                    os._exit(0)
+            
+            os.waitpid(pid, 0)
+            log.info("... back from fork.")
+        else:
+            log.error("Failed to aquire VM.")
+
+    # --- Script is executing as epilog (after job)
+
+    if script_name == "epilog":
+
+        log.info("Running as epilog-skript.")        
+
+        # --- Get tracker object
+
+        tracker = VMTracker(slurm_vm_config)
+        tracker.status()
+
+        tracker.user_id = user_id
+        tracker.group_id = group_id
+        tracker.home_dir = home_dir
+
+        # --- Release vm from database
+
+        vm_name, vm_host = tracker.release_vm(job_id)
+
+        log.info("Released %s." % vm_name)
+
+        if vm_name!="":
+
+            # --- Remove client ip file
+
+            log.info("Removing client ip file for %s" % vm_name)
+
+            pid = os.fork()
+            
+            if pid == 0:
+                try:
+                    os.setgid(group_id)
+                    os.setuid(user_id)
+                    tracker.remove_job_hostfile(job_id, vm_host)
+                finally:
+                    os._exit(0)
+            
+            os.waitpid(pid, 0)
+
+            # --- Extract vm and related snapshot from hostname
+            
+            ss_name = "ss-"+vm_name
+
+            xen = XenServer(xen_server_host)
+
+            log.info("Is %s running?" % vm_name)
+
+            if xen.is_vm_running(vm_name):
+                log.info("Shutting down "+vm_name)
+                if not dry_run:
+                    xen.vm_shutdown(vm_name)
+                    if slurm_vm_config.use_snapshot:
+                        xen.vm_snapshot_revert(vm_name, ss_name)
+                else:
+                    log.info("xe vm shutdown "+vm_name)
+                    log.info("xe snapshot revert "+vm_name)
+            else:
+                log.error("Couldn't shut VM %s down: " % vm_name)
+
+    log.info(script_name + " completed.")
+
+    sys.stdout.close()
+    sys.stderr.close()
