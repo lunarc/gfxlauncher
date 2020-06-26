@@ -258,6 +258,9 @@
         <property name="text">
          <string>More...</string>
         </property>
+        <property name="icon">
+         <iconset theme="dialog-information"/>
+        </property>
         <property name="checkable">
          <bool>true</bool>
         </property>

@@ -99,6 +99,19 @@ class ResourceSpecWindow(QtWidgets.QWidget):
             pass
 
     @QtCore.pyqtSlot()
+    def on_exclusiveCheck_clicked(self):
+        if self.exclusiveCheck.isChecked:
+            self.old_tasks_per_node = self.parent.tasks_per_node
+            self.parent.tasks_per_node = -1
+            self.parent.exclusive = True
+        else:
+            self.parent.tasks_per_node = self.old_tasks_per_node
+            self.parent.exclusive = False
+
+        self.set_data()
+
+
+    @QtCore.pyqtSlot()
     def on_specifyMemoryCheck_clicked(self):
         if self.specifyMemoryCheck.isChecked():
             self.memoryPerCpuEdit.setEnabled(True)
