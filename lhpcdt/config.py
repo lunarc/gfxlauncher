@@ -50,7 +50,7 @@ class GfxConfig(object):
         self.vgl_bin = "/sw/pkg/rviz/vgl/bin/latest"
         self.backend_node = "gfx0"
         self.vgl_connect_template = '%s/vglconnect %s %s/%s'
-        self.simple_slurm_template = 'gfxlaunch --vgl --title "%s" --partition %s --account %s --exclusive --cmd %s --simplified'
+        self.simple_slurm_template = 'gfxlaunch --vgl --title "%s" --partition %s --account %s --exclusive --tasks-per-node=-1 --cmd %s --simplified'
         self.adv_slurm_template = 'gfxlaunch --vgl --title "%s" --partition %s --account %s --exclusive --cmd %s'
         self.submit_only_slurm_template = 'gfxlaunch --vgl --title "%s" --partition %s --account %s --only-submit --job=%s --simplified'
         self.direct_scripts = False
