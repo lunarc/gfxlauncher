@@ -17,7 +17,7 @@ An example configuration file is shown below:
     grantfile = /sw/pkg/slurm/local/grantfile.lvis
     grantfile_base = /sw/pkg/slurm/local/grantfile.%s
 
-    simple_slurm_template = gfxlaunch --vgl --title "%s" --partition %s --account %s --exclusive --tasks-per-node=-1 --cmd %s --simplified
+    simple_launch_template = gfxlaunch --vgl --title "%s" --partition %s --account %s --exclusive --tasks-per-node=-1 --cmd %s --simplified
     
     feature_gpu4k20 = "4 x NVIDIA K20 GPU"
     feature_gpu8k20 = "8 x NVIDIA K20 GPU"
@@ -32,8 +32,15 @@ An example configuration file is shown below:
     menu_filename = Lunarc-On-Demand.menu
 
     [vgl]
-    vgl_bin = /sw/pkg/rviz/vgl/bin/latest
+    vgl_path = /sw/pkg/rviz/vgl/bin/latest
     vglconnect_template = %s/vglconnect %s %s/%s
+
+    [xfreerdp]
+    xfreerdp_path = /sw/pkg/...
+
+    [jupyter]
+    notebook_module = Anaconda3
+    jupyterlab_module = Anaconda3
 
 General configuration section - [general]
 -----------------------------------------
@@ -96,8 +103,30 @@ This section is used by **gfxlaunch** to configure where the binaries for Virtua
 +----------------------+-----------------------------------------------------------------------------+
 | Variable             | Description                                                                 |
 +----------------------+-----------------------------------------------------------------------------+
-| vgl_bin_dir          | Executable directory for the VirtualGL installation.                        |
+| vgl_path             | Path for VirtualGL executables                                              |
 +----------------------+-----------------------------------------------------------------------------+
 | vgl_connect_template | Command to execute vglconnect. Should be %s/vglconnect %s %s/%s by default. |
++----------------------+-----------------------------------------------------------------------------+
+
+XFreeRDP configuration - [xfreerdp]
+-----------------------------------
+
+This section is used by **gfxlaunch** to configure where the binaries for XFreeRDP can be found. The following variables can be configured:
+
++----------------------+-----------------------------------------------------------------------------+
+| Variable             | Description                                                                 |
++----------------------+-----------------------------------------------------------------------------+
+| xfreerdp_path        | Path for XFreeRDP executables                                               |
++----------------------+-----------------------------------------------------------------------------+
+
+Jupyter related settings - [jupyter]
+------------------------------------
+
++----------------------+-----------------------------------------------------------------------------+
+| Variable             | Description                                                                 |
++----------------------+-----------------------------------------------------------------------------+
+| notebook_module      | Module loaded for Jupyter Notebook jobs                                     |
++----------------------+-----------------------------------------------------------------------------+
+| jupyterlab_module    | Module loaded for Jupyter Lab jobs                                          |
 +----------------------+-----------------------------------------------------------------------------+
 

@@ -8,7 +8,7 @@ from lhpcdt import config, desktop
 
 # --- Version information
 
-gfxconvert_version = "0.8"
+gfxconvert_version = "0.8.1"
 
 # --- Fix search path for tool
 

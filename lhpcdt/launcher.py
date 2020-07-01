@@ -49,7 +49,7 @@ class SubmitThread(QtCore.QThread):
     NO_ERROR = 0
     SUBMIT_FAILED = 1
 
-    def __init__(self, job, cmd="xterm", opengl=False, vglrun=True, only_submit=False):
+    def __init__(self, job, cmd="xterm", opengl=False, vglrun=True, only_submit=False, vgl_path=""):
         QtCore.QThread.__init__(self)
 
         self.job = job
@@ -58,8 +58,13 @@ class SubmitThread(QtCore.QThread):
         self.only_submit = only_submit
 
         self.ssh = remote.SSH()
+
         self.vgl = remote.VGLConnect()
         self.vgl.vglrun = vglrun
+
+        if vgl_path!="":
+            self.vgl_path = vgl_path
+
         self.slurm = lrms.Slurm()
         self.error_status = SubmitThread.NO_ERROR
         self.active_connection = None
@@ -217,6 +222,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.exclusive = False
         self.vgl = False
         self.vglrun = False
+        self.vgl_path = self.config.vgl_path
         self.account = self.config.default_account
         self.part = self.config.default_part
         self.grant_filename = ""
@@ -233,6 +239,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.cpus_per_task = 1
         self.no_requeue = False
         self.user = ""
+        self.notebook_module = self.config.notebook_module
+        self.jupyterlab_module = self.config.jupyterlab_module
 
     def get_defaults_from_cmdline(self):
         """Get properties from command line"""
@@ -256,6 +264,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.cpus_per_task = self.args.cpus_per_task
         self.no_requeue = self.args.no_requeue
         self.user = self.args.user
+        self.notebook_module = self.args.notebook_module
+        self.jupyterlab_module = self.args.jupyterlab_module
 
     def update_properties(self):
         """Get properties from user interface"""
@@ -396,6 +406,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         print("Starting RDP: " + hostname)
 
         self.rdp = remote.XFreeRDP(hostname)
+        self.rdp.xfreerdp_path = self.config.xfreerdp_path
         self.rdp.execute()
 
         self.enableExtrasPanel()
@@ -541,7 +552,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
             # Create a Jupyter notbook job
 
-            self.job = jobs.JupyterNotebookJob()
+            self.job = jobs.JupyterNotebookJob(notebook_module=self.notebook_module)
             self.job.on_notebook_url_found = self.on_notebook_url_found
 
             # Create extra user interface controls for reconnection
@@ -560,7 +571,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
             # Create a Jupyter lab job
 
-            self.job = jobs.JupyterLabJob()
+            self.job = jobs.JupyterLabJob(jupyterlab_module=self.jupyterlab_module)
             self.job.on_notebook_url_found = self.on_notebook_url_found
 
             # Create extra user interface controls for reconnection
@@ -618,7 +629,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         # Create a job submission thread
 
         self.submitThread = SubmitThread(
-            self.job, self.cmd, self.vgl, self.vglrun, self.only_submit)
+            self.job, self.cmd, self.vgl, self.vglrun, self.only_submit, self.vgl_path)
         self.submitThread.finished.connect(self.on_submit_finished)
         self.submitThread.start()
 

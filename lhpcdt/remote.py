@@ -337,7 +337,12 @@ class XFreeRDP(object):
         self.process = None
         self.output = ""
         self.error = ""
-        self.xfreerdp_binary = "/sw/pkg/freerdp/2.0.0-rc4/bin/xfreerdp"
+        self.__xfreerdp_path = "/sw/pkg/freerdp/2.0.0-rc4/bin"
+        self.__xfreerdp_cmd = "xfreerdp"
+        self.__update_path()
+
+    def __update_path(self):
+        self.xfreerdp_binary = os.path.join(self.xfreerdp_path, self.xfreerdp_cmd)
 
     def terminate(self):
         """Terminate RDP connection process"""
@@ -350,6 +355,7 @@ class XFreeRDP(object):
         return self.process.returncode == None
 
     def wait(self):
+        """Wait for the process to exit"""
         self.process.wait()        
 
     def execute(self):
@@ -373,3 +379,24 @@ class XFreeRDP(object):
         output, error = self.process.communicate()
 
         return output
+
+    def set_xfreerdp_path(self, p):
+        """Set method for xfreerdp_path property"""
+        self.__xfreerdp_path = p
+        self.__update_path()
+
+    def get_xfreerdp_path(self):
+        """Get method for xfreerdp_path property"""
+        return self.__xfreerdp_path
+
+    def set_xfreerdp_cmd(self, c):
+        """Set method for xfreerdp_cmd property"""
+        self.__xfreerdp_cmd = c
+        self.__update_path()
+    
+    def get_xfreerdp_cmd(self):
+        """Get method for xfreerdp_cmd property"""
+        return self.__xfreerdp_cmd
+
+    xfreerdp_path = property(get_xfreerdp_path, set_xfreerdp_path)
+    xfreerdp_cmd = property(get_xfreerdp_cmd, set_xfreerdp_cmd)

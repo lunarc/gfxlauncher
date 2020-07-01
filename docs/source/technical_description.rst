@@ -7,12 +7,17 @@ GfxLauncher is implemented as a command line tool that take cares of launching g
 
     gfxlaunch --vgl --title "Paraview-5.4.1" --partition lvis --account lvis-test --exclusive --tasks-per-node=-1 --cmd /sw/pkg/rviz/sbin/run/run_paraview-5.4.1_rviz-server.sh --simplified
 
+Application launch methods
+==========================
+
+The main idea with GfxLauncher is to be able to launch interactive applications, both graphical and web based, through SLURM. 
+
 GfxLauncher supports 4 different ways of launching applications through SLURM:
 
- 1. Running a placeholder job on a node. Starting application by executing SSH to allocated node.
- 2. Running a placeholder job on a node. Starting application by executing vglconnect (VirtualGL) to allocated node.
- 3. Running a job for starting up web-server for an interactive Notebook session. (Jupyter Notebook or Jupyter Lab).
- 4. Submitting a job for starting a virtual machine on specially configured node with access to a hypervisor.
+1. Running a placeholder job on a node. Starting application by executing SSH to allocated node.
+2. Running a placeholder job on a node. Starting application by executing vglconnect (VirtualGL) to allocated node.
+3. Running a job for starting up web-server for an interactive Notebook session. (Jupyter Notebook or Jupyter Lab).
+4. Submitting a job for starting a virtual machine on specially configured node with access to a hypervisor.
 
 SSH based application launching
 -------------------------------

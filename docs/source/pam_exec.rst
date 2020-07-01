@@ -18,6 +18,7 @@ Adding pam_ssh_exec.sh script to /sbin
 In the system directory of the distribution the **pam_ssh_exec.sh** script can be found. Copy this script to **/sbin** on the nodes. The script contains the following code:
 
 .. code-block:: bash
+
     #!/bin/sh
 
     SLURMDIR=/usr/bin

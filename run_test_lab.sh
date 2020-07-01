@@ -1,1 +1,1 @@
-gfxlaunch --title "Jupyter Lab" --partition lvis --account lvis-test --simplified --only-submit --job=jupyterlab
+gfxlaunch --title "Jupyter Lab" --partition lvis --account lvis-test --only-submit --job=jupyterlab

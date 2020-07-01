@@ -1,1 +1,1 @@
-gfxlaunch --title "Jupyter Notebook" --partition lvis --account lvis-test --simplified --only-submit --job=notebook
+gfxlaunch --title "Jupyter Notebook" --partition lvis --account lvis-test --only-submit --job=notebook
