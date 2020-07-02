@@ -6,9 +6,87 @@ Generating menus with gfxconvert
 Creating shell scripts for use with gfxconvert
 ----------------------------------------------
 
-Generating gfxlaunch based shell scripts for menus
---------------------------------------------------
+To use the **gfxconvert** tool to generate menus, every application that should be integrated in the menu needs to have a special start script. **gfxconvert** requires the filename of the script to have the form:
 
+``run_[Application name and version]_rviz-server.sh``
+
+An example of a script filename is shown below:
+
+``run_tomviz-1.5_rviz-server.sh``
+
+The purpose of the script is to launch the application. If the application requires hardware accelerated graphics it is usually started with the **vglrun** command in this script. An example of such a script is shown below:
+
+.. code-block:: bash
+
+    #!/bin/sh
+
+    ##LDT category = "Volume Rendering"
+    ##LDT title = "Tomviz 1.5"
+
+    vgl_P=/opt/VirtualGL/bin
+    app_P=
+
+    #ml foss/2018b
+    module load GCC/7.3.0-2.30
+    module load OpenMPI/3.1.1
+    ml Tomviz
+
+    $vgl_P/vglrun tomviz
+
+The ``##LDT`` tags are special attributes used by the **gfxconvert** scripts to greate **gfxlaunch** scripts in the correct menu category and with the proper window title.
+
+The following attributes are supported by **gfxconvert**:
+
++----------------+-------------------------------------------------------------------+
+| Attribute      | Description                                                       |
++----------------+-------------------------------------------------------------------+
+| ##LDT category | Menu category to add the menu item.                               |
++----------------+-------------------------------------------------------------------+
+| ##LDT title    | Menu item name. This will also be assigned to the GfxLauncher UI. |
++----------------+-------------------------------------------------------------------+
+| ##LDT part     | Default partition used when submitting the job                    |
++----------------+-------------------------------------------------------------------+
+| ##LDT job      | Job type. Currently one of vm, notebook and jupyterlab            |
++----------------+-------------------------------------------------------------------+
+
+When the job attribute is specified the script can be empty except for the attribute declarations.
+
+A script for a Jupyter Lab session is shown below:
+
+.. code-block:: bash
+
+    #!/bin/sh
+
+    ##LDT category = "Development"
+    ##LDT title = "Jupyter Lab"
+    ##LDT part = "snic"
+    ##LDT job = "jupyterlab"
+
+Generating the client scripts with gfxconvert
+---------------------------------------------
+
+The **gfxconvert** uses the directories in the /etc/gfxlauncher.conf configuration files to read the launchscripts and generate the menus items and directories. An example of running this command is shown below:
+
+.. code-block:: bash
+
+    $ gfxconvert
+    LUNARC HPC Desktop - Wrapper script  - Version 0.8.1
+    Written by Jonas Lindemann (jonas.lindemann@lunarc.lu.se)
+    Copyright (C) 2018-2020 LUNARC, Lund University
+    Using configuration file : /sw/pkg/rviz/etc/gfxlauncher.conf
+    ...
+    Creating desktop entry 'run_hypermesh_rviz-slurm.sh'
+    Creating desktop entry 'run_cellprofiler-3.0.0-rviz-server.sh_rviz-slurm.sh'
+    Creating desktop entry 'run_vmd-1.9.2_rviz-slurm.sh'
+    Creating desktop entry 'run_matlab-2018b_rviz-slurm.sh'
+    Creating desktop entry 'run_freesurfer-6.0.0_rviz-slurm.sh'
+    Creating desktop entry 'run_hypergraph_rviz-slurm.sh'
+
+It is also possible to do a dryrun of the process by using the command:
+
+.. code-block:: bash
+
+    $ gfxconvert dryrun
 
 Adding menus to shared desktop setup
 ------------------------------------

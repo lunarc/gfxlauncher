@@ -3,8 +3,8 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to GfxLauncher - A graphical application launcher for SLURM's documentation!
-====================================================================================
+Welcome to GfxLauncher - A graphical application launcher for SLURM
+===================================================================
 
 .. toctree::
    :maxdepth: 2

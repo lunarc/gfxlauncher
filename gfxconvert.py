@@ -42,7 +42,7 @@ def create_slurm_script(server_fname, slurm_fname, descr, metadata={}, dryrun=Fa
         client_file.write(cfg.submit_only_slurm_template %
                           (descr, part, cfg.default_account, job))
     else:
-        client_file.write(cfg.simple_slurm_template % (
+        client_file.write(cfg.simple_launch_template % (
             descr, part, cfg.default_account, server_script_filename))
 
     if not dryrun:

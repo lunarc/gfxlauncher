@@ -100,7 +100,7 @@ class ResourceSpecWindow(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot()
     def on_exclusiveCheck_clicked(self):
-        if self.exclusiveCheck.isChecked:
+        if self.exclusiveCheck.isChecked():
             self.old_tasks_per_node = self.parent.tasks_per_node
             self.parent.tasks_per_node = -1
             self.parent.exclusive = True
