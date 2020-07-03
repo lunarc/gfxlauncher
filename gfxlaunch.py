@@ -14,7 +14,7 @@ gfxlaunch_copyright = """LUNARC HPC Desktop On-Demand - Version %s
 Copyright (C) 2017-2020 LUNARC, Lund University
 """
 gfxlaunch_copyright_short = """LUNARC HPC Desktop On-Demand - %s"""
-gfxlaunch_version = "0.5.4"
+gfxlaunch_version = "0.5.5"
 
 # --- Fix search path for tool
 

@@ -27,6 +27,8 @@ class ResourceSpecWindow(QtWidgets.QWidget):
         self.default_job.tasksPerNode = 1
         self.default_job.nodeCount = 1
 
+        self.old_tasks_per_node = -1
+
         self.tool_path = settings.LaunchSettings.create().tool_path
         ui_path = os.path.join(self.tool_path, "ui")
 
