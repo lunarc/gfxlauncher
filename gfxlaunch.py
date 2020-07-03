@@ -14,7 +14,7 @@ gfxlaunch_copyright = """LUNARC HPC Desktop On-Demand - Version %s
 Copyright (C) 2017-2020 LUNARC, Lund University
 """
 gfxlaunch_copyright_short = """LUNARC HPC Desktop On-Demand - %s"""
-gfxlaunch_version = "0.5.3"
+gfxlaunch_version = "0.5.4"
 
 # --- Fix search path for tool
 
@@ -159,6 +159,12 @@ if __name__ == '__main__':
 
     parser.add_argument("--ignore-grantfile", dest="ignore_grantfile",
                         action="store_true", default=False, help="Ignore grantfile checking.")
+
+    parser.add_argument("--jupyterlab-module", dest="jupyterlab_module", action="store", 
+                        default="Anaconda3", help="Specify module to load for Jupyter Lab jobs.")
+
+    parser.add_argument("--notebook-module", dest="notebook_module", action="store", 
+                        default="Anaconda3", help="Specify module to load for Jupyter Notebook jobs.")
 
     args = parser.parse_args()
 

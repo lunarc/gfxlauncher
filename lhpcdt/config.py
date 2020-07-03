@@ -47,16 +47,20 @@ class GfxConfig(object):
         self.directories_dir = "/home/bmjl/test-menu/share/desktop-directories"
         self.menu_dir = "/home/bmjl/test-menu/etc/xdg/menus/applications-merged"
         self.menu_filename = "Lunarc-On-Demand.menu"
-        self.vgl_bin = "/sw/pkg/rviz/vgl/bin/latest"
-        self.backend_node = "gfx0"
+        self.vgl_path = "/sw/pkg/rviz/vgl/bin/latest"
         self.vgl_connect_template = '%s/vglconnect %s %s/%s'
-        self.simple_slurm_template = 'gfxlaunch --vgl --title "%s" --partition %s --account %s --exclusive --cmd %s --simplified'
-        self.adv_slurm_template = 'gfxlaunch --vgl --title "%s" --partition %s --account %s --exclusive --cmd %s'
+        self.backend_node = "gfx0"
+        self.simple_launch_template = 'gfxlaunch --vgl --title "%s" --partition %s --account %s --exclusive --tasks-per-node=-1 --cmd %s --simplified'
+        self.adv_launch_template = 'gfxlaunch --vgl --title "%s" --partition %s --account %s --exclusive --cmd %s'
         self.submit_only_slurm_template = 'gfxlaunch --vgl --title "%s" --partition %s --account %s --only-submit --job=%s --simplified'
         self.direct_scripts = False
         self.feature_descriptions = {}
         self.only_submit = False
         self.module_json_file = "/sw/pkg/rviz/share/modules.json"
+        self.xfreerdp_path = "/sw/pkg/freerdp/2.0.0-rc4/bin"
+
+        self.notebook_module = "Anaconda3"
+        self.jupyterlab_module = "Anaconda3"
 
     def print_config(self):
         """Print configuration"""
@@ -83,8 +87,8 @@ class GfxConfig(object):
         print("grantfile = %s" % self.grantfile)
         print("grantfile_base = %s" % self.grantfile)
 
-        print("simple_slurm_template = %s" % self.simple_slurm_template)
-        print("adv_slurm_template = %s" % self.adv_slurm_template)
+        print("simple_launch_template = %s" % self.simple_launch_template)
+        print("adv_launch_template = %s" % self.adv_launch_template)
 
         print("")
         print("Menu settings")
@@ -99,9 +103,22 @@ class GfxConfig(object):
         print("VGL settings")
         print("")
 
-        print("vgl_bin = %s" % self.vgl_bin)
+        print("vgl_path = %s" % self.vgl_path)
         print("backend_node = %s" % self.backend_node)
         print("vgl_connect_template = %s" % self.vgl_connect_template)
+
+        print("")
+        print("XFreeRDP settings")
+        print("")
+
+        print("xfreerdp_path = %s" % self.xfreerdp_path)
+
+        print("")
+        print("Jupyter/JupyterLab settings")
+        print("")
+
+        print("notebook_module = %s" % self.notebook_module)
+        print("jupyterlab_module = %s" % self.jupyterlab_module)
         
     def _config_get(self, config, section, option):
         """Safe config retrieval"""
@@ -145,8 +162,8 @@ class GfxConfig(object):
             self.grantfile = self._config_get(config, "slurm", "grantfile")
             self.grantfile_base = self._config_get(config, "slurm", "grantfile_base")
 
-            self.simple_slurm_template = self._config_get(config, "slurm", "simple_slurm_template")
-            self.adv_slurm_template = self._config_get(config, "slurm", "adv_slurm_template")
+            self.simple_launch_template = self._config_get(config, "slurm", "simple_launch_template")
+            self.adv_launch_template = self._config_get(config, "slurm", "adv_launch_template")
 
             self.applications_dir = self._config_get(config, "menus", "applications_dir")
             self.directories_dir = self._config_get(config, "menus", "directories_dir")
@@ -154,9 +171,14 @@ class GfxConfig(object):
             self.menu_filename = self._config_get(config, "menus", "menu_filename")
             self.direct_scripts = self._config_getboolean(config, "menus", "direct_scripts")
 
-            self.vgl_bin = self._config_get(config, "vgl", "vgl_bin")
+            self.vgl_path = self._config_get(config, "vgl", "vgl_path")
             self.backend_node = self._config_get(config, "vgl", "backend_node")
             self.vgl_connect_template = self._config_get(config, "vgl", "vglconnect_template")
+
+            self.xfreerdp_path = self._config_get(config, "xfreerdp", "xfreerdp_path")
+
+            self.notebook_module = self._config_get(config, "jupyter", "notebook_module")
+            self.jupyterlab_module = self._config_get(config, "jupyter", "jupyterlab_module")
         except configparser.Error as e:
             print_error(e)
             return False

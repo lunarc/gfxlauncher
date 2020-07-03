@@ -128,9 +128,9 @@ class Job(object):
             module_version = module[1]
 
             if module_version == "":
-                self.add_script('ml %s' % (module_name))
+                self.add_script('module load %s' % (module_name))
             else:
-                self.add_script('ml %s/%s' % (module_name, module_version))
+                self.add_script('module load %s/%s' % (module_name, module_version))
 
         self.script = "\n".join(self.scriptLines + self.customLines)
 
@@ -170,16 +170,17 @@ class PlaceHolderJob(Job):
 class JupyterNotebookJob(Job):
     """Jupyter notebook job"""
 
-    def __init__(self, account="", partition="", time="00:30:00"):
+    def __init__(self, account="", partition="", time="00:30:00", notebook_module="Anaconda3"):
         Job.__init__(self, account, partition, time)
         self.notebook_url = ""
         self.process_output = True
+        self.notebook_module = notebook_module
 
-        self.add_module("Anaconda3")
+        self.add_module(self.notebook_module)
 
         self.add_custom_script("unset XDG_RUNTIME_DIR")
         self.add_custom_script('jupyter-notebook --no-browser --ip=$HOSTNAME')
-        self.add_custom_script("ml")
+        self.add_custom_script("module list")
         self.add_custom_script("which python")
 
     def on_notebook_url_found(self, url):
@@ -205,16 +206,17 @@ class JupyterNotebookJob(Job):
 class JupyterLabJob(Job):
     """Jupyter lab job"""
 
-    def __init__(self, account="", partition="", time="00:30:00"):
+    def __init__(self, account="", partition="", time="00:30:00", jupyterlab_module="Anaconda3"):
         Job.__init__(self, account, partition, time)
         self.notebook_url = ""
         self.process_output = True
+        self.jupyterlab_module = jupyterlab_module
 
-        self.add_module("Anaconda3")
+        self.add_module(self.jupyterlab_module)
 
         self.add_custom_script("unset XDG_RUNTIME_DIR")
         self.add_custom_script('jupyter-lab --no-browser --ip=$HOSTNAME')
-        self.add_custom_script("ml")
+        self.add_custom_script("module list")
         self.add_custom_script("which python")
 
     def on_notebook_url_found(self, url):

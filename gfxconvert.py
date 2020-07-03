@@ -8,7 +8,7 @@ from lhpcdt import config, desktop
 
 # --- Version information
 
-gfxconvert_version = "0.8"
+gfxconvert_version = "0.8.1"
 
 # --- Fix search path for tool
 
@@ -16,24 +16,6 @@ tool_path = os.path.dirname(os.path.abspath(sys.argv[0]))
 sys.path.append(tool_path)
 
 # --- Functions
-
-
-def create_direct_script(server_fname, direct_fname, descr):
-    """Create script for direct vglconnect"""
-
-    cfg = config.GfxConfig.create()
-
-    client_script_filename = os.path.join(cfg.client_script_dir, direct_fname)
-
-    client_file = open(client_script_filename, "w")
-
-    # vglconnect_template = '%s/vglconnect %s@%s %s/%s'
-
-    client_file.write(cfg.vgl_connect_template % (
-        cfg.vgl_bin, cfg.backend_node, cfg.script_dir, server_fname))
-    client_file.close()
-
-    os.chmod(client_script_filename, 0o755)
 
 
 def create_slurm_script(server_fname, slurm_fname, descr, metadata={}, dryrun=False):
@@ -60,7 +42,7 @@ def create_slurm_script(server_fname, slurm_fname, descr, metadata={}, dryrun=Fa
         client_file.write(cfg.submit_only_slurm_template %
                           (descr, part, cfg.default_account, job))
     else:
-        client_file.write(cfg.simple_slurm_template % (
+        client_file.write(cfg.simple_launch_template % (
             descr, part, cfg.default_account, server_script_filename))
 
     if not dryrun:
@@ -132,8 +114,6 @@ def parse_script_dir(dryrun=False):
 
             server_filename = os.path.basename(filename)
 
-            direct_client_filename = 'run_%s_rviz-direct.sh' % app_name
-            direct_client_descr = app_name.title() + ' (Direct)'
             slurm_client_filename = 'run_%s_rviz-slurm.sh' % app_name
             slurm_client_descr = app_name.title()
 
@@ -141,15 +121,6 @@ def parse_script_dir(dryrun=False):
                 server_filename, slurm_client_filename, slurm_client_descr, metadata, dryrun)
             slurm_entry = create_desktop_entry(
                 slurm_client_filename, slurm_client_descr, metadata, dryrun)
-
-            if cfg.direct_scripts:
-                create_direct_script(
-                    server_filename, direct_client_filename, direct_client_descr)
-                direct_entry = create_desktop_entry(
-                    direct_client_filename, direct_client_descr)
-
-            if cfg.direct_scripts:
-                menu.items.append(os.path.basename(direct_entry.filename))
 
             if "category" in metadata:
 
