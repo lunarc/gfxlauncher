@@ -18,7 +18,13 @@ class MonitorWindow(QtWidgets.QWidget):
     def __init__(self, parent = None):
         super(MonitorWindow, self).__init__(parent)
         self.tool_path = settings.LaunchSettings.create().tool_path
-        self.hostname = settings.LaunchSettings.create().args[1]
+
+        if len(settings.LaunchSettings.create().args)>1:
+            self.hostname = settings.LaunchSettings.create().args[1]
+            self.local_exec = False
+        else:
+            self.hostname = ""
+            self.local_exec = True
 
         ui_path = os.path.join(self.tool_path, "ui")
 
@@ -26,7 +32,7 @@ class MonitorWindow(QtWidgets.QWidget):
 
         uic.loadUi(os.path.join(ui_path, "monitor.ui"), self)
 
-        self.remote_probe = remote.StatusProbe()
+        self.remote_probe = remote.StatusProbe(local_exec=self.local_exec)
         self.remote_probe.check_all(self.hostname)
 
         self.update_controls()
@@ -101,6 +107,10 @@ class SessionWindow(QtWidgets.QWidget):
         user = getpass.getuser()
 
         self.sessionTable.setColumnCount(9)
+        self.sessionTable.setHorizontalHeaderLabels(
+            ["Id", "Name", "State", "Time",
+             "Requested", "Count", "Nodes", "", ""]
+            )
 
         if user in self.queue.userJobs:
             self.sessionTable.setRowCount(
@@ -109,11 +119,6 @@ class SessionWindow(QtWidgets.QWidget):
             self.sessionTable.setRowCount(0)
             return
 
-        self.sessionTable.setColumnCount(9)
-        self.sessionTable.setHorizontalHeaderLabels(
-            ["Id", "Name", "State", "Time",
-             "Requested", "Count", "Nodes", "", ""]
-            )
 
         row = 0
         for id in list(self.queue.userJobs[user].keys()):

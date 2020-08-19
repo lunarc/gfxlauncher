@@ -32,7 +32,7 @@ from subprocess import Popen, PIPE, STDOUT
 class SSH(object):
     """Implements a SSH connection"""
 
-    def __init__(self):
+    def __init__(self, local_exec=False):
         self.tty = True
         self.tunnelX11 = True
         self.shell = True
@@ -44,6 +44,7 @@ class SSH(object):
         self.error = ""
         self._options = ""
         self._update_options()
+        self.local_exec = local_exec
 
     def _update_options(self):
         """Update SSH options"""
@@ -61,8 +62,9 @@ class SSH(object):
 
     def terminate(self):
         """Terminate SSH connection process"""
-        if self.process != None:
-            self.process.terminate()
+        if not self.local_exec:
+            if self.process != None:
+                self.process.terminate()
 
     def is_active(self):
         """Return SSH connection status"""
@@ -75,13 +77,23 @@ class SSH(object):
     def execute(self, node, command):
         """Execute command on a node/host"""
         self._update_options()
-        self.process = Popen("ssh %s %s '%s'" %
-                             (self._options, node, command), shell=self.shell)
+        if not self.local_exec:
+            self.process = Popen("ssh %s %s '%s'" %
+                                 (self._options, node, command), shell=self.shell)
+        else:
+            self.process = Popen("%s" %
+                                 (command), shell=self.shell)
 
     def execute_with_output(self, node, command):
         self._update_options()
-        self.process = Popen("ssh %s %s '%s'" %
-                             (self._options, node, command), shell=self.shell, stdout=PIPE)
+
+        if not self.local_exec:
+            self.process = Popen("ssh %s %s '%s'" %
+                                 (self._options, node, command), shell=self.shell, stdout=PIPE)
+        else:
+            self.process = Popen("%s" %
+                                 (command), shell=self.shell, stdout=PIPE)
+
 
         output, error = self.process.communicate()
 
@@ -152,12 +164,12 @@ class VGLConnect(object):
                                 (self._vgl_cmd, self._options, node, command), shell=self.shell)
 
 class StatusProbe(SSH):
-    def __init__(self):
-        super(StatusProbe, self).__init__()
+    def __init__(self, local_exec=False):
+        super(StatusProbe, self).__init__(local_exec)
         self.total_mem = -1
         self.free_mem = -1
         self.used_mem = -1
-        self.memory_unit = "G"
+        self.memory_unit = "G" 
         self.cpu_usage = -1
         self.cpu_unit = "%"
 
@@ -176,7 +188,7 @@ class StatusProbe(SSH):
         Swap:             7           0           7
         """
 
-        output = self.execute_with_output(node, "free -g")
+        output = self.execute_with_output(node, "free -g").decode('ascii')
         lines = output.split("\n")
         mem_items = lines[1].split()
 
@@ -194,7 +206,7 @@ class StatusProbe(SSH):
          1  0     12958956      2536352          272     27033172    0    0     2     1    0    0   2   5  92   0   0
         """
 
-        output = self.execute_with_output(node, "vmstat -w")
+        output = self.execute_with_output(node, "vmstat -w").decode('ascii')
         lines = output.split("\n")
         vmstat_items = lines[2].split()
 
@@ -335,7 +347,7 @@ class StatusProbe(SSH):
                 Avg                         : 0 %
         """
 
-        output = self.execute_with_output(node, "nvidia-smi -q  -d UTILIZATION")
+        output = self.execute_with_output(node, "nvidia-smi -q  -d UTILIZATION").decode('ascii')
         lines = output.split("\n")
 
         self.gpu_usage = []
