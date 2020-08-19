@@ -1,8 +1,25 @@
-#!/usr/bin/python
+#!/bin/env python
+#
+# LUNARC HPC Desktop On-Demand graphical launch tool
+# Copyright (C) 2017-2020 LUNARC, Lund University
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 """
 LHPC VM management module
 
-Contains classes for managing running VM resources
+Contains classes for managing running VM resources.
 """
 
 import os, pwd, fcntl, json
@@ -14,6 +31,10 @@ import configparser
 from filelock import Timeout, FileLock
 
 class SlurmVMConfig(object):
+    """SLURMVM Configuration class
+
+    Reads and manages the slurmvm configuration settings
+    """
     def __init__(self):
 
         self.__default_config_file = "/etc/slurm/lhpcvm.conf"
@@ -30,6 +51,7 @@ class SlurmVMConfig(object):
         self.__read_config()
 
     def __read_config(self):
+        """Read configuration file"""
 
         self.config_valid = False
 
@@ -97,6 +119,7 @@ class SlurmVMConfig(object):
         self.config_valid = True
 
     def show_config(self):
+        """Show configuration"""
         print("XenServer host  :", self.xen_server_hostname)
         print("Log level       :", self.log_level)
         print("Snapshot prefix :", self.snapshot_prefix)
