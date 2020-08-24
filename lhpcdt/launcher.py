@@ -1,8 +1,32 @@
-"""LUNARC HPC Desktop Launcher Module"""
+#!/bin/env python
+#
+# LUNARC HPC Desktop On-Demand graphical launch tool
+# Copyright (C) 2017-2020 LUNARC, Lund University
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+"""
+LUNARC HPC Desktop Launcher Module
+
+This module implements the main user interface of the application 
+launcher.
+"""
 
 import os
 import getpass
 from datetime import datetime
+import time
 
 from PyQt5 import Qt, QtCore, QtGui, QtWidgets, uic
 
@@ -398,7 +422,6 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         Popen("firefox %s" % url, shell=True)
 
         self.enableExtrasPanel()
-        # self.reconnect_nb_button.setEnabled(True)
 
     def on_vm_available(self, hostname):
         """Start an RDP session to host"""
@@ -473,6 +496,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
                 self.rdp.terminate()
 
             self.rdp = remote.XFreeRDP(self.job.hostname)
+            self.rdp.xfreerdp_path = self.config.xfreerdp_path
             self.rdp.execute()
 
     @QtCore.pyqtSlot(int)
@@ -597,8 +621,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
             if self.extraControlsLayout.count() == 0:
                 self.reconnect_vm_button = QtWidgets.QPushButton(
-                    'Reconnect to desktop', self)
-                self.reconnect_vm_button.setEnabled(True)
+                    'Connect to desktop', self)
+                self.reconnect_vm_button.setEnabled(False)
                 self.reconnect_vm_button.clicked.connect(self.on_reconnect_vm)
                 self.extraControlsLayout.addStretch(1)
                 self.extraControlsLayout.addWidget(self.reconnect_vm_button)
