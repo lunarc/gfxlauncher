@@ -400,7 +400,9 @@ class XFreeRDP(object):
         #cmd_line = 'xfreerdp --ignore-certificate %s'
         #cmd_line = '/sw/pkg/freerdp/2.0.0-rc4/bin/xfreerdp /v:%s /u:$USER /d:ad.lunarc /sec:tls -themes -wallpaper /size:1280x1024 /dynamic-resolution /cert-ignore'
 
-        cmd_line = '%s /v:%s /u:$USER /d:ad.lunarc /sec:tls /cert-tofu /audio-mode:1 /gfx +gfx-progressive -bitmap-cache -offscreen-cache -glyph-cache +clipboard -themes -wallpaper /size:1280x1024 /dynamic-resolution /t:"LUNARC HPC Desktop Windows 10 (NVIDA V100)"'
+        #cmd_line = '%s /v:%s /u:$USER /d:ad.lunarc /sec:tls /cert-tofu /cert-ignore /audio-mode:1 /gfx +gfx-progressive -bitmap-cache -offscreen-cache -glyph-cache +clipboard -themes -wallpaper /size:1280x1024 /dynamic-resolution /t:"LUNARC HPC Desktop Windows 10 (NVIDA V100)"'
+
+        cmd_line = '%s /v:%s /u:$USER /d:ad.lunarc /sec:tls /cert-ignore /audio-mode:1 /gfx +gfx-progressive -bitmap-cache -offscreen-cache -glyph-cache +clipboard -themes -wallpaper /size:1280x1024 /dynamic-resolution /t:"LUNARC HPC Desktop Windows 10 (NVIDA V100)"'
 
         #cmd_line = '/sw/pkg/freerdp/2.0.0-rc4/bin/xfreerdp /v:%s /audio-mode:1 /gfx +gfx-progressive -bitmap-cache -offscreen-cache -glyph-cache +clipboard -themes -wallpaper /size:1280x1024 /dynamic-resolution /t:"LUNARC HPC Desktop Windows 10 (NVIDA V100)"'
         self.process = Popen(cmd_line % (self.xfreerdp_binary, self.hostname), shell=True)
