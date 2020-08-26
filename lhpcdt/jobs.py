@@ -270,10 +270,11 @@ class VMJob(Job):
         self.notebook_url = ""
         self.process_output = False
         self.update_processing = True
-        self.add_custom_script("sleep infinity")
+        #self.add_custom_script("sleep infinity")
+        self.add_custom_script("while true; do date; sleep 5; done")
         self.hostname = ""
         self.oversubscribe = True
-        self.memory = 500
+        self.memory = 100
         self.gres = "win10m"
         self.nodeCount = -1
         self.tasksPerNode = -1

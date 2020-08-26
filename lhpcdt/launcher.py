@@ -430,7 +430,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         self.rdp = remote.XFreeRDP(hostname)
         self.rdp.xfreerdp_path = self.config.xfreerdp_path
-        self.rdp.execute()
+        #self.rdp.execute()
 
         self.enableExtrasPanel()
 
