@@ -24,7 +24,7 @@ Prolog/Epilog-script for managing VM:s through slurm.
 import os, pwd, sys, time 
 import logging as log
 
-from lhpcvm import VMTracker, XenServer, PortProber, SlurmVMConfig
+from lhpcvm import VMTracker, XenServer, PortProber, SlurmVMConfig, VM
 
 if __name__ == "__main__":
 
@@ -55,6 +55,8 @@ if __name__ == "__main__":
 
     xen_server_host = slurm_vm_config.xen_server_hostname
     snapshot_prefix = slurm_vm_config.snapshot_prefix
+    manage_vm = slurm_vm_config.manage_vm
+    manage_server = slurm_vm_config.manage_server
 
     # --- Get environment variables from SLURM epilog/prolog
 
@@ -62,6 +64,7 @@ if __name__ == "__main__":
         job_id = os.environ["SLURM_JOBID"]
         user_name = os.environ["SLURM_JOB_USER"]
         user_id = int(os.environ["SLURM_JOB_UID"])
+        job_name = os.environ["SLURM_JOB_NAME"]
         pwd_entry = pwd.getpwuid(user_id)
         group_id = pwd_entry.pw_gid
         home_dir = pwd_entry.pw_dir
@@ -118,51 +121,66 @@ if __name__ == "__main__":
 
             log.info("Aquired %s for job id %s." % (vm_name, job_id))
 
-            # --- Extract vm and related snapshot from hostname
-
-            ss_name = "ss-"+vm_name
-
-            # --- Connect to XenServer
-
-            xen = XenServer(xen_server_host)
-
-            # --- Start selected VM
-
-            log.info("Starting %s." % vm_name)
-
-            if not dry_run:
-                
-                # --- Shut down VM is already running
-
-                if xen.is_vm_running(vm_name):
-                    log.info("Shutting down "+vm_name)
-                    xen.vm_shutdown(vm_name)
-
-                # --- Start VM
-
-                xen.vm_start(vm_name)
-            else:
-                log.info("xe vm start " + vm_name)
-
-            # --- Wait for VM to startup
-
-            log.info("Waiting for host %s to become available..." % (vm_host))
-
-            prober = PortProber(vm_host)
-
-            timeout = 60
+            vm_kind = slurm_vm_config.vm_kind(vm_name)
             
-            if not dry_run:
-                while not prober.is_port_open(3389) and timeout != 0:
-                    log.info("Still waiting for host %s to become available..." % (vm_host))
-                    time.sleep(1)
-                    timeout -= 1
+            # --- Create a VM manager
 
-            # --- Wait some more to make sure RDP connection is up.
+            if manage_server:
+                if vm_kind = "win10":
+                    vm_mgr = Win10VM(vm_host)
 
-            #time.sleep(5)
+                if vm_kind = "centos7":
+                    vm_mgr = CentOS7VM(vm_host)
 
-            log.info("%s is available at %s:3389" % (vm_name, vm_host))
+            # --- Are we going to start VM
+
+            if manage_vm:
+
+                # --- Extract vm and related snapshot from hostname
+
+                ss_name = "ss-"+vm_name
+
+                # --- Connect to XenServer
+
+                xen = XenServer(xen_server_host)
+
+                # --- Start selected VM
+
+                log.info("Starting %s." % vm_name)
+
+                if not dry_run:
+                    
+                    # --- Shut down VM is already running
+
+                    if xen.is_vm_running(vm_name):
+                        log.info("Shutting down "+vm_name)
+                        xen.vm_shutdown(vm_name)
+
+                    # --- Start VM
+
+                    xen.vm_start(vm_name)
+                else:
+                    log.info("xe vm start " + vm_name)
+
+                # --- Wait for VM to startup
+
+                log.info("Waiting for host %s to become available..." % (vm_host))
+
+                prober = PortProber(vm_host)
+
+                timeout = 60
+                
+                if not dry_run:
+                    while not prober.is_port_open(3389) and timeout != 0:
+                        log.info("Still waiting for host %s to become available..." % (vm_host))
+                        time.sleep(1)
+                        timeout -= 1
+
+                # --- Wait some more to make sure RDP connection is up.
+
+                #time.sleep(5)
+
+                log.info("%s is available at %s:3389" % (vm_name, vm_host))
 
             # --- Write ip file for client
 
@@ -205,6 +223,17 @@ if __name__ == "__main__":
 
         if vm_name!="":
 
+            vm_kind = slurm_vm_config.vm_kind(vm_name)
+            
+            # --- Create a VM manager
+
+            if manage_server:
+                if vm_kind = "win10":
+                    vm_mgr = Win10VM(vm_host)
+
+                if vm_kind = "centos7":
+                    vm_mgr = CentOS7VM(vm_host)
+
             # --- Remove client ip file
 
             log.info("Removing client ip file for %s" % vm_name)
@@ -221,25 +250,47 @@ if __name__ == "__main__":
             
             os.waitpid(pid, 0)
 
-            # --- Extract vm and related snapshot from hostname
-            
-            ss_name = "ss-"+vm_name
+            if manage_server:
 
-            xen = XenServer(xen_server_host)
+                # --- Log off all users on VM
 
-            log.info("Is %s running?" % vm_name)
+                log.info("Logging off all users on %s" % vm_host)
 
-            if xen.is_vm_running(vm_name):
-                log.info("Shutting down "+vm_name)
-                if not dry_run:
-                    xen.vm_shutdown(vm_name)
-                    if slurm_vm_config.use_snapshot:
-                        xen.vm_snapshot_revert(vm_name, ss_name)
+                vm_mgr.logoff_users()
+
+            if manage_server:
+
+                # --- Is this an update job 
+
+                if job_name == "update_node" and user_id == 0:
+
+                    log.info("Updating OS on %s" % vm_host)
+
+                    vm_mgr.update()
+
+            # --- Do we manage VM as well?
+
+            if manage_vm:
+
+                # --- Extract vm and related snapshot from hostname
+                
+                ss_name = "ss-"+vm_name
+
+                xen = XenServer(xen_server_host)
+
+                log.info("Is %s running?" % vm_name)
+
+                if xen.is_vm_running(vm_name):
+                    log.info("Shutting down "+vm_name)
+                    if not dry_run:
+                        xen.vm_shutdown(vm_name)
+                        if slurm_vm_config.use_snapshot:
+                            xen.vm_snapshot_revert(vm_name, ss_name)
+                    else:
+                        log.info("xe vm shutdown "+vm_name)
+                        log.info("xe snapshot revert "+vm_name)
                 else:
-                    log.info("xe vm shutdown "+vm_name)
-                    log.info("xe snapshot revert "+vm_name)
-            else:
-                log.error("Couldn't shut VM %s down: " % vm_name)
+                    log.error("Couldn't shut VM %s down: " % vm_name)
 
     log.info(script_name + " completed.")
 
