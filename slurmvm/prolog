@@ -126,10 +126,10 @@ if __name__ == "__main__":
             # --- Create a VM manager
 
             if manage_server:
-                if vm_kind = "win10":
+                if vm_kind == "win10":
                     vm_mgr = Win10VM(vm_host)
 
-                if vm_kind = "centos7":
+                if vm_kind == "centos7":
                     vm_mgr = CentOS7VM(vm_host)
 
             # --- Are we going to start VM
@@ -228,10 +228,10 @@ if __name__ == "__main__":
             # --- Create a VM manager
 
             if manage_server:
-                if vm_kind = "win10":
+                if vm_kind == "win10":
                     vm_mgr = Win10VM(vm_host)
 
-                if vm_kind = "centos7":
+                if vm_kind == "centos7":
                     vm_mgr = CentOS7VM(vm_host)
 
             # --- Remove client ip file

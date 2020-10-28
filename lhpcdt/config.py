@@ -70,6 +70,7 @@ class GfxConfig(object):
         self.directories_dir = "/home/bmjl/test-menu/share/desktop-directories"
         self.menu_dir = "/home/bmjl/test-menu/etc/xdg/menus/applications-merged"
         self.menu_filename = "Lunarc-On-Demand.menu"
+        
         self.vgl_path = "/sw/pkg/rviz/vgl/bin/latest"
         self.vgl_connect_template = '%s/vglconnect %s %s/%s'
         self.backend_node = "gfx0"
@@ -79,8 +80,11 @@ class GfxConfig(object):
         self.direct_scripts = False
         self.feature_descriptions = {}
         self.only_submit = False
+        
         self.module_json_file = "/sw/pkg/rviz/share/modules.json"
+        
         self.xfreerdp_path = "/sw/pkg/freerdp/2.0.0-rc4/bin"
+        self.xfreerdp_cmdline = '%s /v:%s /u:$USER /d:ad.lunarc /sec:tls /cert-ignore /audio-mode:1 /gfx +gfx-progressive -bitmap-cache -offscreen-cache -glyph-cache +clipboard -themes -wallpaper /size:1280x1024 /dynamic-resolution /t:"LUNARC HPC Desktop Windows 10 (NVIDA V100)"'
 
         self.notebook_module = "Anaconda3"
         self.jupyterlab_module = "Anaconda3"
