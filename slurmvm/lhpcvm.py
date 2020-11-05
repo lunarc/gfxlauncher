@@ -45,7 +45,11 @@ class SlurmVMConfig(object):
         self.snapshot_prefix="ss"
         self.use_snapshot = False
         self.manage_vm = False
+        self.manage_server = True
         self.vm_dict = {}
+
+        self.win10_logoff_script = ""
+        self.win10_update_script = ""
 
         self.config_valid = False
 
@@ -123,10 +127,12 @@ class SlurmVMConfig(object):
             if "-default" in vm:
                 kind = vm.split("-")[0]
                 self.vm_actions[kind] = {}
-                if "logoff_users_cmd" in options:
-                    self.vm_actions[kind]["logoff_users_cmd"] = self.config.get(vm, "logoff_users_cmd")
-                if "update_cmd" in options:
-                    self.vm_actions[kind]["update_cmd"] = self.config.get(vm, "update_cmd")
+                if "logoff_users_script" in options:
+                    self.vm_actions[kind]["logoff_users_script"] = self.config.get(vm, "logoff_users_script")
+                if "update_script" in options:
+                    self.vm_actions[kind]["update_script"] = self.config.get(vm, "update_script")
+                if "system_account" in options:
+                    self.vm_actions[kind]["system_account"] = self.config.get(vm, "system_account")
             else:
                 vm_name = ""
                 vm_hostname = ""
@@ -144,7 +150,7 @@ class SlurmVMConfig(object):
                 if vm_name!="" and vm_hostname!="":
                     self.vm_dict[vm_name] = {}
                     self.vm_dict[vm_name]["hostname"] = vm_hostname
-                    self.vm_dict[vm_name]["kind"] = vm_hostname
+                    self.vm_dict[vm_name]["kind"] = vm_kind
 
         self.config_valid = True
 
@@ -169,6 +175,28 @@ class SlurmVMConfig(object):
             return self.vm_dict[name]["kind"]
         else:
             return ""
+
+    def vm_logoff_users_script(self, kind):
+        if kind in self.vm_actions:
+            if 'logoff_users_script' in self.vm_actions[kind]:
+                return self.vm_actions[kind]['logoff_users_script']
+
+        return ""
+
+    def vm_update_script(self, kind):
+        if kind in self.vm_actions:
+            if 'update_script' in self.vm_actions[kind]:
+                return self.vm_actions[kind]['update_script']
+
+        return ""
+
+    def vm_system_account(self, kind):
+        if kind in self.vm_actions:
+            if 'system_account' in self.vm_actions[kind]:
+                return self.vm_actions[kind]['system_account']
+
+        return ""
+
 
 
 class Singleton(object):
@@ -507,59 +535,79 @@ class VMTracker(object):
             log.debug(job_id + " " + str(self.running_dict[job_id]))
 
 class VM:
-    def __init__(self, hostname):
+    def __init__(self, hostname, user=""):
         self.__hostname = hostname
+        self.__user = user
 
-        self.__logoff_users_cmd = ""
-        self.__update_cmd = ""
+        self.__logoff_users_script = ""
+        self.__update_script = ""
+
+    def logoff_users(self):
+        """Log off all users on server"""
+        pass
+
+    def update(self):
+        """Update server"""
+        pass
+
+    @property
+    def logoff_users_script(self):
+        return self.__logoff_users_script
+
+    @logoff_users_script.setter
+    def logoff_users_script(self, value):
+        self.__logoff_users_script = value
+
+    @property
+    def update_script(self):
+        return self.__update_script
+
+    @update_script.setter
+    def update_script(self, value):
+        self.__update_script = value
+
+    @property
+    def hostname(self):
+        return self.__hostname
+    
+    @property
+    def user(self):
+        return self.__user
+
+
+class Win10VM(VM):
+    def __init__(self, hostname, user=""):
+        super().__init__(hostname, user)
 
     def __exec_cmd(self, cmd):
         """Execute a command and return output"""
         output = subprocess.check_output(cmd, shell=True)
         return output.decode('ascii')
 
-    def __ssh(self, cmd):
+    def ssh_cmd(self, cmd):
         """Execute a command on the VM"""
-        log.debug("" % cmd)
+        log.debug("%s" % cmd)
 
-        return self.__exec_cmd("ssh %s '%s'" % (self.__hostname, cmd))
+        return self.__exec_cmd("ssh %s@%s '%s'" % (self.user, self.hostname, cmd))
 
-    def logoff_users(self):
-        """Log off all users on server"""
-        pass
+    def ssh_pipe_script(self, script):
+        """Execute a command on the VM"""
+        log.debug("%s" % script)
 
-    def update(self):
-        """Update server"""
-        pass
-
-    @property
-    def logoff_users_cmd(self):
-        return self.__logoff_users_cmd
-
-    @logoff_users_cmd.setter
-    def logoff_users_cmd(self, value):
-        self.__logoff_users_cmd = value
-
-    @property
-    def update_cmd(self):
-        return self.__update_cmd
-
-    @update_cmd.setter
-    def update_cmd(self, value):
-        self.__update_cmd = value
-
-
-class Win10VM(VM):
-    def __init__(self, hostname):
-        super().__init__(hostname)
+        if self.user == "":
+            return self.__exec_cmd("ssh %s < %s" % (self.hostname, script))
+        else:
+            return self.__exec_cmd("ssh %s@%s < %s" % (self.user, self.hostname, script))
 
     def logoff_users(self):
         """Log off all users on server"""
-        pass
+        if self.logoff_users_script != "":
+            self.ssh_pipe_script(self.logoff_users_script)    
 
     def update(self):
         """Update server"""
-        pass
+        if self.update_script != "":
+            self.ssh_pipe_script(self.update_script)    
 
 class CentOS7VM(VM):
     def __init__(self, hostname):

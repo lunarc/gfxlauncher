@@ -21,10 +21,13 @@
 Prolog/Epilog-script for managing VM:s through slurm.
 """
 
-import os, pwd, sys, time 
+import os
+import pwd
+import sys
+import time
 import logging as log
 
-from lhpcvm import VMTracker, XenServer, PortProber, SlurmVMConfig, VM
+from lhpcvm import VMTracker, XenServer, PortProber, SlurmVMConfig, VM, Win10VM, CentOS7VM
 
 if __name__ == "__main__":
 
@@ -43,7 +46,7 @@ if __name__ == "__main__":
     slurm_vm_config = SlurmVMConfig()
 
     log_level = log.DEBUG
-    
+
     if slurm_vm_config.log_level == "DEBUG":
         log_level = log.DEBUG
     if slurm_vm_config.log_level == "INFO":
@@ -60,21 +63,27 @@ if __name__ == "__main__":
 
     # --- Get environment variables from SLURM epilog/prolog
 
+    job_id = ""
+    user_name = ""
+    user_id = -1
+    job_name = ""
+
     try:
         job_id = os.environ["SLURM_JOBID"]
         user_name = os.environ["SLURM_JOB_USER"]
         user_id = int(os.environ["SLURM_JOB_UID"])
         job_name = os.environ["SLURM_JOB_NAME"]
-        pwd_entry = pwd.getpwuid(user_id)
-        group_id = pwd_entry.pw_gid
-        home_dir = pwd_entry.pw_dir
     except KeyError:
         print("Script not running as a prolog script in SLUMR.")
 
+    pwd_entry = pwd.getpwuid(user_id)
+    group_id = pwd_entry.pw_gid
+    home_dir = pwd_entry.pw_dir
+
     # --- Configure logging - All messages from prolog/epilog uses Python logging.
 
-    log.basicConfig(filename="%s-%s.log" % ("lhpc-proepi", job_id), 
-        level=log.DEBUG, format='%(asctime)s : %(levelname)-8s : %(message)s')
+    log.basicConfig(filename="%s-%s.log" % ("lhpc-proepi", job_id),
+                    level=log.DEBUG, format='%(asctime)s : %(levelname)-8s : %(message)s')
 
     # --- Redirect stderr and stdout output to catch other error messages.
 
@@ -117,20 +126,32 @@ if __name__ == "__main__":
 
         vm_name, vm_host = tracker.aquire_vm(job_id)
 
-        if vm_name!="":
+        if vm_name != "":
 
             log.info("Aquired %s for job id %s." % (vm_name, job_id))
 
             vm_kind = slurm_vm_config.vm_kind(vm_name)
-            
+            vm_logoff_users_script = slurm_vm_config.vm_logoff_users_script(vm_kind)
+            vm_update_script = slurm_vm_config.vm_update_script(vm_kind)
+            vm_system_account = slurm_vm_config.vm_system_account(vm_kind)
+
             # --- Create a VM manager
 
             if manage_server:
                 if vm_kind == "win10":
-                    vm_mgr = Win10VM(vm_host)
+                    vm_mgr = Win10VM(vm_host, vm_system_account)
+                    vm_mgr.logoff_users_script = vm_logoff_users_script
+                    vm_mgr.update_script = vm_logoff_users_script
 
                 if vm_kind == "centos7":
                     vm_mgr = CentOS7VM(vm_host)
+
+            if manage_server:
+    
+                # --- Log off all users on VM
+
+                log.info("Logging off all users on %s" % vm_host)
+                vm_mgr.logoff_users()
 
             # --- Are we going to start VM
 
@@ -149,7 +170,7 @@ if __name__ == "__main__":
                 log.info("Starting %s." % vm_name)
 
                 if not dry_run:
-                    
+
                     # --- Shut down VM is already running
 
                     if xen.is_vm_running(vm_name):
@@ -164,21 +185,23 @@ if __name__ == "__main__":
 
                 # --- Wait for VM to startup
 
-                log.info("Waiting for host %s to become available..." % (vm_host))
+                log.info("Waiting for host %s to become available..." %
+                         (vm_host))
 
                 prober = PortProber(vm_host)
 
                 timeout = 60
-                
+
                 if not dry_run:
                     while not prober.is_port_open(3389) and timeout != 0:
-                        log.info("Still waiting for host %s to become available..." % (vm_host))
+                        log.info(
+                            "Still waiting for host %s to become available..." % (vm_host))
                         time.sleep(1)
                         timeout -= 1
 
                 # --- Wait some more to make sure RDP connection is up.
 
-                #time.sleep(5)
+                # time.sleep(5)
 
                 log.info("%s is available at %s:3389" % (vm_name, vm_host))
 
@@ -194,7 +217,7 @@ if __name__ == "__main__":
                     tracker.write_job_hostfile(job_id, vm_host)
                 finally:
                     os._exit(0)
-            
+
             os.waitpid(pid, 0)
             log.info("... back from fork.")
         else:
@@ -204,7 +227,7 @@ if __name__ == "__main__":
 
     if script_name == "epilog":
 
-        log.info("Running as epilog-skript.")        
+        log.info("Running as epilog-skript.")
 
         # --- Get tracker object
 
@@ -221,15 +244,20 @@ if __name__ == "__main__":
 
         log.info("Released %s." % vm_name)
 
-        if vm_name!="":
+        if vm_name != "":
 
             vm_kind = slurm_vm_config.vm_kind(vm_name)
-            
+            vm_logoff_users_script = slurm_vm_config.vm_logoff_users_script(vm_kind)
+            vm_update_script = slurm_vm_config.vm_update_script(vm_kind)
+            vm_system_account = slurm_vm_config.vm_system_account(vm_kind)
+
             # --- Create a VM manager
 
             if manage_server:
                 if vm_kind == "win10":
-                    vm_mgr = Win10VM(vm_host)
+                    vm_mgr = Win10VM(vm_host, vm_system_account)
+                    vm_mgr.logoff_users_script = vm_logoff_users_script
+                    vm_mgr.update_script = vm_logoff_users_script
 
                 if vm_kind == "centos7":
                     vm_mgr = CentOS7VM(vm_host)
@@ -239,7 +267,7 @@ if __name__ == "__main__":
             log.info("Removing client ip file for %s" % vm_name)
 
             pid = os.fork()
-            
+
             if pid == 0:
                 try:
                     os.setgid(group_id)
@@ -247,7 +275,7 @@ if __name__ == "__main__":
                     tracker.remove_job_hostfile(job_id, vm_host)
                 finally:
                     os._exit(0)
-            
+
             os.waitpid(pid, 0)
 
             if manage_server:
@@ -255,12 +283,11 @@ if __name__ == "__main__":
                 # --- Log off all users on VM
 
                 log.info("Logging off all users on %s" % vm_host)
-
                 vm_mgr.logoff_users()
 
             if manage_server:
 
-                # --- Is this an update job 
+                # --- Is this an update job
 
                 if job_name == "update_node" and user_id == 0:
 
@@ -273,7 +300,7 @@ if __name__ == "__main__":
             if manage_vm:
 
                 # --- Extract vm and related snapshot from hostname
-                
+
                 ss_name = "ss-"+vm_name
 
                 xen = XenServer(xen_server_host)
