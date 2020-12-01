@@ -183,6 +183,20 @@ class SlurmVMConfig(object):
 
         return ""
 
+    def vm_enable_user_script(self, kind):
+        if kind in self.vm_actions:
+            if 'enable_user_script' in self.vm_actions[kind]:
+                return self.vm_actions[kind]['enable_user_script']
+
+        return ""
+
+    def vm_disable_user_script(self, kind):
+        if kind in self.vm_actions:
+            if 'disable_user_script' in self.vm_actions[kind]:
+                return self.vm_actions[kind]['disable_user_script']
+
+        return ""
+
     def vm_update_script(self, kind):
         if kind in self.vm_actions:
             if 'update_script' in self.vm_actions[kind]:
@@ -541,9 +555,19 @@ class VM:
 
         self.__logoff_users_script = ""
         self.__update_script = ""
+        self.__disable_user_script = ""
+        self.__enable_user_script = ""
 
     def logoff_users(self):
         """Log off all users on server"""
+        pass
+
+    def disable_user(self):
+        """Disable user account"""
+        pass
+
+    def enable_user(self):
+        """Enable user account"""
         pass
 
     def update(self):
@@ -565,6 +589,22 @@ class VM:
     @update_script.setter
     def update_script(self, value):
         self.__update_script = value
+
+    @property
+    def disable_user_script(self):
+        return self.__disable_user_script
+
+    @disable_user_script.setter
+    def disable_user_script(self, value):
+        self.__disable_user_script = value
+
+    @property
+    def enable_user_script(self):
+        return self.__disable_user_script
+
+    @enable_user_script.setter
+    def enable_user_script(self, value):
+        self.__disable_user_script = value
 
     @property
     def hostname(self):
@@ -602,12 +642,20 @@ class Win10VM(VM):
     def logoff_users(self):
         """Log off all users on server"""
         if self.logoff_users_script != "":
-            self.ssh_pipe_script(self.logoff_users_script)    
+            self.__exec_cmd(self.logoff_users_script + " " + self.hostname)
 
     def update(self):
         """Update server"""
         if self.update_script != "":
-            self.ssh_pipe_script(self.update_script)    
+            self.__exec_cmd(self.update_script + " " + self.hostname)
+
+    def disable_user(self, username):
+        if self.disable_user_script!="":
+            self.__exec_cmd(self.disable_user_script + " " + username)
+
+    def enable_user(self, username):
+        if self.enable_user_script!="":
+            self.__exec_cmd(self.enable_user_script + " " + username)
 
 class CentOS7VM(VM):
     def __init__(self, hostname):

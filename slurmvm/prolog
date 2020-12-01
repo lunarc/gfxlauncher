@@ -132,6 +132,8 @@ if __name__ == "__main__":
 
             vm_kind = slurm_vm_config.vm_kind(vm_name)
             vm_logoff_users_script = slurm_vm_config.vm_logoff_users_script(vm_kind)
+            vm_enable_user_script = slurm_vm_config.vm_enable_user_script(vm_kind)
+            vm_disable_user_script = slurm_vm_config.vm_disable_user_script(vm_kind)
             vm_update_script = slurm_vm_config.vm_update_script(vm_kind)
             vm_system_account = slurm_vm_config.vm_system_account(vm_kind)
 
@@ -140,70 +142,19 @@ if __name__ == "__main__":
             if manage_server:
                 if vm_kind == "win10":
                     vm_mgr = Win10VM(vm_host, vm_system_account)
+                    vm_mgr.enable_user_script = vm_enable_user_script
+                    vm_mgr.disable_user_script = vm_disable_user_script
                     vm_mgr.logoff_users_script = vm_logoff_users_script
                     vm_mgr.update_script = vm_logoff_users_script
 
                 if vm_kind == "centos7":
                     vm_mgr = CentOS7VM(vm_host)
 
-            if manage_server:
-    
                 # --- Log off all users on VM
 
                 log.info("Logging off all users on %s" % vm_host)
                 vm_mgr.logoff_users()
-
-            # --- Are we going to start VM
-
-            if manage_vm:
-
-                # --- Extract vm and related snapshot from hostname
-
-                ss_name = "ss-"+vm_name
-
-                # --- Connect to XenServer
-
-                xen = XenServer(xen_server_host)
-
-                # --- Start selected VM
-
-                log.info("Starting %s." % vm_name)
-
-                if not dry_run:
-
-                    # --- Shut down VM is already running
-
-                    if xen.is_vm_running(vm_name):
-                        log.info("Shutting down "+vm_name)
-                        xen.vm_shutdown(vm_name)
-
-                    # --- Start VM
-
-                    xen.vm_start(vm_name)
-                else:
-                    log.info("xe vm start " + vm_name)
-
-                # --- Wait for VM to startup
-
-                log.info("Waiting for host %s to become available..." %
-                         (vm_host))
-
-                prober = PortProber(vm_host)
-
-                timeout = 60
-
-                if not dry_run:
-                    while not prober.is_port_open(3389) and timeout != 0:
-                        log.info(
-                            "Still waiting for host %s to become available..." % (vm_host))
-                        time.sleep(1)
-                        timeout -= 1
-
-                # --- Wait some more to make sure RDP connection is up.
-
-                # time.sleep(5)
-
-                log.info("%s is available at %s:3389" % (vm_name, vm_host))
+                vm_mgr.enable_user(user_name)
 
             # --- Write ip file for client
 
@@ -248,6 +199,8 @@ if __name__ == "__main__":
 
             vm_kind = slurm_vm_config.vm_kind(vm_name)
             vm_logoff_users_script = slurm_vm_config.vm_logoff_users_script(vm_kind)
+            vm_enable_user_script = slurm_vm_config.vm_enable_user_script(vm_kind)
+            vm_disable_user_script = slurm_vm_config.vm_disable_user_script(vm_kind)
             vm_update_script = slurm_vm_config.vm_update_script(vm_kind)
             vm_system_account = slurm_vm_config.vm_system_account(vm_kind)
 
@@ -256,6 +209,8 @@ if __name__ == "__main__":
             if manage_server:
                 if vm_kind == "win10":
                     vm_mgr = Win10VM(vm_host, vm_system_account)
+                    vm_mgr.enable_user_script = vm_enable_user_script
+                    vm_mgr.disable_user_script = vm_disable_user_script
                     vm_mgr.logoff_users_script = vm_logoff_users_script
                     vm_mgr.update_script = vm_logoff_users_script
 
@@ -284,8 +239,7 @@ if __name__ == "__main__":
 
                 log.info("Logging off all users on %s" % vm_host)
                 vm_mgr.logoff_users()
-
-            if manage_server:
+                vm_mgr.disable_user(user_name)
 
                 # --- Is this an update job
 
@@ -294,30 +248,6 @@ if __name__ == "__main__":
                     log.info("Updating OS on %s" % vm_host)
 
                     vm_mgr.update()
-
-            # --- Do we manage VM as well?
-
-            if manage_vm:
-
-                # --- Extract vm and related snapshot from hostname
-
-                ss_name = "ss-"+vm_name
-
-                xen = XenServer(xen_server_host)
-
-                log.info("Is %s running?" % vm_name)
-
-                if xen.is_vm_running(vm_name):
-                    log.info("Shutting down "+vm_name)
-                    if not dry_run:
-                        xen.vm_shutdown(vm_name)
-                        if slurm_vm_config.use_snapshot:
-                            xen.vm_snapshot_revert(vm_name, ss_name)
-                    else:
-                        log.info("xe vm shutdown "+vm_name)
-                        log.info("xe snapshot revert "+vm_name)
-                else:
-                    log.error("Couldn't shut VM %s down: " % vm_name)
 
     log.info(script_name + " completed.")
 
