@@ -39,6 +39,10 @@ The command line switches of **gfxlaunch** is described in the table below:
 +---------------------------------+---------------------------------------------------+
 | --ignore-grantfile              | Ignore grantfile checking.                        |
 +---------------------------------+---------------------------------------------------+
+| --autostart                     | Start application directly with given parameters  |
++---------------------------------+---------------------------------------------------+
+| --locked                        | Prevent changes to settings in user interface     |
++---------------------------------+---------------------------------------------------+
 
 Running standard X11 application (No graphics)
 ----------------------------------------------
@@ -118,6 +122,15 @@ A Jupyter Lab session is launched in a similar way except for using the switch *
 .. code-block:: bash
 
     gfxlaunch --title "Jupyter Lab" --partition lvis --account lvis-test --only-submit --job=jupyterlab
+
+Running Windows based desktop applications
+------------------------------------------
+
+This launch method requires a dedicated node that will control access to pre configured Windows virtual machines. The backend will allocate an availble VM. The launch method monitors a special file .lhpc/vm_host_[jobid].ip which contains the ip-number to the allocated VM. When the file for the corresponding job is available, gfxlaunch will start a xfreerdp connection to the VM automatically.
+
+.. code-block:: bash
+
+    gfxlaunch --title "Windows Application" --partition win --account lvis-test --simplified --only-submit --ignore-grantfile --job=vm
 
 
 
