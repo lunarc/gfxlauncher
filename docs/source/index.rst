@@ -14,6 +14,7 @@ Welcome to GfxLauncher - A graphical application launcher for SLURM
    technical_description.rst
    installation.rst
    configuration.rst
+   configuration_slurmvm.rst
    pam_exec.rst
    gfxlaunch.rst
    gfxconvert.rst
