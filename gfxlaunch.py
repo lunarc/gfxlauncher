@@ -33,7 +33,7 @@ This is free software, and you are welcome to redistribute it
 under certain conditions; see LICENSE for details.
 """
 gfxlaunch_copyright_short = """LUNARC HPC Desktop On-Demand - %s"""
-gfxlaunch_version = "0.6.3"
+gfxlaunch_version = "0.6.4"
 
 # --- Fix search path for tool
 
@@ -187,6 +187,8 @@ if __name__ == '__main__':
 
     parser.add_argument("--autostart", dest="autostart", action="store_true", default=False)
 
+    parser.add_argument("--locked", dest="locked", action="store_true", default=False)
+
     args = parser.parse_args()
 
     # Setup global settings singleton
@@ -204,7 +206,7 @@ if __name__ == '__main__':
 
     # Redirect standard output
 
-    redirect = False
+    redirect = True
 
     # Create Queue and redirect sys.stdout to this queue
 

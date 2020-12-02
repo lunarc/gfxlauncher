@@ -274,6 +274,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.notebook_module = self.config.notebook_module
         self.jupyterlab_module = self.config.jupyterlab_module
         self.autostart = False
+        self.locked = False
 
     def get_defaults_from_cmdline(self):
         """Get properties from command line"""
@@ -300,6 +301,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.notebook_module = self.args.notebook_module
         self.jupyterlab_module = self.args.jupyterlab_module
         self.autostart = self.args.autostart
+        self.locked = self.args.locked
 
     def update_properties(self):
         """Get properties from user interface"""
@@ -370,14 +372,15 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
             self.runningFrame.setPalette(p)
             self.wallTimeEdit.setEnabled(False)
         else:
-            self.cancelButton.setEnabled(False)
-            self.startButton.setEnabled(True)
-            self.usageBar.setEnabled(False)
-            self.usageBar.setValue(0)
-            p = self.runningFrame.palette()
-            p.setColor(self.runningFrame.backgroundRole(), QtCore.Qt.gray)
-            self.runningFrame.setPalette(p)
-            self.wallTimeEdit.setEnabled(True)
+            if not self.locked:
+                self.cancelButton.setEnabled(False)
+                self.startButton.setEnabled(True)
+                self.usageBar.setEnabled(False)
+                self.usageBar.setValue(0)
+                p = self.runningFrame.palette()
+                p.setColor(self.runningFrame.backgroundRole(), QtCore.Qt.gray)
+                self.runningFrame.setPalette(p)
+                self.wallTimeEdit.setEnabled(True)
 
         self.wallTimeEdit.setEditText(str(self.time))
         self.projectEdit.setText(str(self.account))
@@ -407,8 +410,13 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
     def closeEvent(self, event):
         """Handle window close event"""
+
         if self.job is not None:
             self.slurm.cancel_job(self.job)
+
+        if self.rdp!=None:
+            self.rdp.terminate()
+
         event.accept()  # let the window close
 
     def submit_job(self):
@@ -704,12 +712,17 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         if self.rdp != None:
             self.rdp.terminate()
 
+
         self.running = False
         self.job = None
         self.statusTimer.stop()
         self.update_controls()
 
         self.disableExtrasPanel()
+
+        if self.locked:
+            print("Closing launcher")
+            self.close()
 
     @QtCore.pyqtSlot()
     def on_showDetails_clicked(self):
