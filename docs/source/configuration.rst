@@ -1,5 +1,5 @@
-Configuration
-=============
+Configuration of launcher (gfxlaunch)
+=====================================
 
 GfxLauncher and the gfxconvert script is configured in the **/etc/gfxlauncher.conf** configuration file. This file controls all the default settings and slurm templates used.
 

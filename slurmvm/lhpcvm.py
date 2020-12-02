@@ -44,7 +44,12 @@ class SlurmVMConfig(object):
         self.log_level="DEBUG"
         self.snapshot_prefix="ss"
         self.use_snapshot = False
+        self.manage_vm = False
+        self.manage_server = True
         self.vm_dict = {}
+
+        self.win10_logoff_script = ""
+        self.win10_update_script = ""
 
         self.config_valid = False
 
@@ -99,22 +104,53 @@ class SlurmVMConfig(object):
             else:
                 self.use_snapshot = False
 
+        if "manage_vm" in default_params:
+            value = self.config.get("DEFAULT", "manage_vm")
+            if value == "yes":
+                self.manage_vm = True
+            else:
+                self.manage_vm = False
+
+        if "manage_server" in default_params:
+            value = self.config.get("DEFAULT", "manage_server")
+            if value == "yes":
+                self.manage_server = True
+            else:
+                self.manage_server = False
+
         self.vm_dict = {}
+        self.vm_actions = {}
 
         for vm in self.config.sections():
             options = self.config.options(vm)
 
-            vm_name = ""
-            vm_hostname = ""
+            if "-default" in vm:
+                kind = vm.split("-")[0]
+                self.vm_actions[kind] = {}
+                if "logoff_users_script" in options:
+                    self.vm_actions[kind]["logoff_users_script"] = self.config.get(vm, "logoff_users_script")
+                if "update_script" in options:
+                    self.vm_actions[kind]["update_script"] = self.config.get(vm, "update_script")
+                if "system_account" in options:
+                    self.vm_actions[kind]["system_account"] = self.config.get(vm, "system_account")
+            else:
+                vm_name = ""
+                vm_hostname = ""
+                vm_kind = ""
 
-            if "name" in options:
-                vm_name = self.config.get(vm, "name")
+                if "name" in options:
+                    vm_name = self.config.get(vm, "name")
 
-            if "hostname" in options:
-                vm_hostname = self.config.get(vm, "hostname")
+                if "hostname" in options:
+                    vm_hostname = self.config.get(vm, "hostname")
 
-            if vm_name!="" and vm_hostname!="":
-                self.vm_dict[vm_name] = vm_hostname
+                if "kind" in options:
+                    vm_kind = self.config.get(vm, "kind")
+
+                if vm_name!="" and vm_hostname!="":
+                    self.vm_dict[vm_name] = {}
+                    self.vm_dict[vm_name]["hostname"] = vm_hostname
+                    self.vm_dict[vm_name]["kind"] = vm_kind
 
         self.config_valid = True
 
@@ -127,12 +163,53 @@ class SlurmVMConfig(object):
         print()
         print("Configured VM:s:")
         for vm in self.vm_dict.keys():
-            print("VM:", vm, "ip =", self.vm_dict[vm])
+            print("VM:", vm, "ip =", self.vm_dict[vm]["hostname"], "kind =", self.vm_dict[vm]["kind"])
 
         if self.config_valid:
             print("Configuration is valid.")
         else:
             print("Configuration is not valid.")
+
+    def vm_kind(self, name):
+        if name in self.vm_dict:
+            return self.vm_dict[name]["kind"]
+        else:
+            return ""
+
+    def vm_logoff_users_script(self, kind):
+        if kind in self.vm_actions:
+            if 'logoff_users_script' in self.vm_actions[kind]:
+                return self.vm_actions[kind]['logoff_users_script']
+
+        return ""
+
+    def vm_enable_user_script(self, kind):
+        if kind in self.vm_actions:
+            if 'enable_user_script' in self.vm_actions[kind]:
+                return self.vm_actions[kind]['enable_user_script']
+
+        return ""
+
+    def vm_disable_user_script(self, kind):
+        if kind in self.vm_actions:
+            if 'disable_user_script' in self.vm_actions[kind]:
+                return self.vm_actions[kind]['disable_user_script']
+
+        return ""
+
+    def vm_update_script(self, kind):
+        if kind in self.vm_actions:
+            if 'update_script' in self.vm_actions[kind]:
+                return self.vm_actions[kind]['update_script']
+
+        return ""
+
+    def vm_system_account(self, kind):
+        if kind in self.vm_actions:
+            if 'system_account' in self.vm_actions[kind]:
+                return self.vm_actions[kind]['system_account']
+
+        return ""
 
 
 
@@ -302,7 +379,7 @@ class VMTracker(object):
         #Singleton.__init__(self)
 
         self.slurm_vm_config = slurm_vm_config
-        self.idle_list = []
+        self.idle_list = [] 
         self.running_dict = {}
         self.user_id = 0
         self.group_id = 0
@@ -370,8 +447,8 @@ class VMTracker(object):
         vm_dict = self.slurm_vm_config.vm_dict
 
         for vm in vm_dict.keys():
-            log.debug("Adding VM " + vm + "(" + vm_dict[vm] + ") to initial configuration.")
-            self.add_vm(vm, vm_dict[vm])
+            log.debug("Adding VM " + vm + "(" + vm_dict[vm]["hostname"] + ") to initial configuration.")
+            self.add_vm(vm, vm_dict[vm]["hostname"])
 
     def aquire_vm(self, job_id):
         """Aquire a vm for a specific job_id"""
@@ -471,6 +548,126 @@ class VMTracker(object):
         for job_id in self.running_dict.keys():
             log.debug(job_id + " " + str(self.running_dict[job_id]))
 
+class VM:
+    def __init__(self, hostname, user=""):
+        self.__hostname = hostname
+        self.__user = user
+
+        self.__logoff_users_script = ""
+        self.__update_script = ""
+        self.__disable_user_script = ""
+        self.__enable_user_script = ""
+
+    def logoff_users(self):
+        """Log off all users on server"""
+        pass
+
+    def disable_user(self):
+        """Disable user account"""
+        pass
+
+    def enable_user(self):
+        """Enable user account"""
+        pass
+
+    def update(self):
+        """Update server"""
+        pass
+
+    @property
+    def logoff_users_script(self):
+        return self.__logoff_users_script
+
+    @logoff_users_script.setter
+    def logoff_users_script(self, value):
+        self.__logoff_users_script = value
+
+    @property
+    def update_script(self):
+        return self.__update_script
+
+    @update_script.setter
+    def update_script(self, value):
+        self.__update_script = value
+
+    @property
+    def disable_user_script(self):
+        return self.__disable_user_script
+
+    @disable_user_script.setter
+    def disable_user_script(self, value):
+        self.__disable_user_script = value
+
+    @property
+    def enable_user_script(self):
+        return self.__disable_user_script
+
+    @enable_user_script.setter
+    def enable_user_script(self, value):
+        self.__disable_user_script = value
+
+    @property
+    def hostname(self):
+        return self.__hostname
+    
+    @property
+    def user(self):
+        return self.__user
+
+
+class Win10VM(VM):
+    def __init__(self, hostname, user=""):
+        super().__init__(hostname, user)
+
+    def __exec_cmd(self, cmd):
+        """Execute a command and return output"""
+        output = subprocess.check_output(cmd, shell=True)
+        return output.decode('ascii')
+
+    def ssh_cmd(self, cmd):
+        """Execute a command on the VM"""
+        log.debug("%s" % cmd)
+
+        return self.__exec_cmd("ssh %s@%s '%s'" % (self.user, self.hostname, cmd))
+
+    def ssh_pipe_script(self, script):
+        """Execute a command on the VM"""
+        log.debug("%s" % script)
+
+        if self.user == "":
+            return self.__exec_cmd("ssh %s < %s" % (self.hostname, script))
+        else:
+            return self.__exec_cmd("ssh %s@%s < %s" % (self.user, self.hostname, script))
+
+    def logoff_users(self):
+        """Log off all users on server"""
+        if self.logoff_users_script != "":
+            self.__exec_cmd(self.logoff_users_script + " " + self.hostname)
+
+    def update(self):
+        """Update server"""
+        if self.update_script != "":
+            self.__exec_cmd(self.update_script + " " + self.hostname)
+
+    def disable_user(self, username):
+        if self.disable_user_script!="":
+            self.__exec_cmd(self.disable_user_script + " " + username)
+
+    def enable_user(self, username):
+        if self.enable_user_script!="":
+            self.__exec_cmd(self.enable_user_script + " " + username)
+
+class CentOS7VM(VM):
+    def __init__(self, hostname):
+        super().__init__(hostname)
+
+    def logoff_users(self):
+        """Log off all users on server"""
+        pass
+
+    def update(self):
+        """Update server"""
+        pass
 
 if __name__ == "__main__":
 
@@ -484,17 +681,6 @@ if __name__ == "__main__":
     formatter = log.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     handler.setFormatter(formatter)
     root.addHandler(handler)
-
-    # prober = PortProber("10.18.50.22")
-
-    # timeout = 60
-    
-    # while not prober.is_port_open(3389) and timeout > 0:
-    #     log.info("Still waiting for host %s to become available..." % ("10.18.50.22"))
-    #     time.sleep(1)
-    #     timeout -= 1
-
-    # sys.exit(0)
 
     slurm_vm_config = SlurmVMConfig()
 

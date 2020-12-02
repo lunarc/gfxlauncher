@@ -190,6 +190,14 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.versionLabel.setText(
             self.copyright_short_info % self.version_info)
 
+        # Setup timer for autostart
+
+        self.autostart_timer = QtCore.QTimer()
+        self.autostart_timer.timeout.connect(self.on_autostart_timeout)
+        
+        if self.autostart:
+            self.autostart_timer.start(2000)
+
         # Hide detail tabs
 
         self.launcherTabs.setHidden(True)
@@ -265,6 +273,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.user = ""
         self.notebook_module = self.config.notebook_module
         self.jupyterlab_module = self.config.jupyterlab_module
+        self.autostart = False
 
     def get_defaults_from_cmdline(self):
         """Get properties from command line"""
@@ -290,6 +299,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.user = self.args.user
         self.notebook_module = self.args.notebook_module
         self.jupyterlab_module = self.args.jupyterlab_module
+        self.autostart = self.args.autostart
 
     def update_properties(self):
         """Get properties from user interface"""
@@ -401,163 +411,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
             self.slurm.cancel_job(self.job)
         event.accept()  # let the window close
 
-    def on_submit_finished(self):
-        """Event called from submit thread when job has been submitted"""
-        self.running = True
-        self.statusTimer.start(5000)
-        self.update_controls()
-        self.active_connection = self.submitThread.active_connection
-
-        if self.submitThread.error_status == SubmitThread.SUBMIT_FAILED:
-            QtWidgets.QMessageBox.about(
-                self, self.title, "Session start failed.")
-            self.running = False
-            self.statusTimer.stop()
-            self.update_controls()
-            self.active_connection = None
-
-    def on_notebook_url_found(self, url):
-        """Callback when notebook url has been found."""
-
-        Popen("firefox %s" % url, shell=True)
-
-        self.enableExtrasPanel()
-
-    def on_vm_available(self, hostname):
-        """Start an RDP session to host"""
-
-        print("Starting RDP: " + hostname)
-
-        self.rdp = remote.XFreeRDP(hostname)
-        self.rdp.xfreerdp_path = self.config.xfreerdp_path
-        #self.rdp.execute()
-
-        self.enableExtrasPanel()
-
-    def on_status_timeout(self):
-        """Status timer callback. Updates job status."""
-
-        if self.job is not None:
-
-            # Check job status
-
-            if self.slurm.is_running(self.job):
-                timeRunning = self.time_to_decimal(self.job.timeRunning)
-                timeLimit = self.time_to_decimal(self.job.timeLimit)
-                percent = 100 * timeRunning / timeLimit
-                self.usageBar.setValue(int(percent))
-
-                if self.only_submit:
-
-                    # Handle job processing, if any
-
-                    if self.job.process_output:
-                        print("Checking job output.")
-                        output_lines = self.slurm.job_output(self.job)
-                        self.job.do_process_output(output_lines)
-                    if self.job.update_processing:
-                        self.job.do_update_processing()
-
-                else:
-
-                    # Check for non-active sessions
-
-                    if not self.active_connection.is_active():
-                        print("Active connection closed. Terminating session.")
-                        self.running = False
-                        self.statusTimer.stop()
-                        self.usageBar.setValue(0)
-                        self.update_controls()
-                        if self.job is not None:
-                            self.slurm.cancel_job(self.job)
-
-            else:
-
-                # Session has completed. Update UI
-
-                print("Session completed.")
-                self.running = False
-                self.statusTimer.stop()
-                self.usageBar.setValue(0)
-                self.update_controls()
-                self.disableExtrasPanel()
-
-    def on_reconnect_notebook(self):
-        """Reopen connection to notebook."""
-
-        if self.job != None:
-            Popen("firefox %s" % self.job.notebook_url, shell=True)
-
-    def on_reconnect_vm(self):
-        """Reopen connection to vm"""
-
-        if self.job != None:
-            if self.rdp != None:
-                self.rdp.terminate()
-
-            self.rdp = remote.XFreeRDP(self.job.hostname)
-            self.rdp.xfreerdp_path = self.config.xfreerdp_path
-            self.rdp.execute()
-
-    @QtCore.pyqtSlot(int)
-    def on_launcherTabs_currentChanged(self, idx):
-        if idx == 1:
-            self.update_properties()
-
-            # Note - This should be modularised
-
-            if self.job_type == "":
-
-                # Create a standard placeholder job
-
-                job = jobs.PlaceHolderJob()
-
-            elif self.job_type == "notebook":
-
-                # Create a Jupyter notbook job
-
-                job = jobs.JupyterNotebookJob()
-
-            elif self.job_type == "jupyterlab":
-
-                # Create a Jupyter notbook job
-
-                job = jobs.JupyterLabJob()
-
-            elif self.job_type == "vm":
-
-                # Create a VM job
-
-                job = jobs.VMJob()
-
-            # Setup job parameters
-
-            job.name = self.job_name
-            job.account = str(self.account)
-            job.partition = str(self.part)
-            job.time = str(self.time)
-            if self.job_type != "vm":
-                job.memory = int(self.memory)
-                job.nodeCount = int(self.count)
-                job.exclusive = self.exclusive
-                job.tasksPerNode = int(self.tasks_per_node)
-            if self.selected_feature != "":
-                job.add_constraint(self.selected_feature)
-            job.update()
-
-            self.batchScriptText.clear()
-            self.batchScriptText.insertPlainText(str(job))
-
-    @QtCore.pyqtSlot()
-    def on_resourceDetailsButton_clicked(self):
-        """Open resources specification window"""
-
-        self.resource_window = resource_win.ResourceSpecWindow(self)
-        self.resource_window.setGeometry(self.x()+self.width(), self.y(), self.resource_window.width(), self.resource_window.height())
-        self.resource_window.show()
-
-    @QtCore.pyqtSlot()
-    def on_startButton_clicked(self):
+    def submit_job(self):
         """Submit placeholder job"""
 
         self.update_properties()
@@ -661,12 +515,183 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         self.startButton.setEnabled(False)
 
+
+    def on_submit_finished(self):
+        """Event called from submit thread when job has been submitted"""
+        self.running = True
+        self.statusTimer.start(5000)
+        self.update_controls()
+        self.active_connection = self.submitThread.active_connection
+
+        if self.submitThread.error_status == SubmitThread.SUBMIT_FAILED:
+            QtWidgets.QMessageBox.about(
+                self, self.title, "Session start failed.")
+            self.running = False
+            self.statusTimer.stop()
+            self.update_controls()
+            self.active_connection = None
+
+    def on_notebook_url_found(self, url):
+        """Callback when notebook url has been found."""
+
+        Popen("firefox %s" % url, shell=True)
+
+        self.enableExtrasPanel()
+
+    def on_vm_available(self, hostname):
+        """Start an RDP session to host"""
+
+        print("Starting RDP: " + hostname)
+
+        self.rdp = remote.XFreeRDP(hostname)
+        self.rdp.xfreerdp_path = self.config.xfreerdp_path
+        self.rdp.execute()
+
+        self.enableExtrasPanel()
+
+    def on_status_timeout(self):
+        """Status timer callback. Updates job status."""
+
+        if self.job is not None:
+
+            # Check job status
+
+            if self.slurm.is_running(self.job):
+                timeRunning = self.time_to_decimal(self.job.timeRunning)
+                timeLimit = self.time_to_decimal(self.job.timeLimit)
+                percent = 100 * timeRunning / timeLimit
+                self.usageBar.setValue(int(percent))
+
+                if self.only_submit:
+
+                    # Handle job processing, if any
+
+                    if self.job.process_output:
+                        print("Checking job output.")
+                        output_lines = self.slurm.job_output(self.job)
+                        self.job.do_process_output(output_lines)
+                    if self.job.update_processing:
+                        self.job.do_update_processing()
+
+                else:
+
+                    # Check for non-active sessions
+
+                    if not self.active_connection.is_active():
+                        print("Active connection closed. Terminating session.")
+                        self.running = False
+                        self.statusTimer.stop()
+                        self.usageBar.setValue(0)
+                        self.update_controls()
+                        if self.job is not None:
+                            self.slurm.cancel_job(self.job)
+
+            else:
+
+                # Session has completed. Update UI
+
+                print("Session completed.")
+                self.running = False
+                self.statusTimer.stop()
+                self.usageBar.setValue(0)
+                self.update_controls()
+                self.disableExtrasPanel()
+
+    def on_autostart_timeout(self):
+        """Automatically submit jobn"""
+        self.autostart_timer.stop()
+        self.submit_job()
+
+    def on_reconnect_notebook(self):
+        """Reopen connection to notebook."""
+
+        if self.job != None:
+            Popen("firefox %s" % self.job.notebook_url, shell=True)
+
+    def on_reconnect_vm(self):
+        """Reopen connection to vm"""
+
+        if self.job != None:
+            if self.rdp != None:
+                self.rdp.terminate()
+
+            self.rdp = remote.XFreeRDP(self.job.hostname)
+            self.rdp.xfreerdp_path = self.config.xfreerdp_path
+            self.rdp.execute()
+
+    @QtCore.pyqtSlot(int)
+    def on_launcherTabs_currentChanged(self, idx):
+        if idx == 1:
+            self.update_properties()
+
+            # Note - This should be modularised
+
+            if self.job_type == "":
+
+                # Create a standard placeholder job
+
+                job = jobs.PlaceHolderJob()
+
+            elif self.job_type == "notebook":
+
+                # Create a Jupyter notbook job
+
+                job = jobs.JupyterNotebookJob()
+
+            elif self.job_type == "jupyterlab":
+
+                # Create a Jupyter notbook job
+
+                job = jobs.JupyterLabJob()
+
+            elif self.job_type == "vm":
+
+                # Create a VM job
+
+                job = jobs.VMJob()
+
+            # Setup job parameters
+
+            job.name = self.job_name
+            job.account = str(self.account)
+            job.partition = str(self.part)
+            job.time = str(self.time)
+            if self.job_type != "vm":
+                job.memory = int(self.memory)
+                job.nodeCount = int(self.count)
+                job.exclusive = self.exclusive
+                job.tasksPerNode = int(self.tasks_per_node)
+            if self.selected_feature != "":
+                job.add_constraint(self.selected_feature)
+            job.update()
+
+            self.batchScriptText.clear()
+            self.batchScriptText.insertPlainText(str(job))
+
+    @QtCore.pyqtSlot()
+    def on_resourceDetailsButton_clicked(self):
+        """Open resources specification window"""
+
+        self.resource_window = resource_win.ResourceSpecWindow(self)
+        self.resource_window.setGeometry(self.x()+self.width(), self.y(), self.resource_window.width(), self.resource_window.height())
+        self.resource_window.show()
+
+    @QtCore.pyqtSlot()
+    def on_startButton_clicked(self):
+        """Submit job"""
+
+        self.submit_job()
+
     @QtCore.pyqtSlot()
     def on_closeButton_clicked(self):
         """User asked to close window"""
 
         if self.job is not None:
             self.slurm.cancel_job(self.job)
+
+        if self.rdp != None:
+            self.rdp.terminate()
+
         self.close()
 
     @QtCore.pyqtSlot()
@@ -675,6 +700,9 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         if self.job is not None:
             self.slurm.cancel_job(self.job)
+
+        if self.rdp != None:
+            self.rdp.terminate()
 
         self.running = False
         self.job = None

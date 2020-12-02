@@ -185,6 +185,8 @@ if __name__ == '__main__':
     parser.add_argument("--notebook-module", dest="notebook_module", action="store", 
                         default="Anaconda3", help="Specify module to load for Jupyter Notebook jobs.")
 
+    parser.add_argument("--autostart", dest="autostart", action="store_true", default=False)
+
     args = parser.parse_args()
 
     # Setup global settings singleton
@@ -202,7 +204,7 @@ if __name__ == '__main__':
 
     # Redirect standard output
 
-    redirect = True
+    redirect = False
 
     # Create Queue and redirect sys.stdout to this queue
 

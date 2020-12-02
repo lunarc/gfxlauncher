@@ -312,9 +312,13 @@ class Slurm(object):
 
     def cancel_job(self, job):
         """Cancel job"""
-        result = subprocess.call("scancel %d" % (job.id), shell=True)
-        job.id = -1
-        job.status = ""
+        try:
+            result = subprocess.call("scancel %d" % (job.id), shell=True)
+            job.id = -1
+            job.status = ""
+        except:
+            return -1
+        
         return result
 
     def job_output(self, job):
