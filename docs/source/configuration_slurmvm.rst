@@ -39,7 +39,7 @@ The configuration of the prolog/epilog script is done through the configuration 
 
 A typical configuration file for 4 virtual machines are shown below. The different sections are described in separate sections.
 
-.. code-block:: 
+.. code-block:: ini
 
     [DEFAULT]
     loglevel = ERROR
