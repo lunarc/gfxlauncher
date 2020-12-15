@@ -129,6 +129,12 @@ class SlurmVMConfig(object):
                 self.vm_actions[kind] = {}
                 if "logoff_users_script" in options:
                     self.vm_actions[kind]["logoff_users_script"] = self.config.get(vm, "logoff_users_script")
+                if "disable_user_script" in options:
+                    self.vm_actions[kind]["disable_user_script"] = self.config.get(vm, "disable_user_script")
+                if "enable_user_script" in options:
+                    self.vm_actions[kind]["enable_user_script"] = self.config.get(vm, "enable_user_script")
+                if "check_reboot_script" in options:
+                    self.vm_actions[kind]["check_reboot_script"] = self.config.get(vm, "check_reboot_script")
                 if "update_script" in options:
                     self.vm_actions[kind]["update_script"] = self.config.get(vm, "update_script")
                 if "system_account" in options:
@@ -557,6 +563,7 @@ class VM:
         self.__update_script = ""
         self.__disable_user_script = ""
         self.__enable_user_script = ""
+        self.__check_reboot_script = ""
 
     def logoff_users(self):
         """Log off all users on server"""
@@ -605,6 +612,14 @@ class VM:
     @enable_user_script.setter
     def enable_user_script(self, value):
         self.__disable_user_script = value
+
+    @property
+    def check_reboot(self):
+        return self.__check_reboot_script
+
+    @check_reboot_script.setter
+    def check_reboot_script(self, value):
+        self.__check_reboot_script = value
 
     @property
     def hostname(self):
@@ -656,6 +671,10 @@ class Win10VM(VM):
     def enable_user(self, username):
         if self.enable_user_script!="":
             self.__exec_cmd(self.enable_user_script + " " + username)
+
+    def check_reboot(self, hostname):
+        if self.check_reboot_script!="":
+            self.__exec_cmd(self.check_reboot_script + " " + self.hostname)
 
 class CentOS7VM(VM):
     def __init__(self, hostname):

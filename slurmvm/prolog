@@ -154,6 +154,7 @@ if __name__ == "__main__":
 
                 log.info("Logging off all users on %s" % vm_host)
                 vm_mgr.logoff_users()
+                log.info("Enable user %s" % user_name)
                 vm_mgr.enable_user(user_name)
 
             # --- Write ip file for client
@@ -239,7 +240,10 @@ if __name__ == "__main__":
 
                 log.info("Logging off all users on %s" % vm_host)
                 vm_mgr.logoff_users()
+                log.info("Disable user %s" % user_name)
                 vm_mgr.disable_user(user_name)
+                log.info("Check if reboot is required %s" % vm_host)
+                vm_mgr.check_reboot()
 
                 # --- Is this an update job
 
