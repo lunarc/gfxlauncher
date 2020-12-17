@@ -210,6 +210,14 @@ class SlurmVMConfig(object):
 
         return ""
 
+    def vm_check_reboot_script(self, kind):
+        if kind in self.vm_actions:
+            if 'check_reboot_script' in self.vm_actions[kind]:
+                return self.vm_actions[kind]['check_reboot_script']
+
+        return ""
+
+
     def vm_system_account(self, kind):
         if kind in self.vm_actions:
             if 'system_account' in self.vm_actions[kind]:
@@ -672,7 +680,7 @@ class Win10VM(VM):
         if self.enable_user_script!="":
             self.__exec_cmd(self.enable_user_script + " " + username)
 
-    def check_reboot(self, hostname):
+    def check_reboot(self):
         if self.check_reboot_script!="":
             self.__exec_cmd(self.check_reboot_script + " " + self.hostname)
 
