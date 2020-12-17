@@ -622,7 +622,7 @@ class VM:
         self.__disable_user_script = value
 
     @property
-    def check_reboot(self):
+    def check_reboot_script(self):
         return self.__check_reboot_script
 
     @check_reboot_script.setter
