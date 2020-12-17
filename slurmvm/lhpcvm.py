@@ -615,11 +615,11 @@ class VM:
 
     @property
     def enable_user_script(self):
-        return self.__disable_user_script
+        return self.__enable_user_script
 
     @enable_user_script.setter
     def enable_user_script(self, value):
-        self.__disable_user_script = value
+        self.__enable_user_script = value
 
     @property
     def check_reboot_script(self):
