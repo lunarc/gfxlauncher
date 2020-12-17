@@ -33,7 +33,7 @@ This is free software, and you are welcome to redistribute it
 under certain conditions; see LICENSE for details.
 """
 gfxlaunch_copyright_short = """LUNARC HPC Desktop On-Demand - %s"""
-gfxlaunch_version = "0.6.4"
+gfxlaunch_version = "0.6.5"
 
 # --- Fix search path for tool
 

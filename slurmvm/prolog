@@ -135,6 +135,7 @@ if __name__ == "__main__":
             vm_enable_user_script = slurm_vm_config.vm_enable_user_script(vm_kind)
             vm_disable_user_script = slurm_vm_config.vm_disable_user_script(vm_kind)
             vm_update_script = slurm_vm_config.vm_update_script(vm_kind)
+            vm_check_reboot_script = slurm_vm_config.vm_check_reboot_script(vm_kind)
             vm_system_account = slurm_vm_config.vm_system_account(vm_kind)
 
             # --- Create a VM manager
@@ -146,6 +147,7 @@ if __name__ == "__main__":
                     vm_mgr.disable_user_script = vm_disable_user_script
                     vm_mgr.logoff_users_script = vm_logoff_users_script
                     vm_mgr.update_script = vm_logoff_users_script
+                    vm_mgr.check_reboot_script = vm_check_reboot_script
 
                 if vm_kind == "centos7":
                     vm_mgr = CentOS7VM(vm_host)
@@ -154,6 +156,7 @@ if __name__ == "__main__":
 
                 log.info("Logging off all users on %s" % vm_host)
                 vm_mgr.logoff_users()
+                log.info("Enable user %s" % user_name)
                 vm_mgr.enable_user(user_name)
 
             # --- Write ip file for client
@@ -202,6 +205,7 @@ if __name__ == "__main__":
             vm_enable_user_script = slurm_vm_config.vm_enable_user_script(vm_kind)
             vm_disable_user_script = slurm_vm_config.vm_disable_user_script(vm_kind)
             vm_update_script = slurm_vm_config.vm_update_script(vm_kind)
+            vm_check_reboot_script = slurm_vm_config.vm_check_reboot_script(vm_kind)
             vm_system_account = slurm_vm_config.vm_system_account(vm_kind)
 
             # --- Create a VM manager
@@ -213,6 +217,7 @@ if __name__ == "__main__":
                     vm_mgr.disable_user_script = vm_disable_user_script
                     vm_mgr.logoff_users_script = vm_logoff_users_script
                     vm_mgr.update_script = vm_logoff_users_script
+                    vm_mgr.check_reboot_script = vm_check_reboot_script
 
                 if vm_kind == "centos7":
                     vm_mgr = CentOS7VM(vm_host)
@@ -239,7 +244,10 @@ if __name__ == "__main__":
 
                 log.info("Logging off all users on %s" % vm_host)
                 vm_mgr.logoff_users()
+                log.info("Disable user %s" % user_name)
                 vm_mgr.disable_user(user_name)
+                log.info("Check if reboot is required %s" % vm_host)
+                vm_mgr.check_reboot()
 
                 # --- Is this an update job
 
