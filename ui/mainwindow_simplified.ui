@@ -259,7 +259,8 @@
          <string>More...</string>
         </property>
         <property name="icon">
-         <iconset theme="dialog-information"/>
+         <iconset theme="dialog-information">
+          <normaloff>.</normaloff>.</iconset>
         </property>
         <property name="checkable">
          <bool>true</bool>
@@ -390,7 +391,7 @@
      </layout>
     </item>
     <item>
-     <widget class="QLabel" name="versionLabel">
+     <widget class="QLabel" name="status_output">
       <property name="baseSize">
        <size>
         <width>0</width>

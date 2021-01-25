@@ -1,7 +1,7 @@
 #!/bin/env python
 #
 # LUNARC HPC Desktop On-Demand graphical launch tool
-# Copyright (C) 2017-2020 LUNARC, Lund University
+# Copyright (C) 2017-2021 LUNARC, Lund University
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -63,6 +63,8 @@ class Job(object):
 
         self._process_output = False
         self.update_processing = False
+
+        self.processing_description = ""
 
         self._create_script()
 
@@ -196,6 +198,7 @@ class JupyterNotebookJob(Job):
         Job.__init__(self, account, partition, time)
         self.notebook_url = ""
         self.process_output = True
+        self.processing_description = "Waiting for notebook instance to start."
         self.notebook_module = notebook_module
 
         self.add_module(self.notebook_module)
@@ -232,6 +235,7 @@ class JupyterLabJob(Job):
         Job.__init__(self, account, partition, time)
         self.notebook_url = ""
         self.process_output = True
+        self.processing_description = "Waiting for notebook instance to start."
         self.jupyterlab_module = jupyterlab_module
 
         self.add_module(self.jupyterlab_module)
@@ -269,6 +273,7 @@ class VMJob(Job):
         super().__init__(account, partition, time)
         self.notebook_url = ""
         self.process_output = False
+        self.processing_description = "Waiting Windows session to become available."
         self.update_processing = True
         #self.add_custom_script("sleep infinity")
         self.add_custom_script("while true; do date; sleep 5; done")
