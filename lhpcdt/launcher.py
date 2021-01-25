@@ -549,6 +549,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
     def on_notebook_url_found(self, url):
         """Callback when notebook url has been found."""
 
+        self.reset_status_panel()
+
         Popen("firefox %s" % url, shell=True)
 
         self.enableExtrasPanel()
