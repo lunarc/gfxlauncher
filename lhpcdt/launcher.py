@@ -1,7 +1,7 @@
 #!/bin/env python
 #
 # LUNARC HPC Desktop On-Demand graphical launch tool
-# Copyright (C) 2017-2020 LUNARC, Lund University
+# Copyright (C) 2017-2021 LUNARC, Lund University
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -187,7 +187,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.statusTimer = QtCore.QTimer()
         self.statusTimer.timeout.connect(self.on_status_timeout)
 
-        self.versionLabel.setText(
+        self.status_output.setText(
             self.copyright_short_info % self.version_info)
 
         # Setup timer for autostart
@@ -302,6 +302,13 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.jupyterlab_module = self.args.jupyterlab_module
         self.autostart = self.args.autostart
         self.locked = self.args.locked
+
+    def update_status_panel(self, text):
+        self.status_output.setText(text)
+
+    def reset_status_panel(self):
+        self.status_output.setText(
+            self.copyright_short_info % self.version_info)
 
     def update_properties(self):
         """Get properties from user interface"""
@@ -549,13 +556,23 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
     def on_vm_available(self, hostname):
         """Start an RDP session to host"""
 
-        print("Starting RDP: " + hostname)
+        self.reset_status_panel()
 
-        self.rdp = remote.XFreeRDP(hostname)
-        self.rdp.xfreerdp_path = self.config.xfreerdp_path
-        self.rdp.execute()
+        if (hostname != "0.0.0.0"):
 
-        self.enableExtrasPanel()
+            print("Starting RDP: " + hostname)
+
+            self.rdp = remote.XFreeRDP(hostname)
+            self.rdp.xfreerdp_path = self.config.xfreerdp_path
+            self.rdp.execute()
+
+            self.enableExtrasPanel()
+        else:
+            QtWidgets.QMessageBox.information(
+                self, self.title, "An error occured when allocating the Windows session. Try launching the session again. If the problem persists contact support.")
+
+            self.close()
+
 
     def on_status_timeout(self):
         """Status timer callback. Updates job status."""
@@ -571,6 +588,10 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
                 self.usageBar.setValue(int(percent))
 
                 if self.only_submit:
+
+                    # Update status panel
+
+                    self.update_status_panel(self.job.processing_description)
 
                     # Handle job processing, if any
 
