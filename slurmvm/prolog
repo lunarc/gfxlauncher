@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 # LUNARC HPC Desktop On-Demand graphical launch tool
-# Copyright (C) 2017-2020 LUNARC, Lund University
+# Copyright (C) 2017-2021 LUNARC, Lund University
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -156,8 +156,11 @@ if __name__ == "__main__":
 
                 log.info("Logging off all users on %s" % vm_host)
                 vm_mgr.logoff_users()
+                error_in_logoff = vm_mgr.in_error()
+
                 log.info("Enable user %s" % user_name)
                 vm_mgr.enable_user(user_name)
+                error_in_enable_user = vm_mgr.in_error()
 
             # --- Write ip file for client
 
@@ -168,7 +171,10 @@ if __name__ == "__main__":
                 try:
                     os.setgid(group_id)
                     os.setuid(user_id)
-                    tracker.write_job_hostfile(job_id, vm_host)
+                    if (error_in_logoff or error_in_enable_user):
+                        tracker.write_job_hostfile(job_id, "0.0.0.0")
+                    else:
+                        tracker.write_job_hostfile(job_id, vm_host)
                 finally:
                     os._exit(0)
 

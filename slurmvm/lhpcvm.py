@@ -1,7 +1,7 @@
 #!/bin/env python
 #
 # LUNARC HPC Desktop On-Demand graphical launch tool
-# Copyright (C) 2017-2020 LUNARC, Lund University
+# Copyright (C) 2017-2021 LUNARC, Lund University
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -563,6 +563,9 @@ class VMTracker(object):
             log.debug(job_id + " " + str(self.running_dict[job_id]))
 
 class VM:
+    no_error = 0
+    script_exec_failure = 1    
+
     def __init__(self, hostname, user=""):
         self.__hostname = hostname
         self.__user = user
@@ -572,6 +575,14 @@ class VM:
         self.__disable_user_script = ""
         self.__enable_user_script = ""
         self.__check_reboot_script = ""
+
+        self.__error_status = VM.no_error
+
+    def clear_error_status(self):
+        self.__error_status = VM.no_error
+
+    def in_error(self):
+        return self.__error_status!=VM.no_error
 
     def logoff_users(self):
         """Log off all users on server"""
@@ -637,6 +648,14 @@ class VM:
     def user(self):
         return self.__user
 
+    @property 
+    def error_status(self):
+        return self.__error_status
+    
+    @error_status.setter
+    def error_status(self, status):
+        self.__error_status = status
+
 
 class Win10VM(VM):
     def __init__(self, hostname, user=""):
@@ -644,7 +663,16 @@ class Win10VM(VM):
 
     def __exec_cmd(self, cmd):
         """Execute a command and return output"""
-        output = subprocess.check_output(cmd, shell=True)
+
+        self.clear_error_status()
+
+        try:
+            output = subprocess.check_output(cmd, shell=True)
+        except subprocess.CalledProcessError as e:
+            log.error("Process: %s returned exit status of %d" % (cmd, e.returncode))
+            self.error_status = VM.script_exec_failure
+            return ""
+            
         return output.decode('ascii')
 
     def ssh_cmd(self, cmd):
