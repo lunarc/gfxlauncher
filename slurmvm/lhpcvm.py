@@ -26,7 +26,7 @@ import os, pwd, fcntl, json
 import sys, subprocess, pickle, socket, time
 import logging as log
 import configparser
-
+import datetime
 
 from filelock import Timeout, FileLock
 
@@ -38,7 +38,7 @@ class SlurmVMConfig(object):
     def __init__(self):
 
         self.__default_config_file = "/etc/slurm/lhpcvm.conf"
-        self.__fallback_config_file = "lhpcvm.conf"
+        self.__fallback_config_file = "./lhpcvm.conf"
         self.__used_config_file = ""
         self.xen_server_hostname = "localhost"
         self.log_level="DEBUG"
@@ -50,8 +50,12 @@ class SlurmVMConfig(object):
 
         self.win10_logoff_script = ""
         self.win10_update_script = ""
+        self.win10_reboot_script = ""
 
         self.config_valid = False
+
+        self.reboot_server_days = []
+        self.reboot_server = False
 
         self.__read_config()
 
@@ -76,13 +80,15 @@ class SlurmVMConfig(object):
             return
 
         if self.__used_config_file!="":
-            try:
-                self.config = configparser.ConfigParser()
-                print("Reading", self.__used_config_file)
-                self.config.read(self.__used_config_file)
-            except:
-                print("Couldn't parse configuration file at /etc/slurm/lhpcvm.conf")
-                return
+            #try:
+            self.config = configparser.ConfigParser()
+            print("Reading", self.__used_config_file)
+            self.config.read(self.__used_config_file)
+            self.config_valid = True
+            #except:
+            #print("Couldn't parse configuration file at /etc/slurm/lhpcvm.conf")
+            #self.config_valid = False
+            #return
         else:
             return
 
@@ -118,6 +124,27 @@ class SlurmVMConfig(object):
             else:
                 self.manage_server = False
 
+        if "reboot_server_days" in default_params:
+            value = self.config.get("DEFAULT", "reboot_server_days")
+
+            days_list = []
+
+            if value != "":
+                days = value.split(",")
+
+            for day in days:
+                if day.strip() in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']:
+                    days_list.append(day.strip())
+
+            self.reboot_server_days = days_list
+
+        if "reboot_server" in default_params:
+            value = self.config.get("DEFAULT", "reboot_server")
+            if value == "yes":
+                self.reboot_server = True
+            else:
+                self.reboot_server = False
+
         self.vm_dict = {}
         self.vm_actions = {}
 
@@ -135,6 +162,8 @@ class SlurmVMConfig(object):
                     self.vm_actions[kind]["enable_user_script"] = self.config.get(vm, "enable_user_script")
                 if "check_reboot_script" in options:
                     self.vm_actions[kind]["check_reboot_script"] = self.config.get(vm, "check_reboot_script")
+                if "reboot_script" in options:
+                    self.vm_actions[kind]["reboot_script"] = self.config.get(vm, "reboot_script")
                 if "update_script" in options:
                     self.vm_actions[kind]["update_script"] = self.config.get(vm, "update_script")
                 if "system_account" in options:
@@ -162,14 +191,33 @@ class SlurmVMConfig(object):
 
     def show_config(self):
         """Show configuration"""
-        print("XenServer host  :", self.xen_server_hostname)
+
+        print("-----------------------------------")
+        print("SLURM Session manager configuration")
+        print("-----------------------------------")
+        print()
         print("Log level       :", self.log_level)
-        print("Snapshot prefix :", self.snapshot_prefix)
-        print("Using snapshot  :", self.use_snapshot)
+        print("Reboot server   :", self.reboot_server)
+        print("Reboot days     :", self.reboot_server_days)
+        print()
+        print("Default actions:")
+        print()
+
+        for kind in self.vm_actions.keys():
+            print("Default actions for %s:" % kind)
+            for prop in self.vm_actions[kind].keys():
+                print("\t%s = %s" % (prop, self.vm_actions[kind][prop]))
+
         print()
         print("Configured VM:s:")
+        print()
         for vm in self.vm_dict.keys():
-            print("VM:", vm, "ip =", self.vm_dict[vm]["hostname"], "kind =", self.vm_dict[vm]["kind"])
+            print("VM:", vm, "ip =", self.vm_dict[vm]["hostname"])
+            for prop in self.vm_dict[vm].keys():
+                print("\t%s = %s" % (prop, self.vm_dict[vm][prop]))
+            print()
+
+
 
         if self.config_valid:
             print("Configuration is valid.")
@@ -217,6 +265,12 @@ class SlurmVMConfig(object):
 
         return ""
 
+    def vm_reboot_script(self, kind):
+        if kind in self.vm_actions:
+            if 'reboot_script' in self.vm_actions[kind]:
+                return self.vm_actions[kind]['reboot_script']
+
+        return ""
 
     def vm_system_account(self, kind):
         if kind in self.vm_actions:
@@ -435,6 +489,20 @@ class VMTracker(object):
                     self.__dict__.update(tmp_dict)
                     self.lock = lock
 
+        # Add last_reboot attribute to list if it does
+        # not exist.
+
+        log.debug("Idle VMs:")
+    
+        for idle_vm in self.idle_list:
+            if len(idle_vm)<3:
+                idle_vm.append(datetime.datetime.now())
+
+        for running_job in self.running_dict.keys():
+            if len(self.running_dict[running_job])<3:
+                self.running_dict[running_job].append(datetime.datetime.now())   
+            
+
     def save(self):
         """Save current database to disk"""
 
@@ -446,12 +514,14 @@ class VMTracker(object):
                 del tmp_dict["lock"]
                 pickle.dump(tmp_dict, f)
 
-    def add_vm(self, name, hostname):
+    def add_vm(self, name, hostname, last_reboot=""):
         """Add a vm to list of resources."""
 
         log.debug("VMTracker.add_vm(%s, %s)" % (name, hostname))
-
-        self.idle_list.append([name, hostname])
+        if last_reboot == "":
+            self.idle_list.append([name, hostname, datetime.datetime.now()])
+        else:
+            self.idle_list.append([name, hostname, last_reboot])
 
     def init_tracker(self):
         """Initialise initial resources."""
@@ -471,7 +541,7 @@ class VMTracker(object):
 
         if len(self.idle_list)>0:
             vm_info = self.idle_list.pop()
-            self.running_dict[job_id] = [vm_info[0], vm_info[1]]
+            self.running_dict[job_id] = [vm_info[0], vm_info[1], vm_info[2]]
             self.save()
             return vm_info[0], vm_info[1]
         else:
@@ -484,7 +554,7 @@ class VMTracker(object):
 
         if job_id in self.running_dict:
             vm_info = self.running_dict.pop(job_id)
-            self.add_vm(vm_info[0], vm_info[1])
+            self.add_vm(vm_info[0], vm_info[1], vm_info[2])
             self.save()
             return vm_info[0], vm_info[1]
         else:
@@ -562,6 +632,59 @@ class VMTracker(object):
         for job_id in self.running_dict.keys():
             log.debug(job_id + " " + str(self.running_dict[job_id]))
 
+    def host_info(self, host):
+        """Return host information"""
+
+        host_info = ["", "", datetime.datetime.today()]
+
+        for vm in self.idle_list:
+            if vm[1] == host:
+                return [vm[0], vm[1], vm[2]]
+        
+        for job_id in self.running_dict.keys():
+            if self.running_dict[job_id][1] == host:
+                return self.running_dict[job_id][:]
+
+        return host_info
+
+    def need_reboot(self, host, days):
+        """Check if reboot is needed."""
+
+        current_date = datetime.datetime.today()
+        current_day = current_date.strftime('%A')
+
+        if current_day in days:
+            log.info("Checking if reboot of %s is scheduled." % host)
+            host_info = self.host_info(host)
+            reboot_date = host_info[2]
+
+            diff = current_date - reboot_date
+
+            log.debug("%s was rebooted at: %s" % (host, reboot_date))
+
+            if diff.days != 0:
+                log.info("Reboot of %s required." % host)
+                return True
+            else:
+                log.info("No reboot of %s required." % host)
+                return False
+
+        else:
+            log.debug("Reboot checking performed.")
+            return False
+
+    def update_reboot_status(self, host):
+        """Update time stamp for last reboot"""
+
+        for vm in self.idle_list:
+            if vm[1] == host:
+                vm[2] = datetime.datetime.today()
+        
+        for job_id in self.running_dict.keys():
+            if self.running_dict[job_id][1] == host:
+                self.running_dict[job_id][2] = datetime.datetime.today()        
+
+
 class VM:
     no_error = 0
     script_exec_failure = 1    
@@ -575,6 +698,7 @@ class VM:
         self.__disable_user_script = ""
         self.__enable_user_script = ""
         self.__check_reboot_script = ""
+        self.__reboot_script = ""
 
         self.__error_status = VM.no_error
 
@@ -594,6 +718,9 @@ class VM:
 
     def enable_user(self):
         """Enable user account"""
+        pass
+
+    def reboot(self):
         pass
 
     def update(self):
@@ -639,6 +766,14 @@ class VM:
     @check_reboot_script.setter
     def check_reboot_script(self, value):
         self.__check_reboot_script = value
+
+    @property
+    def reboot_script(self):
+        return self.__reboot_script
+
+    @reboot_script.setter
+    def reboot_script(self, value):
+        self.__reboot_script = value
 
     @property
     def hostname(self):
@@ -712,6 +847,10 @@ class Win10VM(VM):
         if self.check_reboot_script!="":
             self.__exec_cmd(self.check_reboot_script + " " + self.hostname)
 
+    def reboot(self):
+        if self.reboot_script!="":
+            self.__exec_cmd(self.reboot_script + " " + self.hostname)
+
 class CentOS7VM(VM):
     def __init__(self, hostname):
         super().__init__(hostname)
@@ -746,41 +885,15 @@ if __name__ == "__main__":
 
     vm_tracker = VMTracker(slurm_vm_config)
     vm_tracker.status()
+    vm_tracker.save()
+
+    host = "10.18.50.23"
+
+    if vm_tracker.need_reboot(host, slurm_vm_config.reboot_server_days):
+        vm_tracker.update_reboot_status(host)
+
+    vm_tracker.status()
+    vm_tracker.save()
 
     sys.exit(0)
 
-    print()
-    print("Querying XenServer...")
-    print()
-
-    xen = XenServer(slurm_vm_config.xen_server_hostname)
-    vm_dict = xen.vm_list()
-
-    for vm in vm_dict.keys():
-        print(vm)
-        print("\t",vm_dict[vm]["uuid"])
-        print("\t",vm_dict[vm]["state"])
-
-    vm_name = "win10m-ip22"
-    vm_host = "10.18.50.22"
-
-    sys.exit(0)
-
-    print()
-    print("Starting:", vm_name)
-    xen.vm_start(vm_name)
-
-    # --- Wait for VM to startup
-
-    prober = PortProber(vm_host)
-    
-    print("Waiting for VM to become available...")
-    while not prober.is_port_open(3389):
-        pass
-
-    log.info("VM is available at %s:3389" % vm_host)
-
-    print("Stopping VM...")
-    xen.vm_shutdown(vm_name)
-    print("Revert to snapshot...")
-    xen.vm_snapshot_revert(vm_name, "ss-"+vm_name)
