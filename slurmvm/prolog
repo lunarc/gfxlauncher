@@ -260,7 +260,7 @@ if __name__ == "__main__":
                 vm_mgr.disable_user(user_name)
                 log.info("Check if reboot is required %s" % vm_host)
 
-                if tracker.need_reboot(vm_host, slurm_vm_config.days):
+                if tracker.need_reboot(vm_host, slurm_vm_config.reboot_server_days):
 
                     # --- Reboot server here
 
