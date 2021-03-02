@@ -65,6 +65,7 @@ class GfxConfig(object):
         self.default_account = "rviz"
         self.grantfile = ""
         self.grantfile_base = ""
+        self.grantfile_dir = ""
         self.client_script_dir = "/home/bmjl/Development/gfxlauncher/scripts/client"
         self.applications_dir = "/home/bmjl/test-menu/share/applications"
         self.directories_dir = "/home/bmjl/test-menu/share/desktop-directories"
@@ -113,6 +114,7 @@ class GfxConfig(object):
         print("default_account = %s" % self.default_account)
         print("grantfile = %s" % self.grantfile)
         print("grantfile_base = %s" % self.grantfile)
+        print("grantfile_dir = %s" % self.grantfile_dir)
 
         print("simple_launch_template = %s" % self.simple_launch_template)
         print("adv_launch_template = %s" % self.adv_launch_template)
@@ -188,6 +190,7 @@ class GfxConfig(object):
             self.default_account = self._config_get(config, "slurm", "default_account")
             self.grantfile = self._config_get(config, "slurm", "grantfile")
             self.grantfile_base = self._config_get(config, "slurm", "grantfile_base")
+            self.grantfile_dir = self._config_get(config, "slurm", "grantfile_dir")
 
             self.simple_launch_template = self._config_get(config, "slurm", "simple_launch_template")
             self.adv_launch_template = self._config_get(config, "slurm", "adv_launch_template")
