@@ -27,6 +27,8 @@ import sys
 import time
 import logging as log
 
+from datetime import datetime
+
 from lhpcvm import VMTracker, XenServer, PortProber, SlurmVMConfig, VM, Win10VM, CentOS7VM
 
 if __name__ == "__main__":
@@ -44,6 +46,8 @@ if __name__ == "__main__":
 
     print("Reading configuration file")
     slurm_vm_config = SlurmVMConfig()
+
+    current_day = datetime.today().strftime('%A')
 
     log_level = log.DEBUG
 
@@ -83,7 +87,7 @@ if __name__ == "__main__":
     # --- Configure logging - All messages from prolog/epilog uses Python logging.
 
     log.basicConfig(filename="%s-%s.log" % ("lhpc-proepi", job_id),
-                    level=log.DEBUG, format='%(asctime)s : %(levelname)-8s : %(message)s')
+                    level=log_level, format='%(asctime)s : %(levelname)-8s : %(message)s')
 
     # --- Redirect stderr and stdout output to catch other error messages.
 
@@ -136,6 +140,7 @@ if __name__ == "__main__":
             vm_disable_user_script = slurm_vm_config.vm_disable_user_script(vm_kind)
             vm_update_script = slurm_vm_config.vm_update_script(vm_kind)
             vm_check_reboot_script = slurm_vm_config.vm_check_reboot_script(vm_kind)
+            vm_reboot_script = slurm_vm_config.vm_reboot_script(vm_kind)
             vm_system_account = slurm_vm_config.vm_system_account(vm_kind)
 
             # --- Create a VM manager
@@ -212,6 +217,7 @@ if __name__ == "__main__":
             vm_disable_user_script = slurm_vm_config.vm_disable_user_script(vm_kind)
             vm_update_script = slurm_vm_config.vm_update_script(vm_kind)
             vm_check_reboot_script = slurm_vm_config.vm_check_reboot_script(vm_kind)
+            vm_reboot_script = slurm_vm_config.vm_reboot_script(vm_kind)
             vm_system_account = slurm_vm_config.vm_system_account(vm_kind)
 
             # --- Create a VM manager
@@ -253,15 +259,18 @@ if __name__ == "__main__":
                 log.info("Disable user %s" % user_name)
                 vm_mgr.disable_user(user_name)
                 log.info("Check if reboot is required %s" % vm_host)
-                vm_mgr.check_reboot()
 
-                # --- Is this an update job
+                if tracker.need_reboot(vm_host, slurm_vm_config.reboot_server_days):
 
-                if job_name == "update_node" and user_id == 0:
+                    # --- Reboot server here
 
-                    log.info("Updating OS on %s" % vm_host)
+                    vm_mgr.reboot()
 
-                    vm_mgr.update()
+                    # --- Update tracker database with reboot status
+
+                    tracker.update_reboot_status(vm_host)
+                    tracker.save()
+
 
     log.info(script_name + " completed.")
 

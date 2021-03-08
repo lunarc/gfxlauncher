@@ -27,6 +27,7 @@ import os
 import getpass
 from datetime import datetime
 import time
+import glob
 
 from PyQt5 import Qt, QtCore, QtGui, QtWidgets, uic
 
@@ -229,19 +230,51 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         grant_filename = self.config.grantfile
 
-        if self.config.grantfile_base != "":
-            grant_filename = self.config.grantfile_base % self.part
+
+        #if self.config.grantfile_base != "":
+        #    grant_filename = self.config.grantfile_base % self.part
+
+        self.grantfile_list = []
+
+        # --- If we have a explicit grantfile use that only.
 
         if self.grant_filename != "":
             grant_filename = self.grant_filename
+            self.grantfile_list.append(lrms.GrantFile(grant_filename))
+        else:
+            # --- No explicit grantfile given. Search for grantfiles
 
-        grant_file = lrms.GrantFile(grant_filename)
+            if self.config.grantfile_dir != "":
 
-        active_projects = grant_file.query_active_projects(user)
+                # --- Grant file directory given. Search it for grantfiles
 
-        if len(active_projects) > 0:
-            self.account = active_projects[0]
-            return True
+                grant_files = glob.glob(self.config.grantfile_dir+'/grantfile.*')
+
+                for grant_filename in grant_files:
+                    if (not '~' in grant_filename) and (len(grant_filename.split("."))==2):
+                        print("Parsing grantfile: %s" % grant_filename)
+                        self.grantfile_list.append(lrms.GrantFile(grant_filename))
+
+            else:
+
+                # --- Do we have a grantile_base directive?
+
+                grant_filename = self.config.grantfile_base % self.part
+                if os.path.exists(grant_filename):
+                    self.grantfile_list.append(lrms.GrantFile(grant_filename))
+
+        self.active_projects = []
+                
+        if len(self.grantfile_list)>0:
+
+            for grant_file in self.grantfile_list:
+                self.active_projects += grant_file.query_active_projects(user)
+
+            if len(self.active_projects) > 0:
+                self.account = self.active_projects[0]
+                return True
+            else:
+                return False
         else:
             return False
 
@@ -357,6 +390,12 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
                     self.featureCombo.addItem(feature)
                 self.filtered_features.append(feature)
 
+        self.projectCombo.clear()
+        for project in self.active_projects:
+            self.projectCombo.addItem(project)
+
+        self.projectCombo.setCurrentIndex(0)
+
         selected_index = -1
         selected_count = 0
 
@@ -390,7 +429,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
                 self.wallTimeEdit.setEnabled(True)
 
         self.wallTimeEdit.setEditText(str(self.time))
-        self.projectEdit.setText(str(self.account))
+        #self.projectEdit.setText(str(self.account))
 
         if self.args.title != "":
             self.setWindowTitle(self.args.title)
@@ -507,7 +546,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         # Setup job parameters
 
         self.job.name = self.job_name
-        self.job.account = str(self.account)
+        self.job.account = str(self.projectCombo.currentText())
         self.job.partition = str(self.part)
         self.job.time = str(self.time)
         if self.job_type != "vm":
@@ -684,7 +723,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
             # Setup job parameters
 
             job.name = self.job_name
-            job.account = str(self.account)
+            job.account = str(self.projectCombo.currentText())
             job.partition = str(self.part)
             job.time = str(self.time)
             if self.job_type != "vm":

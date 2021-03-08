@@ -40,16 +40,17 @@ class GrantFile:
         self.projects = {}
 
         for line in lines:
-            items = line.split(",")
-            if len(items)==6:
-                name = items[0]
-                self.projects[name] = {}
-                self.projects[name]["start_date"] = items[1]
-                self.projects[name]["end_date"] = items[2]
-                self.projects[name]["core_hours"] = int(items[3])
-                self.projects[name]["partition"] = items[4]
-                self.projects[name]["pi"] = items[5].split("#")[0]
-                self.projects[name]["users"] = items[5].split("#")[1].split()
+            if line[0] != '#':
+                items = line.split(",")
+                if len(items)==6:
+                    name = items[0]
+                    self.projects[name] = {}
+                    self.projects[name]["start_date"] = items[1]
+                    self.projects[name]["end_date"] = items[2]
+                    self.projects[name]["core_hours"] = int(items[3])
+                    self.projects[name]["partition"] = items[4]
+                    self.projects[name]["pi"] = items[5].split("#")[0]
+                    self.projects[name]["users"] = items[5].split("#")[1].split()
 
     def query_active_projects(self, user):
         """Query for an active project for user"""
