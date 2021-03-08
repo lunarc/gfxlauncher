@@ -1,7 +1,7 @@
 #!/bin/env python
 #
 # LUNARC HPC Desktop On-Demand graphical launch tool
-# Copyright (C) 2017-2020 LUNARC, Lund University
+# Copyright (C) 2017-2021 LUNARC, Lund University
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -32,7 +32,7 @@ from lhpcdt import config, desktop
 
 # --- Version information
 
-gfxconvert_version = "0.8.1"
+gfxconvert_version = "0.8.2"
 
 # --- Fix search path for tool
 
