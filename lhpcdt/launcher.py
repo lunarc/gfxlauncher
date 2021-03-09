@@ -253,9 +253,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
                 print("Searching for grantfiles in %s." % self.config.grantfile_dir)
 
-                grant_fil
-                
-                es = glob.glob(self.config.grantfile_dir+'/grantfile.*')
+                grant_files = glob.glob(self.config.grantfile_dir+'/grantfile.*')
 
                 for grant_filename in grant_files:
                     if (not '~' in grant_filename) and (len(grant_filename.split("."))==2):
