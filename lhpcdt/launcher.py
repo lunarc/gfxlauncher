@@ -239,6 +239,9 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         # --- If we have a explicit grantfile use that only.
 
         if self.grant_filename != "":
+
+            print("Explicit grantfile %s used." % self.grant_filename)
+
             grant_filename = self.grant_filename
             self.grantfile_list.append(lrms.GrantFile(grant_filename))
         else:
@@ -248,13 +251,21 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
                 # --- Grant file directory given. Search it for grantfiles
 
-                grant_files = glob.glob(self.config.grantfile_dir+'/grantfile.*')
+                print("Searching for grantfiles in %s." % self.config.grantfile_dir)
+
+                grant_fil
+                
+                es = glob.glob(self.config.grantfile_dir+'/grantfile.*')
 
                 for grant_filename in grant_files:
                     if (not '~' in grant_filename) and (len(grant_filename.split("."))==2):
-                        print("Parsing grantfile: %s" % grant_filename)
-                        self.grantfile_list.append(lrms.GrantFile(grant_filename))
-
+                        suffix = grant_filename.split('.')[1]
+                        if self.config.grantfile_suffix=='':
+                            print("Parsing grantfile: %s" % grant_filename)
+                            self.grantfile_list.append(lrms.GrantFile(grant_filename))
+                        elif self.config.grantfile_suffix == suffix:
+                            print("Parsing grantfile (suffix match): %s" % grant_filename)
+                            self.grantfile_list.append(lrms.GrantFile(grant_filename))
             else:
 
                 # --- Do we have a grantile_base directive?
