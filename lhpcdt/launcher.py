@@ -230,7 +230,6 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         grant_filename = self.config.grantfile
 
-
         #if self.config.grantfile_base != "":
         #    grant_filename = self.config.grantfile_base % self.part
 
@@ -675,6 +674,10 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
                 self.usageBar.setValue(0)
                 self.update_controls()
                 self.disableExtrasPanel()
+                
+                QtWidgets.QMessageBox.information(
+                    self, self.title, "Your application was closed as the session time expired.")
+
 
     def on_autostart_timeout(self):
         """Automatically submit jobn"""
