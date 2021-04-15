@@ -206,16 +206,22 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
     def time_to_decimal(self, time_string):
         """Time to decimal conversion routine"""
+        d = "0"
         h = "0"
         m = "0"
         s = "0"
 
-        if len(time_string.split(':')) == 2:
-            (m, s) = time_string.split(':')
-        elif len(time_string.split(':')) == 3:
-            (h, m, s) = time_string.split(':')
+        if "-" in time_string:
+            (d, time_rest) = time_string.split("-")
+        else:
+            time_rest = time_string
 
-        return int(h) * 3600 + int(m) * 60 + int(s)
+        if len(time_rest.split(':')) == 2:
+            (m, s) = time_rest.split(':')
+        elif len(time_rest.split(':')) == 3:
+            (h, m, s) = time_rest.split(':')
+
+        return int(d) * 86400 + int(h) * 3600 + int(m) * 60 + int(s)
 
     def has_project(self):
         """Check for user in grantfile"""
@@ -633,6 +639,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
             if self.slurm.is_running(self.job):
                 timeRunning = self.time_to_decimal(self.job.timeRunning)
                 timeLimit = self.time_to_decimal(self.job.timeLimit)
+                print(timeRunning)
+                print(timeLimit)
                 percent = 100 * timeRunning / timeLimit
                 self.usageBar.setValue(int(percent))
 
