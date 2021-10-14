@@ -33,7 +33,7 @@ This is free software, and you are welcome to redistribute it
 under certain conditions; see LICENSE for details.
 """
 gfxlaunch_copyright_short = """LUNARC HPC Desktop On-Demand - %s"""
-gfxlaunch_version = "0.7.3"
+gfxlaunch_version = "0.8.0"
 
 # --- Fix search path for tool
 
@@ -206,7 +206,7 @@ if __name__ == '__main__':
 
     # Redirect standard output
 
-    redirect = True
+    redirect = False
 
     # Create Queue and redirect sys.stdout to this queue
 

@@ -151,6 +151,14 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         self.config = config.GfxConfig.create()
 
+        # Parse partition and feature excludes
+
+        self.feature_ignore = self.config.feature_ignore[1:-1]
+        self.feature_exclude_set = set(self.feature_ignore.split(","))
+
+        self.part_ignore = self.config.part_ignore[1:-1]
+        self.part_exclude_set = set(self.part_ignore.split(","))
+
         # Setup default launch properties
 
         self.init_defaults()
@@ -161,9 +169,10 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         # Query partition features
 
-        self.slurm.query_partitions()
+        self.slurm.query_partitions(exclude_set=self.part_exclude_set)
 
-        self.features = self.slurm.query_features(self.part)
+        self.features = self.slurm.query_features(self.part, self.feature_exclude_set)
+        self.selected_part = self.part
 
         # Check for available project
 
@@ -311,6 +320,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.running = False
         self.job = None
         self.selected_feature = ""
+        self.selected_part = self.part
         self.only_submit = False
         self.job_type = ""
         self.job_name = "lhpc"
@@ -367,13 +377,17 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         else:
             self.selected_feature = ""
 
-    def update_controls(self):
-        """Update user interface from properties"""
+        if self.partCombo.currentIndex() != -1:
+            self.selected_part = self.filtered_parts[self.partCombo.currentIndex(
+            )]
+        else:
+            self.selected_part = ""
 
-        if self.job_type == "":
-            self.launcherTabs.removeTab(2)
+    def update_feature_combo(self):
 
-        self.slurm.query_partitions()
+        print("update_feature_combo")
+
+        self.features = self.slurm.query_features(self.selected_part, self.feature_exclude_set)
 
         self.filtered_features = []
         self.filtered_features.append("")
@@ -382,27 +396,36 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.featureCombo.addItem("None")
 
         for feature in self.features:
-            if feature.find("mem") != -1:
-                if feature.lower() in self.config.feature_descriptions:
-                    self.featureCombo.addItem(
-                        self.config.feature_descriptions[feature.lower()])
-                else:
-                    self.featureCombo.addItem(feature)
-                self.filtered_features.append(feature)
-            elif feature.find("gpu") != -1:
-                if feature.lower() in self.config.feature_descriptions:
-                    self.featureCombo.addItem(
-                        self.config.feature_descriptions[feature.lower()])
-                else:
-                    self.featureCombo.addItem(feature)
-                self.filtered_features.append(feature)
-            elif feature.find("win") != -1:
-                if feature.lower() in self.config.feature_descriptions:
-                    self.featureCombo.addItem(
-                        self.config.feature_descriptions[feature.lower()])
-                else:
-                    self.featureCombo.addItem(feature)
-                self.filtered_features.append(feature)
+            if feature.lower() in self.config.feature_descriptions:
+                self.featureCombo.addItem(
+                    self.config.feature_descriptions[feature.lower()])
+            else:
+                self.featureCombo.addItem(feature)
+            self.filtered_features.append(feature)
+
+    def update_controls(self):
+        """Update user interface from properties"""
+
+        if self.job_type == "":
+            self.launcherTabs.removeTab(2)
+
+        self.slurm.query_partitions(exclude_set=self.part_exclude_set)
+
+        self.update_feature_combo()
+
+        self.filtered_parts = []
+        self.filtered_parts.append("")
+
+        self.partCombo.clear()
+        self.partCombo.addItem("None")
+
+        for part in self.slurm.partitions:
+            if part.lower() in self.config.partition_descriptions:
+                self.partCombo.addItem(
+                    self.config.partition_descriptions[part.lower()])
+            else:
+                self.partCombo.addItem(part)
+            self.filtered_parts.append(part)
 
         self.projectCombo.clear()
         for project in self.active_projects:
@@ -422,6 +445,21 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
             self.featureCombo.setCurrentIndex(selected_index)
         else:
             self.featureCombo.setCurrentIndex(0)
+
+        selected_index = -1
+        selected_count = 0
+
+        print("update_controls, self.selected_part=", self.selected_part)
+
+        for part in self.filtered_parts:
+            if part == self.selected_part:
+                selected_index = selected_count
+            selected_count += 1
+
+        if selected_index != -1:
+            self.partCombo.setCurrentIndex(selected_index)
+        else:
+            self.partCombo.setCurrentIndex(0)
 
         if self.running:
             self.cancelButton.setEnabled(True)
@@ -561,7 +599,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         self.job.name = self.job_name
         self.job.account = str(self.projectCombo.currentText())
-        self.job.partition = str(self.part)
+        self.job.partition = str(self.selected_part)
         self.job.time = str(self.time)
         if self.job_type != "vm":
             self.job.memory = int(self.memory)
@@ -639,8 +677,6 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
             if self.slurm.is_running(self.job):
                 timeRunning = self.time_to_decimal(self.job.timeRunning)
                 timeLimit = self.time_to_decimal(self.job.timeLimit)
-                print(timeRunning)
-                print(timeLimit)
                 percent = 100 * timeRunning / timeLimit
                 self.usageBar.setValue(int(percent))
 
@@ -710,6 +746,13 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
             self.rdp.execute()
 
     @QtCore.pyqtSlot(int)
+    def on_partCombo_currentIndexChanged(self, idx):
+        if idx!=0:
+            self.selected_part = self.filtered_parts[idx]
+        self.update_feature_combo()
+        
+
+    @QtCore.pyqtSlot(int)
     def on_launcherTabs_currentChanged(self, idx):
         if idx == 1:
             self.update_properties()
@@ -744,7 +787,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
             job.name = self.job_name
             job.account = str(self.projectCombo.currentText())
-            job.partition = str(self.part)
+            job.partition = str(self.selected_part)
             job.time = str(self.time)
             if self.job_type != "vm":
                 job.memory = int(self.memory)
