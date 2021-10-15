@@ -383,6 +383,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         else:
             self.selected_part = ""
 
+        self.part = self.selected_part
+
     def update_feature_combo(self):
         """Update only feature combo box."""
 
@@ -412,25 +414,29 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         self.update_feature_combo()
 
-        self.filtered_parts = []
-        self.filtered_parts.append("")
+        if self.partCombo.count()==0:
 
-        self.partCombo.clear()
-        self.partCombo.addItem("None")
+            self.filtered_parts = []
+            self.filtered_parts.append("")
 
-        for part in self.slurm.partitions:
-            if part.lower() in self.config.partition_descriptions:
-                self.partCombo.addItem(
-                    self.config.partition_descriptions[part.lower()])
-            else:
-                self.partCombo.addItem(part)
-            self.filtered_parts.append(part)
+            self.partCombo.clear()
+            self.partCombo.addItem("None")
 
-        self.projectCombo.clear()
-        for project in self.active_projects:
-            self.projectCombo.addItem(project)
+            for part in self.slurm.partitions:
+                if part.lower() in self.config.partition_descriptions:
+                    self.partCombo.addItem(
+                        self.config.partition_descriptions[part.lower()])
+                else:
+                    self.partCombo.addItem(part)
+                self.filtered_parts.append(part)
 
-        self.projectCombo.setCurrentIndex(0)
+        if self.projectCombo.count()==0:
+
+            self.projectCombo.clear()
+            for project in self.active_projects:
+                self.projectCombo.addItem(project)
+
+            self.projectCombo.setCurrentIndex(0)
 
         selected_index = -1
         selected_count = 0
@@ -621,6 +627,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
     def on_submit_finished(self):
         """Event called from submit thread when job has been submitted"""
+
         self.running = True
         self.statusTimer.start(5000)
         self.update_controls()
