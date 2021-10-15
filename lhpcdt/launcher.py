@@ -384,8 +384,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
             self.selected_part = ""
 
     def update_feature_combo(self):
-
-        print("update_feature_combo")
+        """Update only feature combo box."""
 
         self.features = self.slurm.query_features(self.selected_part, self.feature_exclude_set)
 
@@ -448,8 +447,6 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         selected_index = -1
         selected_count = 0
-
-        print("update_controls, self.selected_part=", self.selected_part)
 
         for part in self.filtered_parts:
             if part == self.selected_part:

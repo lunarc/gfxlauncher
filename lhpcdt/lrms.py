@@ -280,7 +280,7 @@ class Slurm(object):
                             feature_list.append(feature)
 
         if self.verbose:
-            print(list(set(feature_list)))
+            #print(list(set(feature_list)))
             print("Done.")
 
         return list(set(feature_list))
