@@ -1,7 +1,7 @@
 #!/bin/env python
 #
 # LUNARC HPC Desktop On-Demand graphical launch tool
-# Copyright (C) 2017-2020 LUNARC, Lund University
+# Copyright (C) 2017-2021 LUNARC, Lund University
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -81,7 +81,10 @@ class GfxConfig(object):
         self.submit_only_slurm_template = 'gfxlaunch --vgl --title "%s" --partition %s --account %s --only-submit --job=%s --simplified'
         self.direct_scripts = False
         self.feature_descriptions = {}
+        self.partition_descriptions = {}
         self.only_submit = False
+        self.feature_ignore = ""
+        self.part_ignore = ""
         
         self.module_json_file = "/sw/pkg/rviz/share/modules.json"
         
@@ -120,6 +123,8 @@ class GfxConfig(object):
 
         print("simple_launch_template = %s" % self.simple_launch_template)
         print("adv_launch_template = %s" % self.adv_launch_template)
+        print("feature_ignore = %s" % self.feature_ignore)
+        print("part_ignore = %s" % self.part_ignore)
 
         print("")
         print("Menu settings")
@@ -194,6 +199,8 @@ class GfxConfig(object):
             self.grantfile_base = self._config_get(config, "slurm", "grantfile_base")
             self.grantfile_dir = self._config_get(config, "slurm", "grantfile_dir")
             self.grantfile_suffix = self._config_get(config, "slurm", "grantfile_suffix")
+            self.feature_ignore = self._config_get(config, "slurm", "feature_ignore")
+            self.part_ignore = self._config_get(config, "slurm", "part_ignore")
 
             self.simple_launch_template = self._config_get(config, "slurm", "simple_launch_template")
             self.adv_launch_template = self._config_get(config, "slurm", "adv_launch_template")
@@ -225,6 +232,19 @@ class GfxConfig(object):
                     descr = self._config_get(config, "slurm", option)
                     feature = option.split("_")[1]
                     self.feature_descriptions[feature] = descr.strip('"')
+        except configparser.Error as e:
+            print_error(e)
+            return False
+
+        # Check for partition descriptions
+
+        try:
+            slurm_options = config.options("slurm")
+            for option in slurm_options:
+                if option.find("part_")!=-1:
+                    descr = self._config_get(config, "slurm", option)
+                    partition = option.split("_")[1]
+                    self.partition_descriptions[partition] = descr.strip('"')
         except configparser.Error as e:
             print_error(e)
             return False

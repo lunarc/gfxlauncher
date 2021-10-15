@@ -1,4 +1,21 @@
 #!/bin/env python
+#
+# LUNARC HPC Desktop On-Demand graphical launch tool
+# Copyright (C) 2017-2021 LUNARC, Lund University
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 """Base classes for interacting with resource management systems."""
 
 import os
@@ -27,6 +44,7 @@ class GrantFile:
     def __init__(self, filename):
         """Class constructor"""
         self.filename = filename
+        self.verbose = True
 
         self._parse_grantfile()
 
@@ -59,19 +77,23 @@ class GrantFile:
 
         for project in list(self.projects.keys()):
             if user in self.projects[project]["users"]:
-                print("Found user %s in project %s in grantfile %s" % (user, project, self.filename))
+                if self.verbose:
+                    print("Found user %s in project %s in grantfile %s" % (user, project, self.filename))
                 start_date = datetime.datetime.strptime(self.projects[project]["start_date"], "%Y%m%d")
                 end_date = datetime.datetime.strptime(self.projects[project]["end_date"], "%Y%m%d")
 
                 current_date = datetime.datetime.today()
 
-                print("Project lifetime: %s-%s" % (start_date, end_date))
+                if self.verbose:
+                    print("Project lifetime: %s-%s" % (start_date, end_date))
 
                 if (start_date < current_date) and (current_date < end_date):
-                    print("Project is ACTIVE")
+                    if self.verbose:
+                        print("Project is ACTIVE")
                     active_projects.append(project)
                 else:
-                    print("Project is EXPIRED")
+                    if self.verbose:                    
+                        print("Project is EXPIRED")
 
         return active_projects
 
@@ -133,8 +155,17 @@ class Slurm(object):
         """Slurm constructor"""
         self.partitions = []
         self.node_lists = {}
+        self.verbose = True
 
-    def query_partitions(self):
+    def __include_part(self, part, exclude_set):
+        include = True
+        for exclude_pattern in exclude_set:
+            if exclude_pattern in part:
+                include = False
+
+        return include
+
+    def query_partitions(self, exclude_set={}):
         """Query partitions in slurm."""
         p = Popen("sinfo", stdout=PIPE, stderr=PIPE, shell=True, universal_newlines=True)
         squeue_output = p.communicate()[0].split("\n")
@@ -150,11 +181,12 @@ class Slurm(object):
                 node_list = line.split()[5]
                 if part_name.find("*") != -1:
                     part_name = part_name[:-1]
-                self.partitions.append(part_name)
-                if part_name in self.node_lists:
-                    self.node_lists[part_name] = self.node_lists[part_name] + hostlist.expand_hostlist(node_list)
-                else:
-                    self.node_lists[part_name] = hostlist.expand_hostlist(node_list)
+                if self.__include_part(part_name, exclude_set):
+                    self.partitions.append(part_name)
+                    if part_name in self.node_lists:
+                        self.node_lists[part_name] = self.node_lists[part_name] + hostlist.expand_hostlist(node_list)
+                    else:
+                        self.node_lists[part_name] = hostlist.expand_hostlist(node_list)
 
         self.partitions = list(set(self.partitions))
 
@@ -221,10 +253,19 @@ class Slurm(object):
 
         return node_dict
 
-    def query_features(self, part):
+    def __include_feature(self, feature, exclude_set):
+        include = True
+        for exclude_pattern in exclude_set:
+            if exclude_pattern in feature:
+                include = False
+
+        return include
+
+    def query_features(self, part, exclude_set={}):
         """Query features of partition"""
 
-        print("Please wait, querying nodes...")
+        if self.verbose:
+            print("Please wait, querying nodes...")
 
         node_info = self.query_nodes()
 
@@ -234,9 +275,13 @@ class Slurm(object):
             if "Partitions" in node_info[node]:
                 if node_info[node]["Partitions"] == part:
                     features = node_info[node]["ActiveFeatures"].split(",")
-                    feature_list.extend(features)
+                    for feature in features:
+                        if self.__include_feature(feature, exclude_set):
+                            feature_list.append(feature)
 
-        print("Done.")
+        if self.verbose:
+            #print(list(set(feature_list)))
+            print("Done.")
 
         return list(set(feature_list))
 

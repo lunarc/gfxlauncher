@@ -190,6 +190,27 @@ class PlaceHolderJob(Job):
         self.add_custom_script('while true; do date; sleep 5; done')
         self.update()
 
+conda_initialise_script = """# >>> conda initialize >>>
+# !! Contents within this block are managed by 'conda init' !!
+
+if [ -z "${EBROOTANACONDA3}" ]; then
+    echo "You need to load the Anaconda3 module before sourcing this script."
+    return
+fi
+
+__conda_setup="$(${EBROOTANACONDA3}/bin/conda 'shell.bash' 'hook' 2> /dev/null)"
+if [ $? -eq 0 ]; then
+    eval "$__conda_setup"
+else
+    if [ -f "${EBROOTANACONDA3}/etc/profile.d/conda.sh" ]; then
+        . "${EBROOTANACONDA3}/etc/profile.d/conda.sh"
+    else
+        export PATH="${EBROOTANACONDA3}/bin:$PATH"
+    fi
+fi
+unset __conda_setup
+# <<< conda initialize <<<
+"""
 
 class JupyterNotebookJob(Job):
     """Jupyter notebook job"""
@@ -220,11 +241,10 @@ class JupyterNotebookJob(Job):
         if self.process_output:
             for line in output_lines:
                 if line.find("?token=") != -1:
-                    parts = line.split()
-                    if len(parts) == 4:
-                        self.notebook_url = parts[3]
+                    if line.find("127.0.0.1") == -1:
+                        url = line[line.find("http:"):].strip()
+                        self.notebook_url = url
                         self.process_output = False
-
                         self.on_notebook_url_found(self.notebook_url)
 
 
@@ -238,9 +258,20 @@ class JupyterLabJob(Job):
         self.processing_description = "Waiting for notebook instance to start."
         self.jupyterlab_module = jupyterlab_module
 
+        self.init_conda = False
+        self.use_conda_env = False
+        self.conda_env = ""
+
         self.add_module(self.jupyterlab_module)
 
         self.add_custom_script("unset XDG_RUNTIME_DIR")
+
+        if self.init_conda:
+            self.add_custom_script(conda_initialise_script)
+        if self.use_conda_env:
+            if self.conda_env!="":
+                self.add_custom_script("conda activate %s" % (self.conda_env))
+
         self.add_custom_script('jupyter-lab --no-browser --ip=$HOSTNAME')
         self.add_custom_script("module list")
         self.add_custom_script("which python")
@@ -257,11 +288,10 @@ class JupyterLabJob(Job):
         if self.process_output:
             for line in output_lines:
                 if line.find("?token=") != -1:
-                    parts = line.split()
-                    if len(parts) == 4:
-                        self.notebook_url = parts[3]
+                    if line.find("127.0.0.1") == -1:
+                        url = line[line.find("http:"):].strip()
+                        self.notebook_url = url
                         self.process_output = False
-
                         self.on_notebook_url_found(self.notebook_url)
 
 
