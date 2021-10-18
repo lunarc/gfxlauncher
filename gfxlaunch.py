@@ -33,7 +33,7 @@ This is free software, and you are welcome to redistribute it
 under certain conditions; see LICENSE for details.
 """
 gfxlaunch_copyright_short = """LUNARC HPC Desktop On-Demand - %s"""
-gfxlaunch_version = "0.8.1"
+gfxlaunch_version = "0.8.2"
 
 # --- Fix search path for tool
 
@@ -86,7 +86,7 @@ def create_light_palette():
     lightPalette.setColor(QtGui.QPalette.Base, QtGui.QColor(255, 255, 230))
     lightPalette.setColor(QtGui.QPalette.AlternateBase,
                           QtGui.QColor(0, 255, 0))
-    lightPalette.setColor(QtGui.QPalette.ToolTipBase, QtCore.Qt.black)
+    lightPalette.setColor(QtGui.QPalette.ToolTipBase, QtGui.QColor(255, 255, 230))
     lightPalette.setColor(QtGui.QPalette.ToolTipText, QtCore.Qt.black)
     lightPalette.setColor(QtGui.QPalette.Text, QtCore.Qt.black)
     lightPalette.setColor(QtGui.QPalette.Disabled,
