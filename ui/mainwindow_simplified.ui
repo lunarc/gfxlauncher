@@ -268,7 +268,7 @@
          </size>
         </property>
         <property name="toolTip">
-         <string>Request to start the application through the queuing system.</string>
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Request to start the application through the queuing system. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
         <property name="text">
          <string>Start</string>
@@ -288,7 +288,7 @@
          </size>
         </property>
         <property name="toolTip">
-         <string>Stops the application from running. This will do a forceful shutdown of the application.</string>
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Stops the application from running. This will do a forceful shutdown of the application.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
         <property name="text">
          <string>Stop</string>
@@ -308,7 +308,7 @@
          </size>
         </property>
         <property name="toolTip">
-         <string>Closes this window. Running applications will be stopped.</string>
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Closes this window. Running applications will be stopped. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
         <property name="text">
          <string>Close</string>
@@ -328,7 +328,7 @@
          </size>
         </property>
         <property name="toolTip">
-         <string>Shows more information on the job as well as the generated SLURM script.</string>
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Shows more information on the job as well as the generated SLURM script. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
         <property name="text">
          <string>More...</string>
@@ -434,7 +434,7 @@
          </size>
         </property>
         <property name="toolTip">
-         <string>A green color indicates that the application is running.</string>
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;A green color indicates that the application is running. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
         <property name="autoFillBackground">
          <bool>true</bool>
@@ -450,7 +450,7 @@
       <item>
        <widget class="QProgressBar" name="usageBar">
         <property name="toolTip">
-         <string>This shows how much of the requested wall time has been used in percent.</string>
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This shows how much of the requested wall time has been used in percent. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
         <property name="value">
          <number>0</number>
