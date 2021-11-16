@@ -466,6 +466,19 @@
         </property>
        </widget>
       </item>
+      <item>
+       <widget class="QPushButton" name="helpButton">
+        <property name="maximumSize">
+         <size>
+          <width>45</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>Help</string>
+        </property>
+       </widget>
+      </item>
      </layout>
     </item>
     <item>

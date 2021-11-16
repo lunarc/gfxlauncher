@@ -72,6 +72,7 @@ class GfxConfig(object):
         self.directories_dir = "/home/bmjl/test-menu/share/desktop-directories"
         self.menu_dir = "/home/bmjl/test-menu/etc/xdg/menus/applications-merged"
         self.menu_filename = "Lunarc-On-Demand.menu"
+        self.help_url = ""
         
         self.vgl_path = "/sw/pkg/rviz/vgl/bin/latest"
         self.vgl_connect_template = '%s/vglconnect %s %s/%s'
@@ -109,6 +110,7 @@ class GfxConfig(object):
         print("client_script_dir = %s" % self.client_script_dir)
         print("only_submit = %s" % str(self.only_submit))
         print("modules_json_file = %s" % (self.module_json_file))
+        print("help_url = %s" % self.help_url)
 
         print("")
         print("SLURM settings")
@@ -192,6 +194,7 @@ class GfxConfig(object):
             self.debug_mode = self._config_getboolean(config, "general", "debug_mode")
             self.only_submit = self._config_getboolean(config, "general", "only_submit")
             self.modules_json_file = self._config_get(config, "general", "modules_json_file")
+            self.help_url = self._config_get(config, "general", "help_url").replace('"', '')
 
             self.default_part = self._config_get(config, "slurm", "default_part")
             self.default_account = self._config_get(config, "slurm", "default_account")
