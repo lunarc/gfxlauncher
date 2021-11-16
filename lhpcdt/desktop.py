@@ -1,6 +1,7 @@
 #!/bin/env python
 
 import sys, os
+#from typing_extensions import final
 
 # --- Classes
 
@@ -57,76 +58,95 @@ class Menu:
 
     def _write_dir_entry(self, filename, name):
         """Write directory entry"""
-        if self.dryrun:
-            f = sys.stdout
-            f.write("direntry = "+filename+"\n")
-        else:
-            f = open(filename, "w")
 
-        f.write("[Desktop Entry]\n")
-        f.write("Type = Directory\n")
-        f.write("Name = %s\n" % name)
-        f.write("Icon = /usr/share/icons/mate/48x48/actions/lunarc.png\n")
+        try:
 
-        if not self.dryrun:
-            f.close()
+            f = None
 
-        # [Desktop Entry]
-        # Type = Directory
-        # Name = Python
-        # Icon = / usr / share / icons / mate / 48
-        # x48 / actions / lunarc.png
+            if self.dryrun:
+                f = sys.stdout
+                f.write("direntry = "+filename+"\n")
+            else:
+                f = open(filename, "w")
+
+            f.write("[Desktop Entry]\n")
+            f.write("Type = Directory\n")
+            f.write("Name = %s\n" % name)
+            f.write("Icon = /usr/share/icons/mate/48x48/actions/lunarc.png\n")
+
+        except PermissionError:
+            print("Menu: Couldn't write, %s, check permissions." % filename)
+        finally:
+            if not self.dryrun:
+                if f!=None:
+                    f.close()
+
+            # [Desktop Entry]
+            # Type = Directory
+            # Name = Python
+            # Icon = / usr / share / icons / mate / 48
+            # x48 / actions / lunarc.png
 
     def write(self):
         """Write menu XML"""
         if self.dest_filename == "":
             return
 
-        if self.dryrun:
-            f = sys.stdout
-        else:
-            f = open(self.dest_filename, "w")
+        try:
 
-        self._write_header(f)
+            f = None
+            dir_entries = None
 
-        self._begin_tag(f, "Menu")
-        self._tag_value(f, "Name", "Applications")
-        self._begin_tag(f, "Menu")
-        self._tag_value(f, "Name", self.name)
-        self._tag_value(f, "Directory", self.dir_file)
-        self._begin_tag(f, "Include")
+            if self.dryrun:
+                f = sys.stdout
+            else:
+                f = open(self.dest_filename, "w")
 
-        for item in self.items:
-            self._tag_value(f, "Filename", item)
+            self._write_header(f)
 
-        self._end_tag(f, "Include")
-
-        dir_entries = []
-
-        for key in list(self.sub_menus.keys()):
             self._begin_tag(f, "Menu")
-            self._tag_value(f, "Name", key)
-            self._tag_value(f, "Directory", key.replace(" ", "_")+".directory")
-            dir_entries.append([key, key.replace(" ", "_")+".directory"])
+            self._tag_value(f, "Name", "Applications")
+            self._begin_tag(f, "Menu")
+            self._tag_value(f, "Name", self.name)
+            self._tag_value(f, "Directory", self.dir_file)
             self._begin_tag(f, "Include")
-            for item in self.sub_menus[key]:
+
+            for item in self.items:
                 self._tag_value(f, "Filename", item)
+
             self._end_tag(f, "Include")
+
+            dir_entries = []
+
+            for key in list(self.sub_menus.keys()):
+                self._begin_tag(f, "Menu")
+                self._tag_value(f, "Name", key)
+                self._tag_value(f, "Directory", key.replace(" ", "_")+".directory")
+                dir_entries.append([key, key.replace(" ", "_")+".directory"])
+                self._begin_tag(f, "Include")
+                for item in self.sub_menus[key]:
+                    self._tag_value(f, "Filename", item)
+                self._end_tag(f, "Include")
+                self._end_tag(f, "Menu")
+
+            self._end_tag(f, "Menu")
             self._end_tag(f, "Menu")
 
-        self._end_tag(f, "Menu")
-        self._end_tag(f, "Menu")
+            #< Menu >
+            #< Name > Python < / Name >
+            #< Directory > Python.directory < / Directory >
+            #< Include >
+            #< Filename > Paraview.desktop < / Filename >
+            #< / Include >
+            #< / Menu >
 
-        #< Menu >
-        #< Name > Python < / Name >
-        #< Directory > Python.directory < / Directory >
-        #< Include >
-        #< Filename > Paraview.desktop < / Filename >
-        #< / Include >
-        #< / Menu >
-
-        if not self.dryrun:
-            f.close()
+        except PermissionError:
+            print("Menu: Couldn't write, %s, check permissions" % self.dest_filename)
+            return
+        finally:
+            if not self.dryrun:
+                if f!=None:
+                    f.close()
 
         for dir_entry in dir_entries:
             filename = os.path.join(self.directory_dir, dir_entry[1])
@@ -150,25 +170,36 @@ class DesktopEntry:
         if self.filename == "":
             return
 
-        if self.dryrun:
-            f = sys.stdout
-            f.write("desktop entry = "+self.filename+"\n")
-        else:
-            f = open(self.filename, "w")
+        try:
 
-        f.write("[Desktop Entry]\n")
-        f.write("Name=%s\n" % self.name)
-        f.write("Type=%s\n" % self._type)
-        if self.terminal:
-            f.write("Terminal=true\n")
-        else:
-            f.write("Terminal=false\n")
+            f = None
 
-        if self.icon != "":
-            f.write("Icon=%s\n" % self.icon)
+            if self.dryrun:
+                f = sys.stdout
+                f.write("desktop entry = "+self.filename+"\n")
+            else:
+                f = open(self.filename, "w")
 
-        if self.exec_file != "":
-            f.write("Exec=%s\n" % self.exec_file)
+            f.write("[Desktop Entry]\n")
+            f.write("Name=%s\n" % self.name)
+            f.write("Type=%s\n" % self._type)
+            if self.terminal:
+                f.write("Terminal=true\n")
+            else:
+                f.write("Terminal=false\n")
 
-        if not self.dryrun:
-            f.close()
+            if self.icon != "":
+                f.write("Icon=%s\n" % self.icon)
+
+            if self.exec_file != "":
+                f.write("Exec=%s\n" % self.exec_file)
+
+            if not self.dryrun:
+                f.close()
+
+        except PermissionError:
+            print("DesktopEntry: Couldn't write, %s, check permissions. " % self.filename)
+        finally:
+            if not self.dryrun:
+                if f!=None:
+                    f.close()
