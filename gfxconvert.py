@@ -32,7 +32,7 @@ from lhpcdt import config, desktop
 
 # --- Version information
 
-gfxconvert_version = "0.8.3"
+gfxconvert_version = "0.8.4"
 
 # --- Fix search path for tool
 
@@ -50,47 +50,55 @@ def create_slurm_script(server_fname, slurm_fname, descr, metadata={}, dryrun=Fa
     client_script_filename = os.path.join(cfg.client_script_dir, slurm_fname)
     server_script_filename = os.path.join(cfg.script_dir, server_fname)
 
-    if dryrun:
-        client_file = sys.stdout
-        client_file.write("slurmscript = "+client_script_filename+"\n")
-    else:
-        client_file = open(client_script_filename, "w")
+    try:
 
-    part = cfg.default_part
+        client_file = None
 
-    vgl = True
+        if dryrun:
+            client_file = sys.stdout
+            client_file.write("slurmscript = "+client_script_filename+"\n")
+        else:
+            client_file = open(client_script_filename, "w")
 
-    submit_only_slurm_template = cfg.submit_only_slurm_template
-    simple_launch_template = cfg.simple_launch_template
+        part = cfg.default_part
 
-    if "vgl" in metadata:
-        vgl = metadata["vgl"]
+        vgl = True
 
-    if vgl == "no":
-        submit_only_slurm_template = cfg.submit_only_slurm_template.replace('--vgl', '')
-        simple_launch_template = cfg.simple_launch_template.replace('--vgl', '')
+        submit_only_slurm_template = cfg.submit_only_slurm_template
+        simple_launch_template = cfg.simple_launch_template
 
-    if "part" in metadata:
-        part = metadata["part"]
+        if "vgl" in metadata:
+            vgl = metadata["vgl"]
 
-    if "job" in metadata:
-        job = metadata["job"]
-        client_file.write(submit_only_slurm_template %
-                          (descr, part, cfg.default_account, job))
-    else:
-        client_file.write(simple_launch_template % (
-            descr, part, cfg.default_account, server_script_filename))
+        if vgl == "no":
+            submit_only_slurm_template = cfg.submit_only_slurm_template.replace('--vgl', '')
+            simple_launch_template = cfg.simple_launch_template.replace('--vgl', '')
 
-    if not dryrun:
-        client_file.close()
-        os.chmod(client_script_filename, 0o755)
+        if "part" in metadata:
+            part = metadata["part"]
+
+        if "job" in metadata:
+            job = metadata["job"]
+            client_file.write(submit_only_slurm_template %
+                            (descr, part, cfg.default_account, job))
+        else:
+            client_file.write(simple_launch_template % (
+                descr, part, cfg.default_account, server_script_filename))
+
+    except PermissionError:
+        print("Couldn't write, %s, check permissions." % client_script_filename)
+    finally:
+        if not dryrun:
+            if client_file != None:
+                client_file.close()
+                os.chmod(client_script_filename, 0o755)
 
 
 def create_desktop_entry(script, descr, metadata={}, dryrun=False):
     """Create desktop entry for script"""
 
     print(("Creating desktop entry '%s'" % script))
-    desktop_filename = os.path.join(cfg.applications_dir, "%s.desktop" % descr)
+    desktop_filename = os.path.join(cfg.applications_dir, "%s.desktop" % descr.replace("/","-"))
     script_filename = os.path.join(cfg.client_script_dir, script)
 
     entry = desktop.DesktopEntry(dryrun)

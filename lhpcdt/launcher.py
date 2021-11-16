@@ -23,11 +23,8 @@ This module implements the main user interface of the application
 launcher.
 """
 
-import os
-import getpass
+import os, sys, time, glob, getpass
 from datetime import datetime
-import time
-import glob
 
 from PyQt5 import Qt, QtCore, QtGui, QtWidgets, uic
 
@@ -150,6 +147,10 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.reconnect_vm_button = None
 
         self.config = config.GfxConfig.create()
+
+        if not self.config.is_ok:
+            print("Please check configuration.")
+            sys.exit(1)
 
         # Parse partition and feature excludes
 
