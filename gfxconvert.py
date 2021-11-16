@@ -32,7 +32,7 @@ from lhpcdt import config, desktop
 
 # --- Version information
 
-gfxconvert_version = "0.8.2"
+gfxconvert_version = "0.8.3"
 
 # --- Fix search path for tool
 
@@ -58,15 +58,27 @@ def create_slurm_script(server_fname, slurm_fname, descr, metadata={}, dryrun=Fa
 
     part = cfg.default_part
 
+    vgl = True
+
+    submit_only_slurm_template = cfg.submit_only_slurm_template
+    simple_launch_template = cfg.simple_launch_template
+
+    if "vgl" in metadata:
+        vgl = metadata["vgl"]
+
+    if vgl == "no":
+        submit_only_slurm_template = cfg.submit_only_slurm_template.replace('--vgl', '')
+        simple_launch_template = cfg.simple_launch_template.replace('--vgl', '')
+
     if "part" in metadata:
         part = metadata["part"]
 
     if "job" in metadata:
         job = metadata["job"]
-        client_file.write(cfg.submit_only_slurm_template %
+        client_file.write(submit_only_slurm_template %
                           (descr, part, cfg.default_account, job))
     else:
-        client_file.write(cfg.simple_launch_template % (
+        client_file.write(simple_launch_template % (
             descr, part, cfg.default_account, server_script_filename))
 
     if not dryrun:
@@ -139,7 +151,11 @@ def parse_script_dir(dryrun=False):
             server_filename = os.path.basename(filename)
 
             slurm_client_filename = 'run_%s_rviz-slurm.sh' % app_name
-            slurm_client_descr = app_name.title()
+
+            if "title" in metadata:
+                slurm_client_descr = metadata["title"].title()
+            else:
+                slurm_client_descr = app_name.title()
 
             create_slurm_script(
                 server_filename, slurm_client_filename, slurm_client_descr, metadata, dryrun)
@@ -169,7 +185,7 @@ if __name__ == '__main__':
 
     print(("LUNARC HPC Desktop - Wrapper script  - Version %s" % gfxconvert_version))
     print("Written by Jonas Lindemann (jonas.lindemann@lunarc.lu.se)")
-    print("Copyright (C) 2018-2020 LUNARC, Lund University")
+    print("Copyright (C) 2018-2021 LUNARC, Lund University")
 
     cfg = config.GfxConfig.create()
     cfg.print_config()

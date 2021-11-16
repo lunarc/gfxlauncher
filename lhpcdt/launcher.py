@@ -866,6 +866,13 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
             self.resize(0,0)
             self.adjustSize()
 
+    @QtCore.pyqtSlot()
+    def on_helpButton_clicked(self):
+        """Open help page if set"""
+
+        if self.config.help_url!="":
+            Popen("firefox %s" % self.config.help_url, shell=True)
+
 
     @QtCore.pyqtSlot(str)
     def on_append_text(self, text):
