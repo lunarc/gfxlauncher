@@ -22,6 +22,7 @@ The purpose of the script is to launch the application. If the application requi
 
     ##LDT category = "Volume Rendering"
     ##LDT title = "Tomviz 1.5"
+    ##LDT group = "ondemand"
 
     vgl_P=/opt/VirtualGL/bin
     app_P=
@@ -47,6 +48,8 @@ The following attributes are supported by **gfxconvert**:
 | ##LDT part     | Default partition used when submitting the job                    |
 +----------------+-------------------------------------------------------------------+
 | ##LDT job      | Job type. Currently one of vm, notebook and jupyterlab            |
++----------------+-------------------------------------------------------------------+
+| ##LDT group    | Partition group to display in user interface (--group)            |
 +----------------+-------------------------------------------------------------------+
 
 When the job attribute is specified the script can be empty except for the attribute declarations.
