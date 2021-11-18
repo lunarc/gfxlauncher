@@ -55,6 +55,6 @@ Connecting to Windows sessions using RDP
 The final launch method is used to connect to specially configured Windows hosts. This launch method also uses a special placeholder job submitted to a specially configured virtual SLURM node. The virtual node is configured with special SLURM epilogue and prologue scripts, that log out current users of the Windows session at job start and automatically log out a user when the walltime has expired. The backend scripts also handle the brokering of backend Windows servers. When a server is allocated, a special file is written in the user directory with the IP number of the backend Windows server. GfxLauncher monitors this file, and when available, launches a remote desktop (RDP) session to the started Windows instance. See the following figure for more details:
 
 .. image:: images/win_session_launch.png
-  :width: 400
+  :width: 100%
   :alt: Alternative text
 
