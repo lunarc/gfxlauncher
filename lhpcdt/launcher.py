@@ -146,6 +146,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.reconnect_nb_button = None
         self.reconnect_vm_button = None
 
+        # Read configuration
+
         self.config = config.GfxConfig.create()
 
         if not self.config.is_ok:
@@ -333,6 +335,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.jupyterlab_module = self.config.jupyterlab_module
         self.autostart = False
         self.locked = False
+        self.group = ""
 
     def get_defaults_from_cmdline(self):
         """Get properties from command line"""
@@ -360,6 +363,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.jupyterlab_module = self.args.jupyterlab_module
         self.autostart = self.args.autostart
         self.locked = self.args.locked
+        self.group = self.args.group
 
     def update_status_panel(self, text):
         self.status_output.setText(text)
@@ -424,12 +428,13 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
             self.partCombo.addItem("None")
 
             for part in self.slurm.partitions:
+                descr = part                
                 if part.lower() in self.config.partition_descriptions:
-                    self.partCombo.addItem(
-                        self.config.partition_descriptions[part.lower()])
-                else:
-                    self.partCombo.addItem(part)
-                self.filtered_parts.append(part)
+                    descr = self.config.partition_descriptions[part.lower()]
+
+                if self.group == "" or (part in self.config.part_groups[self.group]):
+                    self.partCombo.addItem(descr)
+                    self.filtered_parts.append(part)
 
         if self.projectCombo.count()==0:
 

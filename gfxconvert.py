@@ -77,6 +77,10 @@ def create_slurm_script(server_fname, slurm_fname, descr, metadata={}, dryrun=Fa
         if "part" in metadata:
             part = metadata["part"]
 
+        if "group" in metadata:
+            submit_only_slurm_template += " --group %s" % metadata["group"]
+            simple_launch_template += " --group %s" % metadata["group"]
+
         if "job" in metadata:
             job = metadata["job"]
             client_file.write(submit_only_slurm_template %
@@ -122,6 +126,7 @@ def parse_script_metadata(filename):
     # LDT title = "ParaView 5.4.1"
     # LDT part = "snic"
     # LDT job = "notebook"
+    # LDT group = "ondemand"
 
     variables = {}
 

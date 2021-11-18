@@ -207,6 +207,7 @@ class GfxConfig(object):
 
             self.simple_launch_template = self._config_get(config, "slurm", "simple_launch_template")
             self.adv_launch_template = self._config_get(config, "slurm", "adv_launch_template")
+            self.submit_only_slurm_template = self._config_get(config, "slurm", "submit_only_slurm_template")
 
             self.applications_dir = self._config_get(config, "menus", "applications_dir")
             self.directories_dir = self._config_get(config, "menus", "directories_dir")
@@ -251,5 +252,26 @@ class GfxConfig(object):
         except configparser.Error as e:
             print_error(e)
             return False
+
+        # Check for partition groups
+
+        self.part_groups = {}
+
+        try:
+            slurm_options = config.options("slurm")
+            for option in slurm_options:
+                if option.find("group_")!=-1:
+                    parts = self._config_get(config, "slurm", option)
+                    group = option.split("_")[1].strip()
+                    partitions = parts.split(",")
+                    self.part_groups[group] = []
+                    for part in partitions:
+                        self.part_groups[group].append(part.strip())
+
+        except configparser.Error as e:
+            print_error(e)
+            return False
+
+        print(self.part_groups)
 
         return True
