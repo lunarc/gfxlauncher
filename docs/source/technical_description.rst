@@ -25,7 +25,7 @@ SSH based application launching
 To launch X11-based applications securely through SLURM requires them to be launched through SSH with options for X11 tunneling enabled. This is often not directly available through SLURM based launch methods. GfxLauncher uses a placeholder job to allocate the node. This launch method requires SSH access to the nodes. The following figure illustrates the launch process:
 
 .. image:: images/std_app_launch.png
-  :width: 400
+  :width: 100%
   :alt: Alternative text
 
 To be able to run the application with the same resource limits as the jobs requires the nodes to have a special pam module (pam_exec) and a special associated script installed for attaching the started process to the context of the place holder job. 
@@ -36,7 +36,7 @@ VGLConnect based application launching
 Launching VirtualGL applications through SLRUM has the same requirements as launching through SSH. In addition, the front-end and nodes must have working VirtualGL installations. GfxLauncher uses vglconnect instead of SSH to connect to the allocated node. The following figure below illustrates the launch process:
 
 .. image:: images/hw_app_launch.png
-  :width: 400
+  :width: 100%
   :alt: Alternative text
 
 Notebook job launching
@@ -45,7 +45,7 @@ Notebook job launching
 Starting a job running a Jupyter Notebook or JypterLab session is very similar to conventional job submission. A job is submitted to SLURM that starts up the notebook web server. GfxLauncher then waits for the job to start and monitors the job output for the URL to the started Jupyter web server. It then starts a browser session to this URL. If the user by mistake closes the browser window there is a special button in the user interface for reconnecting to the running Jupyter server. The figure below describes this process:
 
 .. image:: images/notebook_launch.png
-  :width: 400
+  :width: 100%
   :alt: Alternative text
 
 
