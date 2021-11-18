@@ -17,7 +17,7 @@ GfxLauncher supports 4 different ways of launching applications through SLURM:
 1. Running a placeholder job on a node. Starting application by executing SSH to allocated node.
 2. Running a placeholder job on a node. Starting application by executing vglconnect (VirtualGL) to allocated node.
 3. Running a job for starting up web-server for an interactive Notebook session. (Jupyter Notebook or Jupyter Lab).
-4. Submitting a job for starting a virtual machine on specially configured node with access to a hypervisor.
+4. Submitting a job for connecting to windows sessions using Xrdp.
 
 SSH based application launching
 -------------------------------
@@ -36,14 +36,7 @@ Notebook job launching
 
 Starting a job running a Jupyter Notebook or JypterLab session is very similar to conventional job submission. A job is submitted to SLURM that starts up the notebook web server. GfxLauncher then waits for the job start and monitors the job output for the URL to the started Jupyter web server. It then starts a browser session to this URL. If the user by mistake closes the browser window there is a special button in the user interface for reconnecting to the running Jupyter server.
 
-VM based application launching
-------------------------------
+Connecting to Windows sessions using RDP
+----------------------------------------
 
-The final launch method is used to start Windows instances through a specially configured node which controls a backedn hypervisor. This launch method also uses a special placeholder job to handle the job submission. GfxLauncher monitors for a special file with connection information, when available, launches a remote deskopt (RDP) session to the started Windows instance.
-
-
-
-
-
-
-
+The final launch method is used to connect to specially configured Windows hosts. This launch method also uses a special placeholder job submitted to a specially configured virtual SLURM node. The virtual node is configured with special SLURM epilogue and prologue scripts, that logs out current users of the Windows session at job start and automatically logs out a user when the walltime has expired. The backend scripts are also handles the brokering of backend Windows servers. When a server is allocated, a special file is written in the user directory with the ip-number of the backend Windows server. GfxLauncher monitors this file, and when available, launches a remote deskopt (RDP) session to the started Windows instance.
