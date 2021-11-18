@@ -334,3 +334,12 @@ class VMJob(Job):
     def on_vm_available(self, hostname):
         """Callback when job ib file found."""
         print("VM vailable: "+hostname)
+
+class JobPluginBase(Job):
+    """Base class for loadable job plugins."""
+    def __init__(self, account="", partition="", time="00:60:00"):
+        """Class constructor"""
+
+        super().__init__(account, partition, time)
+        self.plugin_name = "Noname"
+        self.plugin_descr = "Plugin that does nothing"
