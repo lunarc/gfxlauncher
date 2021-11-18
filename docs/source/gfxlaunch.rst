@@ -43,6 +43,8 @@ The command line switches of **gfxlaunch** is described in the table below:
 +---------------------------------+---------------------------------------------------+
 | --locked                        | Prevent changes to settings in user interface     |
 +---------------------------------+---------------------------------------------------+
+| --group GROUP                   | Display only partitions in the GROUP group.       |
++---------------------------------+---------------------------------------------------+
 
 Running standard X11 application (No graphics)
 ----------------------------------------------
