@@ -661,7 +661,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         self.reset_status_panel()
 
-        if (hostname != "0.0.0.0"):
+        if (hostname!="0.0.0.0") or (hostname!="0.0.0.1"):
 
             print("Starting RDP: " + hostname)
 
@@ -671,8 +671,13 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
             self.enableExtrasPanel()
         else:
-            QtWidgets.QMessageBox.information(
-                self, self.title, "An error occured when allocating the Windows session. Try launching the session again. If the problem persists contact support.")
+            if hostname == "0.0.0.0":
+                QtWidgets.QMessageBox.information(
+                    self, self.title, "An error occured when allocating the Windows session. Try launching the session again. If the problem persists contact support.")
+
+            if hostname == "0.0.0.1":
+                QtWidgets.QMessageBox.information(
+                    self, self.title, "A windows session was not currently available. Try launching the session again later. If the problem persists contact support.")             
 
             self.close()
 
