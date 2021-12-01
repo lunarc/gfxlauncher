@@ -187,6 +187,21 @@ if __name__ == "__main__":
             log.info("... back from fork.")
         else:
             log.error("Failed to aquire VM.")
+            # --- Write ip file for client
+
+            log.info("Forking process to write job_hostfile with error status...")
+            pid = os.fork()
+
+            if pid == 0:
+                try:
+                    os.setgid(group_id)
+                    os.setuid(user_id)
+                    tracker.write_job_hostfile(job_id, "0.0.0.1")
+                finally:
+                    os._exit(0)
+
+            os.waitpid(pid, 0)
+            log.info("... back from fork.")
 
     # --- Script is executing as epilog (after job)
 

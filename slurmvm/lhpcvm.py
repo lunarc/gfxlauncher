@@ -22,7 +22,7 @@ LHPC VM management module
 Contains classes for managing running VM resources.
 """
 
-import os, pwd, fcntl, json
+import os, json
 import sys, subprocess, pickle, socket, time
 import logging as log
 import configparser
@@ -147,6 +147,7 @@ class SlurmVMConfig(object):
 
         self.vm_dict = {}
         self.vm_actions = {}
+        self.vm_enabled = {}
 
         for vm in self.config.sections():
             options = self.config.options(vm)
@@ -182,6 +183,14 @@ class SlurmVMConfig(object):
                 if "kind" in options:
                     vm_kind = self.config.get(vm, "kind")
 
+                if "enabled" in options:
+                    if self.config.get(vm, "enabled") == "no":
+                        self.vm_enabled[vm_name] = False
+                    else:
+                        self.vm_enabled[vm_name] = True
+                else:
+                    self.vm_enabled[vm_name] = True
+
                 if vm_name!="" and vm_hostname!="":
                     self.vm_dict[vm_name] = {}
                     self.vm_dict[vm_name]["hostname"] = vm_hostname
@@ -215,6 +224,10 @@ class SlurmVMConfig(object):
             print("VM:", vm, "ip =", self.vm_dict[vm]["hostname"])
             for prop in self.vm_dict[vm].keys():
                 print("\t%s = %s" % (prop, self.vm_dict[vm][prop]))
+            if self.vm_enabled[vm]:
+                print("\tenabled = yes")
+            else:
+                print("\tenabled = no")
             print()
 
 
@@ -539,11 +552,23 @@ class VMTracker(object):
 
         log.debug("VMTracker.aquire_vm(%s)" % job_id)
 
+        vm_enabled = self.slurm_vm_config.vm_enabled
+
         if len(self.idle_list)>0:
-            vm_info = self.idle_list.pop()
-            self.running_dict[job_id] = [vm_info[0], vm_info[1], vm_info[2]]
-            self.save()
-            return vm_info[0], vm_info[1]
+            for i, idle_vm in enumerate(self.idle_list):
+                vm_name = idle_vm[0]
+                if vm_enabled[vm_name]:
+                    self.idle_list.pop(i)
+                    self.running_dict[job_id] = [idle_vm[0], idle_vm[1], idle_vm[2]]       
+                    self.save()
+                    return idle_vm[0], idle_vm[1]
+
+            return "", ""       
+
+            # vm_info = self.idle_list.pop()
+            # self.running_dict[job_id] = [vm_info[0], vm_info[1], vm_info[2]]
+            # self.save()
+            # return vm_info[0], vm_info[1]
         else:
             return "", ""
 
@@ -857,7 +882,7 @@ class CentOS7VM(VM):
 
     def logoff_users(self):
         """Log off all users on server"""
-        pass
+        pass 
 
     def update(self):
         """Update server"""
@@ -889,11 +914,20 @@ if __name__ == "__main__":
 
     host = "10.18.50.23"
 
-    if vm_tracker.need_reboot(host, slurm_vm_config.reboot_server_days):
-        vm_tracker.update_reboot_status(host)
+    #if vm_tracker.need_reboot(host, slurm_vm_config.reboot_server_days):
+    #    vm_tracker.update_reboot_status(host)
 
-    vm_tracker.status()
-    vm_tracker.save()
+    for i in range(20):
+        vm_name, vm_host = vm_tracker.aquire_vm(str(i))
+        print(vm_name, vm_host)
+
+    for i in range(20):
+        vm_name, vm_host = vm_tracker.release_vm(str(i))
+        print(vm_name, vm_host)
+
+
+    #vm_tracker.status()
+    #vm_tracker.save()
 
     sys.exit(0)
 
