@@ -152,6 +152,8 @@ class SlurmVMConfig(object):
         for vm in self.config.sections():
             options = self.config.options(vm)
 
+            print(options)
+
             if "-default" in vm:
                 kind = vm.split("-")[0]
                 self.vm_actions[kind] = {}
@@ -183,8 +185,8 @@ class SlurmVMConfig(object):
                 if "kind" in options:
                     vm_kind = self.config.get(vm, "kind")
 
-                if "enabled" in options:
-                    if self.config.get(vm, "enabled") == "no":
+                if "enable" in options:
+                    if self.config.get(vm, "enable") == "no":
                         self.vm_enabled[vm_name] = False
                     else:
                         self.vm_enabled[vm_name] = True
@@ -456,10 +458,9 @@ class XenServer(object):
 class VMTracker(object): 
     """Class for tracking running vm:s"""
 
-    def __init__(self, slurm_vm_config):
+    def __init__(self):
         #Singleton.__init__(self)
 
-        self.slurm_vm_config = slurm_vm_config
         self.idle_list = [] 
         self.running_dict = {}
         self.user_id = 0
@@ -478,6 +479,11 @@ class VMTracker(object):
         # --- Create or read state file
 
         self.create()
+
+        # --- Read configuration here (overwritten by oicke otherwise)
+
+        self.slurm_vm_config = SlurmVMConfig()
+
 
     def create(self):
         """Create or load tracker database"""
@@ -558,10 +564,13 @@ class VMTracker(object):
             for i, idle_vm in enumerate(self.idle_list):
                 vm_name = idle_vm[0]
                 if vm_enabled[vm_name]:
+                    log.debug("%s is enabled." % vm_name)
                     self.idle_list.pop(i)
                     self.running_dict[job_id] = [idle_vm[0], idle_vm[1], idle_vm[2]]       
                     self.save()
                     return idle_vm[0], idle_vm[1]
+                else:
+                    log.debug("%s is not enabled. Not allocating." % vm_name)
 
             return "", ""       
 
@@ -908,7 +917,7 @@ if __name__ == "__main__":
     else:
         print("No valid config file.")
 
-    vm_tracker = VMTracker(slurm_vm_config)
+    vm_tracker = VMTracker()
     vm_tracker.status()
     vm_tracker.save()
 

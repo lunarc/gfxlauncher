@@ -115,7 +115,7 @@ if __name__ == "__main__":
 
         # --- Get tracker object
 
-        tracker = VMTracker(slurm_vm_config)
+        tracker = VMTracker()
         tracker.status()
 
         # tracker = create_tracker(state_filename, lock)
@@ -211,7 +211,7 @@ if __name__ == "__main__":
 
         # --- Get tracker object
 
-        tracker = VMTracker(slurm_vm_config)
+        tracker = VMTracker()
         tracker.status()
 
         tracker.user_id = user_id
