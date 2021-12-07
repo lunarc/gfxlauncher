@@ -661,7 +661,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         self.reset_status_panel()
 
-        if (hostname!="0.0.0.0") or (hostname!="0.0.0.1"):
+        if (hostname!="0.0.0.0") and (hostname!="0.0.0.1"):
 
             print("Starting RDP: " + hostname)
 
