@@ -120,7 +120,7 @@ class Queue(object):
     def update(self):
         """Update queue information"""
         output = execute_cmd(
-            'squeue --long --noheader --format="%s"' % self.squeueFormat)
+            'squeue --noheader --format="%s"' % self.squeueFormat)
         lines = output.split("\n")
 
         self.jobs = {}
