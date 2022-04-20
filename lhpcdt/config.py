@@ -88,6 +88,7 @@ class GfxConfig(object):
         self.only_submit = False
         self.feature_ignore = ""
         self.part_ignore = ""
+        self.use_sacctmgr = False
 
         self.module_json_file = "/sw/pkg/rviz/share/modules.json"
 
@@ -129,6 +130,7 @@ class GfxConfig(object):
         print("adv_launch_template = %s" % self.adv_launch_template)
         print("feature_ignore = %s" % self.feature_ignore)
         print("part_ignore = %s" % self.part_ignore)
+        print("use_sacctmgr = %s" % self.use_sacctmgr)
 
         print("")
         print("Menu settings")
@@ -160,21 +162,21 @@ class GfxConfig(object):
         print("notebook_module = %s" % self.notebook_module)
         print("jupyterlab_module = %s" % self.jupyterlab_module)
 
-    def _config_get(self, config, section, option):
+    def _config_get(self, config, section, option, default_value=""):
         """Safe config retrieval"""
 
         if config.has_option(section, option):
             return config.get(section, option)
         else:
-            return ""
+            return default_value
 
-    def _config_getboolean(self, config, section, option):
+    def _config_getboolean(self, config, section, option, default_value=False):
         """Safe config retrieval"""
 
         if config.has_option(section, option):
             return config.getboolean(section, option)
         else:
-            return ""
+            return default_value
 
     def parse_config_file(self):
         """Parse configuration file"""
@@ -225,6 +227,7 @@ class GfxConfig(object):
                 config, "slurm", "adv_launch_template")
             self.submit_only_slurm_template = self._config_get(
                 config, "slurm", "submit_only_slurm_template")
+            self.use_sacctmgr = self._config_getboolean(config, "slurm", "use_sacctmgr", False)
 
             self.applications_dir = self._config_get(
                 config, "menus", "applications_dir")

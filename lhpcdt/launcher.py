@@ -160,6 +160,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
             print("Please check configuration.")
             sys.exit(1)
 
+        #self.config.use_sacctmgr = True
+
         # Parse partition and feature excludes
 
         self.feature_ignore = self.config.feature_ignore[1:-1]
@@ -278,68 +280,84 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         else:
             user = self.user
 
-        grant_filename = self.config.grantfile
+        if not self.config.use_sacctmgr:
 
-        # if self.config.grantfile_base != "":
-        #    grant_filename = self.config.grantfile_base % self.part
+            grant_filename = self.config.grantfile
 
-        self.grantfile_list = []
+            # if self.config.grantfile_base != "":
+            #    grant_filename = self.config.grantfile_base % self.part
 
-        # --- If we have a explicit grantfile use that only.
+            self.grantfile_list = []
 
-        if self.grant_filename != "":
+            # --- If we have a explicit grantfile use that only.
 
-            print("Explicit grantfile %s used." % self.grant_filename)
+            if self.grant_filename != "":
 
-            grant_filename = self.grant_filename
-            self.grantfile_list.append(lrms.GrantFile(grant_filename))
-        else:
-            # --- No explicit grantfile given. Search for grantfiles
+                print("Explicit grantfile %s used." % self.grant_filename)
 
-            if self.config.grantfile_dir != "":
-
-                # --- Grant file directory given. Search it for grantfiles
-
-                print("Searching for grantfiles in %s." %
-                      self.config.grantfile_dir)
-
-                grant_files = glob.glob(
-                    self.config.grantfile_dir+'/grantfile.*')
-
-                for grant_filename in grant_files:
-                    if (not '~' in grant_filename) and (len(grant_filename.split(".")) == 2):
-                        suffix = grant_filename.split('.')[1]
-                        if self.config.grantfile_suffix == '':
-                            print("Parsing grantfile: %s" % grant_filename)
-                            self.grantfile_list.append(
-                                lrms.GrantFile(grant_filename))
-                        elif self.config.grantfile_suffix == suffix:
-                            print("Parsing grantfile (suffix match): %s" %
-                                  grant_filename)
-                            self.grantfile_list.append(
-                                lrms.GrantFile(grant_filename))
+                grant_filename = self.grant_filename
+                self.grantfile_list.append(lrms.GrantFile(grant_filename))
             else:
 
-                # --- Do we have a grantile_base directive?
+                # --- No explicit grantfile given. Search for grantfiles
 
-                grant_filename = self.config.grantfile_base % self.part
-                if os.path.exists(grant_filename):
-                    self.grantfile_list.append(lrms.GrantFile(grant_filename))
+                if self.config.grantfile_dir != "":
 
-        self.active_projects = []
+                    # --- Grant file directory given. Search it for grantfiles
 
-        if len(self.grantfile_list) > 0:
+                    print("Searching for grantfiles in %s." %
+                        self.config.grantfile_dir)
 
-            for grant_file in self.grantfile_list:
-                self.active_projects += grant_file.query_active_projects(user)
+                    grant_files = glob.glob(
+                        self.config.grantfile_dir+'/grantfile.*')
+
+                    for grant_filename in grant_files:
+                        if (not '~' in grant_filename) and (len(grant_filename.split(".")) == 2):
+                            suffix = grant_filename.split('.')[1]
+                            if self.config.grantfile_suffix == '':
+                                print("Parsing grantfile: %s" % grant_filename)
+                                self.grantfile_list.append(
+                                    lrms.GrantFile(grant_filename))
+                            elif self.config.grantfile_suffix == suffix:
+                                print("Parsing grantfile (suffix match): %s" %
+                                    grant_filename)
+                                self.grantfile_list.append(
+                                    lrms.GrantFile(grant_filename))
+                else:
+
+                    # --- Do we have a grantile_base directive?
+
+                    grant_filename = self.config.grantfile_base % self.part
+                    if os.path.exists(grant_filename):
+                        self.grantfile_list.append(lrms.GrantFile(grant_filename))
+
+            self.active_projects = []
+
+            if len(self.grantfile_list) > 0:
+
+                for grant_file in self.grantfile_list:
+                    self.active_projects += grant_file.query_active_projects(user)
+
+                if len(self.active_projects) > 0:
+                    self.account = self.active_projects[0]
+                    return True
+                else:
+                    return False
+            else:
+                return False
+        else:
+
+            # Querying SLURM directly to find active projects as an alternative to grant files.
+
+            acctmgr = lrms.AccountManager()
+            self.active_projects = acctmgr.query_active_projects(user)
 
             if len(self.active_projects) > 0:
                 self.account = self.active_projects[0]
                 return True
             else:
                 return False
-        else:
-            return False
+
 
     def init_defaults(self):
         """Basic property defaults"""
