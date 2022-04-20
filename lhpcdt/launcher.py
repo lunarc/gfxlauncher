@@ -133,6 +133,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         """Launch window constructor"""
         super(GfxLaunchWindow, self).__init__(parent)
 
+        print("Initialising launch window...")
+
         # Initialise properties
 
         self.slurm = lrms.Slurm()
@@ -191,6 +193,10 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         uic.loadUi(os.path.join(ui_path, "mainwindow_simplified.ui"), self)
 
+        if self.silent:
+            self.enable_silent_ui()
+
+
         # Update controls to reflect parameters
 
         self.update_controls()
@@ -215,6 +221,28 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         self.launcherTabs.setHidden(True)
         self.adjustSize()
+
+    def enable_silent_ui(self):
+
+        msg = "Below shows the amount of time allocated for running this application.\n"+\
+              "Closing this window will also terminate the running application.\n\n"+\
+              "Walltime allocated (HH:MM:SS): %s" % self.time
+
+        self.walltime_group.setVisible(False)
+        self.resource_group.setVisible(False)
+        self.feature_group.setVisible(False)
+        self.project_group.setVisible(False)
+        self.application_req_label.setText(msg)
+        self.helpButton.setVisible(False)
+        #self.application_req_label.setVisible(False)
+        self.sep_first.setVisible(False)
+        self.sep_before_buttons.setVisible(False)
+        self.sep_after_buttons.setVisible(False)
+        self.startButton.setVisible(False)
+        self.showDetails.setVisible(False)
+        self.cancelButton.setVisible(False)
+        self.setMaximumHeight(180)
+
 
     def time_to_decimal(self, time_string):
         """Time to decimal conversion routine"""
@@ -336,6 +364,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.autostart = False
         self.locked = False
         self.group = ""
+        self.silent = False
 
     def get_defaults_from_cmdline(self):
         """Get properties from command line"""
@@ -364,6 +393,10 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.autostart = self.args.autostart
         self.locked = self.args.locked
         self.group = self.args.group
+        self.silent = self.args.silent
+
+        if self.silent:
+            self.autostart = True
 
     def update_status_panel(self, text):
         self.status_output.setText(text)

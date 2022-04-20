@@ -1,1 +1,0 @@
-gfxlaunch --vgl --title "X terminal" --partition lvis --account lvis-test --exclusive --cmd "vglrun xterm"

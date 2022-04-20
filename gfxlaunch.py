@@ -1,7 +1,7 @@
 #!/bin/env python
 #
 # LUNARC HPC Desktop On-Demand graphical launch tool
-# Copyright (C) 2017-2021 LUNARC, Lund University
+# Copyright (C) 2017-2022 LUNARC, Lund University
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,18 +27,22 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 # --- Version information
 
 gfxlaunch_copyright = """LUNARC HPC Desktop On-Demand - Version %s
-Copyright (C) 2017-2021 LUNARC, Lund University
+Copyright (C) 2017-2022 LUNARC, Lund University
 This program comes with ABSOLUTELY NO WARRANTY; for details see LICENSE.
 This is free software, and you are welcome to redistribute it
 under certain conditions; see LICENSE for details.
 """
 gfxlaunch_copyright_short = """LUNARC HPC Desktop On-Demand - %s"""
-gfxlaunch_version = "0.8.6"
+gfxlaunch_version = "0.9.0"
 
 # --- Fix search path for tool
 
 tool_path = os.path.dirname(os.path.abspath(sys.argv[0]))
-sys.path.append(tool_path)
+sys.path.insert(0, tool_path)
+#sys.path.append(tool_path)
+
+print(tool_path)
+print(sys.path)
 
 
 def create_dark_palette():
@@ -191,6 +195,11 @@ if __name__ == '__main__':
 
     parser.add_argument("--group", dest="group", help="Limit partitions to group.", default="")
 
+    parser.add_argument("--silent", 
+        dest="silent", 
+        help="Run silently. No user interface controls. Application will start automatically", 
+        action="store_true", default=False)
+
     args = parser.parse_args()
 
     # Setup global settings singleton
@@ -208,7 +217,7 @@ if __name__ == '__main__':
 
     # Redirect standard output
 
-    redirect = True
+    redirect = False
 
     # Create Queue and redirect sys.stdout to this queue
 
@@ -229,9 +238,10 @@ if __name__ == '__main__':
 
     # Show splash
 
-    splash_window = splash_win.SplashWindow(
-        None, gfxlaunch_copyright % gfxlaunch_version)
-    splash_window.show()
+    if not args.silent:
+        splash_window = splash_win.SplashWindow(
+            None, gfxlaunch_copyright % gfxlaunch_version)
+        splash_window.show()
 
     # Show user interface
 

@@ -164,12 +164,15 @@ class SessionWindow(QtWidgets.QMainWindow):
 
         user = getpass.getuser()
 
+        #  JOBID PARTITION                      NAME     USER ACCOUNT        ST          START_TIME  TIME_LEFT  NODES CPUS NODELIST(REASON)
+        #6385516        lu           LDMX_Prod_Simul      rpt lu2021-2-100    R 2022-03-04T05:00:49       0:23      1    1 au027
+
         if self.action_show_all_jobs.isChecked():
 
-            self.session_table.setColumnCount(9)
+            self.session_table.setColumnCount(12)
             self.session_table.setHorizontalHeaderLabels(
-                ["Id", "Name", "State", "Percent", "Time",
-                "Requested", "Count", "User", "Nodes"]
+                ["Id", "Partition", "Name", "User", "Account", "State",
+                "Progress", "Start", "Left", "Nodes", "CPUs", "Nodelist"]
                 )
 
             if len(self.queue.jobs.keys())>0:
@@ -179,14 +182,9 @@ class SessionWindow(QtWidgets.QMainWindow):
                 self.session_table.setRowCount(0)
                 return
 
-            QtGui.QColor.red
-
             row = 0
 
             for id in list(self.queue.jobs.keys()):
-                self.session_table.setItem(row, 0, QtWidgets.QTableWidgetItem(str(id)))
-                self.session_table.setItem(row, 1, QtWidgets.QTableWidgetItem(
-                    str(self.queue.jobs[id]["name"])))
 
                 state_str = str(self.queue.jobs[id]["state"])
                 state_item = QtWidgets.QTableWidgetItem(state_str)
@@ -200,22 +198,39 @@ class SessionWindow(QtWidgets.QMainWindow):
 
                 percent_value = int(100*time_value/timelimit_value)
 
-                self.session_table.setItem(row, 2, state_item)
 
                 progress_bar = QtWidgets.QProgressBar(self)
                 progress_bar.setValue(percent_value)
 
-                self.session_table.setCellWidget(row, 3, progress_bar)
+                #  JOBID PARTITION                      NAME     USER ACCOUNT        ST          START_TIME  TIME_LEFT  NODES CPUS NODELIST(REASON)                
+
+                self.session_table.setItem(row, 0, QtWidgets.QTableWidgetItem(str(id)))
+
+                self.session_table.setItem(row, 1, QtWidgets.QTableWidgetItem(
+                    str(self.queue.jobs[id]["partition"])))
+
+                self.session_table.setItem(row, 2, QtWidgets.QTableWidgetItem(
+                    str(self.queue.jobs[id]["name"])))
+
+                self.session_table.setItem(row, 3, QtWidgets.QTableWidgetItem(
+                    str(self.queue.jobs[id]["user"])))
 
                 self.session_table.setItem(row, 4, QtWidgets.QTableWidgetItem(
-                    str(self.queue.jobs[id]["time"])))
-                self.session_table.setItem(row, 5, QtWidgets.QTableWidgetItem(
-                    str(self.queue.jobs[id]["timelimit"])))
-                self.session_table.setItem(row, 6, QtWidgets.QTableWidgetItem(
-                    str(self.queue.jobs[id]["nodes"])))
+                    str(self.queue.jobs[id]["account"])))
+
+                self.session_table.setItem(row, 5, state_item)
+
+                self.session_table.setCellWidget(row, 6, progress_bar)
+
                 self.session_table.setItem(row, 7, QtWidgets.QTableWidgetItem(
-                    str(self.queue.jobs[id]["user"])))
+                    str(self.queue.jobs[id]["timestart"])))
                 self.session_table.setItem(row, 8, QtWidgets.QTableWidgetItem(
+                    str(self.queue.jobs[id]["timeleft"])))
+                self.session_table.setItem(row, 9, QtWidgets.QTableWidgetItem(
+                    str(self.queue.jobs[id]["nodes"])))
+                self.session_table.setItem(row, 10, QtWidgets.QTableWidgetItem(
+                    str(self.queue.jobs[id]["cpus"])))
+                self.session_table.setItem(row, 11, QtWidgets.QTableWidgetItem(
                     str(self.queue.jobs[id]["nodelist"])))
 
                 row += 1

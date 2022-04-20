@@ -107,8 +107,12 @@ class Queue(object):
         2981700		brand 5cpu.scr	 kurs16	 RUNNING 2-02:39:48 6-00:00:00		1 an225
         """
         self.squeueParams = ["jobid", "partition", "name", "user",
-                             "state", "time", "timelimit", "nodes", "nodelist", "timeleft"]
-        self.squeueFormat = "%.7i;%.9P;%.20j;%.8u;%.8T;%.10M;%.9l;%.6D;%R;%S"
+                             "state", "time", "timelimit", "nodes", "nodelist", "timeleft",
+                             "deps", "account", "cpus", "features", "timestart"]
+
+        # jobinfo squeue format  - %.7i %.9P %.25j %.8u %14a %.2t %.19S %.10L %.8Q %.4C %.16R %.12f %E
+        #                             x    x     x    x         x     x                     x     
+        self.squeueFormat = "%.7i;%.9P;%.20j;%.8u;%.8T;%.10M;%.9l;%.6D;%R;%L;%E;%14a;%4C;%.12f;%S"
         self.jobList = []
         self.jobs = {}
         self.userJobs = {}
@@ -134,7 +138,7 @@ class Queue(object):
                 if not (id in self.jobs):
                     self.jobs[id] = {}
                     job = {"jobid": id}
-                for i in range(1, 10):
+                for i in range(1, 15):
                     self.jobs[id][self.squeueParams[i]] = parts[i].strip()
                     job[self.squeueParams[i]] = parts[i].strip()
 

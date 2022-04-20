@@ -1,1 +1,0 @@
-gfxlaunch --vgl --title "X terminal" --partition lvis --account lvis-test --exclusive --cmd /home/bmjl/Development/gfxlauncher/run_xterm.sh
