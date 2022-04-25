@@ -187,7 +187,7 @@ class PlaceHolderJob(Job):
 
     def __init__(self, account="", partition="", time="00:30:00"):
         Job.__init__(self, account, partition, time)
-        self.add_custom_script('while true; do date; sleep 5; done')
+        self.add_custom_script('while true; sleep 60; done')
         self.update()
 
 conda_initialise_script = """# >>> conda initialize >>>
