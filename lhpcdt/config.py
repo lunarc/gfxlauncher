@@ -1,7 +1,7 @@
 #!/bin/env python
 #
 # LUNARC HPC Desktop On-Demand graphical launch tool
-# Copyright (C) 2017-2021 LUNARC, Lund University
+# Copyright (C) 2017-2022 LUNARC, Lund University
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -299,7 +299,5 @@ class GfxConfig(object):
         except configparser.Error as e:
             print_error(e)
             return False
-
-        print(self.part_groups)
 
         return True

@@ -1,7 +1,7 @@
 #!/bin/env python
 #
 # LUNARC HPC Desktop On-Demand graphical launch tool
-# Copyright (C) 2017-2021 LUNARC, Lund University
+# Copyright (C) 2017-2022 LUNARC, Lund University
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -123,6 +123,8 @@ class Queue(object):
         self.jobList = []
         self.jobs = {}
         self.userJobs = {}
+        self.running_jobs = {}
+        self.pending_jobs = {}
 
     def job_info(self, jobid):
         """Return information on job jobid"""
@@ -148,6 +150,12 @@ class Queue(object):
                 for i in range(1, 15):
                     self.jobs[id][self.squeueParams[i]] = parts[i].strip()
                     job[self.squeueParams[i]] = parts[i].strip()
+
+                if job["state"] == "RUNNING":
+                    self.running_jobs[id] = job
+
+                if job["state"] == "PENDING":
+                    self.pending_jobs[id] = job
 
                 self.jobList.append(job)
 

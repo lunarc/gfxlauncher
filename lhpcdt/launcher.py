@@ -1,7 +1,7 @@
 #!/bin/env python
 #
 # LUNARC HPC Desktop On-Demand graphical launch tool
-# Copyright (C) 2017-2021 LUNARC, Lund University
+# Copyright (C) 2017-2022 LUNARC, Lund University
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -160,8 +160,6 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
             print("Please check configuration.")
             sys.exit(1)
 
-        #self.config.use_sacctmgr = True
-
         # Parse partition and feature excludes
 
         self.feature_ignore = self.config.feature_ignore[1:-1]
@@ -280,7 +278,20 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         else:
             user = self.user
 
-        if not self.config.use_sacctmgr:
+        if self.config.use_sacctmgr:
+
+            # Querying SLURM directly to find active projects as an alternative to grant files.
+
+            acctmgr = lrms.AccountManager()
+            self.active_projects = acctmgr.query_active_projects(user)
+
+            if len(self.active_projects) > 0:
+                self.account = self.active_projects[0]
+                return True
+            else:
+                return False
+
+        else:
 
             grant_filename = self.config.grantfile
 
@@ -343,18 +354,6 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
                     return True
                 else:
                     return False
-            else:
-                return False
-        else:
-
-            # Querying SLURM directly to find active projects as an alternative to grant files.
-
-            acctmgr = lrms.AccountManager()
-            self.active_projects = acctmgr.query_active_projects(user)
-
-            if len(self.active_projects) > 0:
-                self.account = self.active_projects[0]
-                return True
             else:
                 return False
 
@@ -917,7 +916,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.status_timer.stop()
         self.update_controls()
 
-        self.disableExtrasPanel()
+        self.disable_extras_panel()
 
         if self.locked:
             print("Closing launcher")
