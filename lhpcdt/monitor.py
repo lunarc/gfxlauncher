@@ -14,7 +14,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-# 
+#
 """LUNARC HPC Desktop Monitor Module"""
 
 import os
@@ -31,12 +31,13 @@ from . import config
 
 from subprocess import Popen, PIPE, STDOUT
 
+
 class MonitorWindow(QtWidgets.QWidget):
-    def __init__(self, parent = None):
+    def __init__(self, parent=None):
         super(MonitorWindow, self).__init__(parent)
         self.tool_path = settings.LaunchSettings.create().tool_path
 
-        if len(settings.LaunchSettings.create().args)>1:
+        if len(settings.LaunchSettings.create().args) > 1:
             self.hostname = settings.LaunchSettings.create().args[1]
             self.local_exec = False
         else:
@@ -70,30 +71,31 @@ class MonitorWindow(QtWidgets.QWidget):
         self.progressGPU7.setEnabled(False)
         self.progressGPU8.setEnabled(False)
 
-        if len(self.remote_probe.gpu_usage)>=1:
+        if len(self.remote_probe.gpu_usage) >= 1:
             self.progressGPU1.setEnabled(True)
             self.progressGPU1.setValue(self.remote_probe.gpu_usage[0])
-        if len(self.remote_probe.gpu_usage)>=2:
+        if len(self.remote_probe.gpu_usage) >= 2:
             self.progressGPU2.setEnabled(True)
             self.progressGPU2.setValue(self.remote_probe.gpu_usage[1])
-        if len(self.remote_probe.gpu_usage)>=3:
+        if len(self.remote_probe.gpu_usage) >= 3:
             self.progressGPU3.setEnabled(True)
             self.progressGPU3.setValue(self.remote_probe.gpu_usage[2])
-        if len(self.remote_probe.gpu_usage)>=4:
+        if len(self.remote_probe.gpu_usage) >= 4:
             self.progressGPU4.setEnabled(True)
             self.progressGPU4.setValue(self.remote_probe.gpu_usage[3])
-        if len(self.remote_probe.gpu_usage)>=5:
+        if len(self.remote_probe.gpu_usage) >= 5:
             self.progressGPU5.setEnabled(True)
             self.progressGPU5.setValue(self.remote_probe.gpu_usage[4])
-        if len(self.remote_probe.gpu_usage)>=6:
+        if len(self.remote_probe.gpu_usage) >= 6:
             self.progressGPU6.setEnabled(True)
             self.progressGPU6.setValue(self.remote_probe.gpu_usage[4])
-        if len(self.remote_probe.gpu_usage)>=7:
+        if len(self.remote_probe.gpu_usage) >= 7:
             self.progressGPU7.setEnabled(True)
             self.progressGPU7.setValue(self.remote_probe.gpu_usage[7])
-        if len(self.remote_probe.gpu_usage)>=8:
+        if len(self.remote_probe.gpu_usage) >= 8:
             self.progressGPU8.setEnabled(True)
             self.progressGPU8.setValue(self.remote_probe.gpu_usage[8])
+
 
 class QueueSortFilterProxyModel(QtCore.QSortFilterProxyModel):
     def __init__(self, parent, state_filter="", user_filter=""):
@@ -105,16 +107,16 @@ class QueueSortFilterProxyModel(QtCore.QSortFilterProxyModel):
         left_data = self.sourceModel().data(left)
         right_data = self.sourceModel().data(right)
         return left_data < right_data
-    
+
     def filterAcceptsRow(self, source_row, source_parent):
         model = self.sourceModel()
         job_id = model.job_keys[source_row]
-        if self.state_filter == "" and self.user_filter =="":
+        if self.state_filter == "" and self.user_filter == "":
             return True
         else:
-            if self.state_filter == "" and self.user_filter!= "":
+            if self.state_filter == "" and self.user_filter != "":
                 return model.job_dict[job_id]["user"] == self.user_filter
-            elif self.state_filter != ""  and self.user_filter == "":
+            elif self.state_filter != "" and self.user_filter == "":
                 return model.job_dict[job_id]["state"] == self.state_filter
             elif self.state_filter != "" and self.user_filter != "":
                 if model.job_dict[job_id]["state"] == self.state_filter:
@@ -130,8 +132,10 @@ class QueueTableModel(QtCore.QAbstractTableModel):
         super(QueueTableModel, self).__init__()
 
         self.__data = data
-        self.__headers = ["Id", "Partition", "Name", "User", "Account", "Progress", "Start", "Left", "Nodes", "CPUs", "Nodelist"]     
-        self.__column_keys = ["", "state, partition", "name", "user", "account", "timestart", "timeleft", "nodes", "cpus", "nodelist"]
+        self.__headers = ["Id", "Partition", "Name", "User", "Account",
+                          "Progress", "Start", "Left", "Nodes", "CPUs", "Nodelist"]
+        self.__column_keys = ["", "state, partition", "name", "user",
+                              "account", "timestart", "timeleft", "nodes", "cpus", "nodelist"]
         self.__job_keys = list(self.__data.keys())
 
     @property
@@ -148,7 +152,7 @@ class QueueTableModel(QtCore.QAbstractTableModel):
                 return str(self.__headers[section])
 
             if orientation == QtCore.Qt.Vertical:
-                return str(section)            
+                return str(section)
 
     def data(self, index, role=QtCore.Qt.DisplayRole):
         if role == QtCore.Qt.DisplayRole:
@@ -199,6 +203,7 @@ class QueueTableModel(QtCore.QAbstractTableModel):
 
     def columnCount(self, index):
         return 11
+
 
 class SessionWindow(QtWidgets.QMainWindow):
     """Session Window class"""
@@ -265,8 +270,6 @@ class SessionWindow(QtWidgets.QMainWindow):
     def update_table(self):
         """Update session table"""
 
-        print("update_table()")
-
         # Query the queue
 
         self.queue.update()
@@ -285,9 +288,11 @@ class SessionWindow(QtWidgets.QMainWindow):
             self.waiting_model = QueueSortFilterProxyModel(self, "PENDING")
             self.waiting_model.setSourceModel(self.queue_model)
         else:
-            self.running_model = QueueSortFilterProxyModel(self, "RUNNING", user)
+            self.running_model = QueueSortFilterProxyModel(
+                self, "RUNNING", user)
             self.running_model.setSourceModel(self.queue_model)
-            self.waiting_model = QueueSortFilterProxyModel(self, "PENDING", user)
+            self.waiting_model = QueueSortFilterProxyModel(
+                self, "PENDING", user)
             self.waiting_model.setSourceModel(self.queue_model)
 
         self.running_table_view.setModel(self.running_model)
@@ -308,7 +313,11 @@ class SessionWindow(QtWidgets.QMainWindow):
         for selected_index in selected_indexes:
             selected_rows.append(selected_index.row())
 
+        # Extract unique rows
+
         selected_rows = list(set(selected_rows))
+
+        # Extract job ids
 
         job_list = []
 
@@ -316,15 +325,12 @@ class SessionWindow(QtWidgets.QMainWindow):
             job_id = self.running_model.index(row, 0).data()
             job_list.append(int(job_id))
 
-        print(job_list)
-
         return job_list
 
     @QtCore.pyqtSlot()
     def on_action_show_all_jobs_triggered(self):
         """Toggle showing all jobs event method."""
 
-        print("show_all_jobs_triggered")
         self.update_table()
         self.processing_progress.setVisible(False)
 
@@ -346,7 +352,7 @@ class SessionWindow(QtWidgets.QMainWindow):
 
         selected_jobs = self.get_selected_job_list()
 
-        if len(selected_jobs)>1:
+        if len(selected_jobs) > 1:
             QtWidgets.QMessageBox.information(
                 self, "SLURM Job monitor", "You can only show job information for a single job.")
 
@@ -361,11 +367,10 @@ class SessionWindow(QtWidgets.QMainWindow):
         self.job_info_window.job_id = selected_jobs[0]
         self.job_info_window.show()
 
-
     @QtCore.pyqtSlot()
     def on_action_refresh_triggered(self):
         """Refresh button event method."""
-        print("refresh_triggered")
+
         self.update_table()
         self.processing_progress.setVisible(False)
 
@@ -385,9 +390,9 @@ class SessionWindow(QtWidgets.QMainWindow):
     def on_refresh_timer_timeout(self):
         """Refresh timer event method."""
 
-        print("timer_timeout")
         self.update_table()
         self.processing_progress.setVisible(False)
+
 
 class JobInfoWindow(QtWidgets.QMainWindow):
     """Session Window class"""
@@ -409,7 +414,6 @@ class JobInfoWindow(QtWidgets.QMainWindow):
 
         uic.loadUi(os.path.join(ui_path, "job_info.ui"), self)
 
-
     def update_table(self):
         """Update job property table"""
 
@@ -422,7 +426,7 @@ class JobInfoWindow(QtWidgets.QMainWindow):
             ["Property", "Value"]
         )
 
-        if len(self.job_info_dict.keys())>0:
+        if len(self.job_info_dict.keys()) > 0:
             self.job_properties.setRowCount(len(self.job_info_dict.keys()))
         else:
             self.job_properties.setRowCount(0)
@@ -430,12 +434,13 @@ class JobInfoWindow(QtWidgets.QMainWindow):
 
         row = 0
         for prop, value in self.job_info_dict.items():
-            self.job_properties.setItem(row, 0, QtWidgets.QTableWidgetItem(str(prop)))
-            self.job_properties.setItem(row, 1, QtWidgets.QTableWidgetItem(str(value)))
+            self.job_properties.setItem(
+                row, 0, QtWidgets.QTableWidgetItem(str(prop)))
+            self.job_properties.setItem(
+                row, 1, QtWidgets.QTableWidgetItem(str(value)))
             row += 1
 
-        self.job_properties.resizeColumnsToContents()            
-
+        self.job_properties.resizeColumnsToContents()
 
     def query_job_info(self):
         """Query SLURM for job information"""
@@ -446,19 +451,17 @@ class JobInfoWindow(QtWidgets.QMainWindow):
         self.job_info_dict = {}
 
         for line in job_lines:
-            value_pairs = line.split() 
+            value_pairs = line.split()
 
             for value_pair in value_pairs:
-                if len(value_pair.split("="))==2:
+                if len(value_pair.split("=")) == 2:
                     prop, value = value_pair.split("=")
                     self.job_info_dict[prop.strip()] = value.strip()
-
 
     def on_action_refresh_view_triggered(self):
         """Update job info and property table when refresh button is clicked."""
         self.query_job_info()
         self.update_table()
-
 
     @property
     def job_id(self):
