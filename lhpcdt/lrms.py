@@ -125,6 +125,8 @@ class Queue(object):
         self.userJobs = {}
         self.running_jobs = {}
         self.pending_jobs = {}
+        self.max_nodes = -1
+        self.max_cpus = -1
 
     def job_info(self, jobid):
         """Return information on job jobid"""
@@ -135,6 +137,9 @@ class Queue(object):
         output = execute_cmd(
             'squeue --noheader --format="%s"' % self.squeueFormat)
         lines = output.split("\n")
+
+        self.max_nodes = -1
+        self.max_cpus = -1
 
         self.jobs = {}
         self.jobList = []
@@ -156,6 +161,12 @@ class Queue(object):
 
                 if job["state"] == "PENDING":
                     self.pending_jobs[id] = job
+
+                if int(job["nodes"]) > self.max_nodes:
+                    self.max_nodes = int(job["nodes"])
+
+                if int(job["cpus"]) > self.max_cpus:
+                    self.max_cpus = int(job["cpus"])
 
                 self.jobList.append(job)
 

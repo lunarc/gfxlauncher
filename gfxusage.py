@@ -37,8 +37,6 @@ gfxlaunch_version = "0.9"
 tool_path = os.path.dirname(os.path.abspath(sys.argv[0]))
 sys.path.append(tool_path)
 
-print(tool_path)
-
 from lhpcdt import *
 
 def create_dark_palette():

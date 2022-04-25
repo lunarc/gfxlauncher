@@ -32,7 +32,7 @@
       <property name="currentIndex">
        <number>0</number>
       </property>
-      <widget class="QWidget" name="tab">
+      <widget class="QWidget" name="running_tab">
        <attribute name="title">
         <string>Running</string>
        </attribute>
@@ -70,7 +70,7 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="tab_2">
+      <widget class="QWidget" name="waiting_tab">
        <attribute name="title">
         <string>Waiting</string>
        </attribute>
@@ -107,11 +107,6 @@
          </widget>
         </item>
        </layout>
-      </widget>
-      <widget class="QWidget" name="tab_4">
-       <attribute name="title">
-        <string>Cluster</string>
-       </attribute>
       </widget>
      </widget>
     </item>

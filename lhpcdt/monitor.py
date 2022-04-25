@@ -17,7 +17,7 @@
 #
 """LUNARC HPC Desktop Monitor Module"""
 
-import os
+import os, math
 import getpass
 from datetime import datetime
 
@@ -31,84 +31,82 @@ from . import config
 
 from subprocess import Popen, PIPE, STDOUT
 
+def time_to_decimal(time_string):
+    """Time to decimal conversion routine"""
 
-class MonitorWindow(QtWidgets.QWidget):
+    d = "0"
+    h = "0"
+    m = "0"
+    s = "0"
+
+    if "-" in time_string:
+        (d, time_rest) = time_string.split("-")
+    else:
+        time_rest = time_string
+
+    if len(time_rest.split(':')) == 2:
+        (m, s) = time_rest.split(':')
+    elif len(time_rest.split(':')) == 3:
+        (h, m, s) = time_rest.split(':')
+
+    return int(d) * 86400 + int(h) * 3600 + int(m) * 60 + int(s)
+
+
+class QueueTableDelegate(QtWidgets.QStyledItemDelegate):
+    """Delegate class for drawing progress bars."""
     def __init__(self, parent=None):
-        super(MonitorWindow, self).__init__(parent)
-        self.tool_path = settings.LaunchSettings.create().tool_path
+        super(QueueTableDelegate, self).__init__(parent)
 
-        if len(settings.LaunchSettings.create().args) > 1:
-            self.hostname = settings.LaunchSettings.create().args[1]
-            self.local_exec = False
+    def paint(self, painter, option, index):
+     
+        if index.column()==5:
+
+            value = index.data()
+
+            painter.save()
+            full_rect = QtCore.QRect(option.rect)
+            rect = option.rect
+            rect.adjust(5, 5, -5, -5)
+
+            bar_length = int(rect.width()*value/100.0)
+            rect_width = rect.width()
+
+            #painter.setPen(QtCore.Qt.black)
+
+            rect.adjust(0, 0, -rect_width+bar_length, 0)
+
+            self.bar_gradient = QtGui.QLinearGradient(rect.left(), rect.top(), rect.right(), rect.bottom())
+            self.bar_gradient.setColorAt(0.0, QtGui.QColor(50, 200, 50))
+            self.bar_gradient.setColorAt(1.0, QtGui.QColor(180, 255, 180))
+            self.bar_brush = QtGui.QBrush(self.bar_gradient)
+            painter.setPen(QtGui.QPen(QtGui.QColor(20, 150, 20)))
+            painter.setBrush(self.bar_brush)
+          
+            painter.drawRect(rect)
+            painter.setPen(QtGui.QPen(QtGui.QColor(0,0,0)))
+            painter.drawText(full_rect, QtCore.Qt.AlignCenter | QtCore.Qt.AlignVCenter, "%d" % (int(value))+"%")
+
+            painter.restore()
         else:
-            self.hostname = ""
-            self.local_exec = True
-
-        ui_path = os.path.join(self.tool_path, "ui")
-
-        # Load appropriate user interface
-
-        uic.loadUi(os.path.join(ui_path, "monitor.ui"), self)
-
-        self.remote_probe = remote.StatusProbe(local_exec=self.local_exec)
-        self.remote_probe.check_all(self.hostname)
-
-        self.update_controls()
-
-    def update_controls(self):
-        self.progressMemory.setMaximum(self.remote_probe.total_mem)
-        self.progressMemory.setValue(self.remote_probe.used_mem)
-        self.progressCPU.setMaximum(100)
-        self.progressCPU.setValue(self.remote_probe.cpu_usage)
-        self.hostnameEdit.setText(self.hostname)
-
-        self.progressGPU1.setEnabled(False)
-        self.progressGPU2.setEnabled(False)
-        self.progressGPU3.setEnabled(False)
-        self.progressGPU4.setEnabled(False)
-        self.progressGPU5.setEnabled(False)
-        self.progressGPU6.setEnabled(False)
-        self.progressGPU7.setEnabled(False)
-        self.progressGPU8.setEnabled(False)
-
-        if len(self.remote_probe.gpu_usage) >= 1:
-            self.progressGPU1.setEnabled(True)
-            self.progressGPU1.setValue(self.remote_probe.gpu_usage[0])
-        if len(self.remote_probe.gpu_usage) >= 2:
-            self.progressGPU2.setEnabled(True)
-            self.progressGPU2.setValue(self.remote_probe.gpu_usage[1])
-        if len(self.remote_probe.gpu_usage) >= 3:
-            self.progressGPU3.setEnabled(True)
-            self.progressGPU3.setValue(self.remote_probe.gpu_usage[2])
-        if len(self.remote_probe.gpu_usage) >= 4:
-            self.progressGPU4.setEnabled(True)
-            self.progressGPU4.setValue(self.remote_probe.gpu_usage[3])
-        if len(self.remote_probe.gpu_usage) >= 5:
-            self.progressGPU5.setEnabled(True)
-            self.progressGPU5.setValue(self.remote_probe.gpu_usage[4])
-        if len(self.remote_probe.gpu_usage) >= 6:
-            self.progressGPU6.setEnabled(True)
-            self.progressGPU6.setValue(self.remote_probe.gpu_usage[4])
-        if len(self.remote_probe.gpu_usage) >= 7:
-            self.progressGPU7.setEnabled(True)
-            self.progressGPU7.setValue(self.remote_probe.gpu_usage[7])
-        if len(self.remote_probe.gpu_usage) >= 8:
-            self.progressGPU8.setEnabled(True)
-            self.progressGPU8.setValue(self.remote_probe.gpu_usage[8])
+            QtWidgets.QStyledItemDelegate.paint(self, painter, option, index)
 
 
 class QueueSortFilterProxyModel(QtCore.QSortFilterProxyModel):
-    def __init__(self, parent, state_filter="", user_filter=""):
+    """Proxy model class for enabling queue sorting."""
+    def __init__(self, parent, state_filter="", user_filter="", show_progress=True):
         super().__init__(parent)
         self.state_filter = state_filter
         self.user_filter = user_filter
+        self.show_progress = show_progress
 
     def lessThan(self, left, right):
+        """Sorting comparison function."""
         left_data = self.sourceModel().data(left)
         right_data = self.sourceModel().data(right)
         return left_data < right_data
 
     def filterAcceptsRow(self, source_row, source_parent):
+        """Filter function."""
         model = self.sourceModel()
         job_id = model.job_keys[source_row]
         if self.state_filter == "" and self.user_filter == "":
@@ -126,17 +124,29 @@ class QueueSortFilterProxyModel(QtCore.QSortFilterProxyModel):
             else:
                 return True
 
+    def filterAcceptsColumn(self, source_column, source_parent):
+        if not self.show_progress and source_column == 5:
+            return False
+        else:
+            return True
 
 class QueueTableModel(QtCore.QAbstractTableModel):
-    def __init__(self, data):
+    """Queue table model for use with QTableView"""
+    def __init__(self, data, max_nodes=-1, max_cpus=-1):
         super(QueueTableModel, self).__init__()
 
         self.__data = data
         self.__headers = ["Id", "Partition", "Name", "User", "Account",
-                          "Progress", "Start", "Left", "Nodes", "CPUs", "Nodelist"]
+                          "Progress", "Start", "Left", "Nodes", "CPUs", "Nodelist/Reason"]
         self.__column_keys = ["", "state, partition", "name", "user",
                               "account", "timestart", "timeleft", "nodes", "cpus", "nodelist"]
         self.__job_keys = list(self.__data.keys())
+
+        self.colors = ["#FFF878", "#FEED73", "#FDE16D", "#FCD668", "#FBCA62", "#FABF5D", "#F9B458", "#F8A852", "#F79D4D", "#F69147", "#F58642"]
+
+
+        self.__max_nodes = max_nodes
+        self.__max_cpus = max_cpus
 
     @property
     def job_keys(self):
@@ -146,7 +156,24 @@ class QueueTableModel(QtCore.QAbstractTableModel):
     def job_dict(self):
         return self.__data
 
+    @property
+    def max_nodes(self):
+        return self.__max_nodes
+
+    @max_nodes.setter
+    def max_nodes(self, nodes):
+        self.__max_nodes = nodes
+
+    @property
+    def max_cpus(self):
+        return self.__max_cpus
+
+    @max_cpus.setter
+    def max_cpus(self, cpus):
+        self.__max_cpus = cpus
+
     def headerData(self, section, orientation, role):
+        """Return table headers"""
         if role == QtCore.Qt.DisplayRole:
             if orientation == QtCore.Qt.Horizontal:
                 return str(self.__headers[section])
@@ -154,7 +181,40 @@ class QueueTableModel(QtCore.QAbstractTableModel):
             if orientation == QtCore.Qt.Vertical:
                 return str(section)
 
+    def reason_to_string(self, reason):
+        if "(Priority)" in reason:
+            return "Waiting for higher priority jobs."
+        elif "(Resources)" in reason:
+            return "Waiting for resources to become free."
+        elif "(AssocGrpCpuLimit)" in reason:
+            return "Account resource limit reached (CPU)."
+        elif "(DependencyNeverSatisfied)" in reason:
+            return "Job dependenies can't be resolved."
+        elif "(Dependency)" in reason:
+            return "Job waiting for dependency."
+        elif "(BadConstraints)" in reason:
+            return "Job requirements can't be satisfied."
+        elif "(QOSJobLimit)" in reason:
+            return "The job's QOS has reached its maximum job count."
+        elif "(QOSResourceLimit)" in reason:
+            return "The job's QOS has reached some resource limit."
+        elif "(QOSTimeLimit)" in reason:
+            return "The job's QOS has reached its time limit."
+        elif "(ReqNodeNotAvail)" in reason:
+            return "Some node specifically required by the job is not currently available."
+        elif "(AssociationJobLimit)" in reason:
+            return "The job's association has reached its maximum job count."
+        elif "(AssociationResourceLimit)" in reason:
+            return "The job's association has reached some resource limit."
+        elif "(AssociationTimeLimit)" in reason:
+            return "The job's association has reached its time limit."
+        else:
+            return reason
+
+
+
     def data(self, index, role=QtCore.Qt.DisplayRole):
+        """Return table data"""
         if role == QtCore.Qt.DisplayRole:
 
             job_key = self.__job_keys[index.row()]
@@ -179,7 +239,15 @@ class QueueTableModel(QtCore.QAbstractTableModel):
                 return str(job_values["account"])
 
             if index.column() == 5:
-                return str(0)
+                time_str = job_values["time"]
+                timelimit_str = job_values["timelimit"]
+
+                time_value = time_to_decimal(time_str)
+                timelimit_value = time_to_decimal(timelimit_str)
+
+                percent_value = int(100*time_value/timelimit_value)            
+
+                return float(percent_value)
 
             if index.column() == 6:
                 return str(job_values["timestart"])
@@ -194,14 +262,78 @@ class QueueTableModel(QtCore.QAbstractTableModel):
                 return int(job_values["cpus"])
 
             if index.column() == 10:
-                return str(job_values["nodelist"])
+                return self.reason_to_string(str(job_values["nodelist"]))
 
             return ""
 
+        if role == QtCore.Qt.BackgroundColorRole:
+            
+            job_key = self.__job_keys[index.row()]
+            job_values = self.__data[job_key]
+
+            if index.column() == 8:
+                nodes = int(job_values["nodes"])
+                return QtGui.QColor(self.colors[int(math.floor((len(self.colors)-1)*nodes/self.max_nodes))])
+            elif index.column() == 9:
+                cpus = int(job_values["cpus"])
+                return QtGui.QColor(self.colors[int(math.floor((len(self.colors)-1)*cpus/self.max_cpus))])
+            elif index.column() == 10:
+                if "(Priority)" in job_values["nodelist"]:
+                    return QtGui.QColor(50, 200, 50)
+                elif "(Resources)" in job_values["nodelist"]:
+                    return QtGui.QColor(50, 230, 50)
+                elif "(AssocGrpCpuLimit)" in job_values["nodelist"]:
+                    return QtGui.QColor(220, 220, 50)
+                elif "(DependencyNeverSatisfied)" in job_values["nodelist"]:
+                    return QtGui.QColor(220, 50, 50)
+                else:
+                    return None
+            else:
+                return None
+
+        if role == QtCore.Qt.TextAlignmentRole:
+            if index.column() == 0:
+                return QtCore.Qt.AlignVCenter | QtCore.Qt.AlignRight
+
+            if index.column() == 1:
+                return QtCore.Qt.AlignVCenter | QtCore.Qt.AlignLeft
+
+            if index.column() == 2:
+                return QtCore.Qt.AlignVCenter | QtCore.Qt.AlignLeft
+
+            if index.column() == 3:
+                return QtCore.Qt.AlignVCenter | QtCore.Qt.AlignLeft
+
+            if index.column() == 4:
+                return QtCore.Qt.AlignVCenter | QtCore.Qt.AlignLeft
+
+            if index.column() == 6:
+                return QtCore.Qt.AlignVCenter | QtCore.Qt.AlignRight
+
+            if index.column() == 7:
+                return QtCore.Qt.AlignVCenter | QtCore.Qt.AlignRight
+
+            if index.column() == 8:
+                return QtCore.Qt.AlignVCenter | QtCore.Qt.AlignCenter
+
+            if index.column() == 9:
+                return QtCore.Qt.AlignVCenter | QtCore.Qt.AlignCenter
+
+            if index.column() == 10:
+                return QtCore.Qt.AlignVCenter | QtCore.Qt.AlignLeft
+
+            return QtCore.Qt.AlignVCenter | QtCore.Qt.AlignCenter
+
+
+
+
+
     def rowCount(self, index):
+        """Return table rows"""
         return len(self.__data.keys())
 
     def columnCount(self, index):
+        """Return table columns"""
         return 11
 
 
@@ -235,26 +367,6 @@ class SessionWindow(QtWidgets.QMainWindow):
         self.update_table()
         self.processing_progress.setVisible(False)
 
-    def time_to_decimal(self, time_string):
-        """Time to decimal conversion routine"""
-
-        d = "0"
-        h = "0"
-        m = "0"
-        s = "0"
-
-        if "-" in time_string:
-            (d, time_rest) = time_string.split("-")
-        else:
-            time_rest = time_string
-
-        if len(time_rest.split(':')) == 2:
-            (m, s) = time_rest.split(':')
-        elif len(time_rest.split(':')) == 3:
-            (h, m, s) = time_rest.split(':')
-
-        return int(d) * 86400 + int(h) * 3600 + int(m) * 60 + int(s)
-
     def state_bg_color(self, state_str):
         """Return a color depending on the SLURM state."""
 
@@ -280,34 +392,42 @@ class SessionWindow(QtWidgets.QMainWindow):
 
         # Test tableview
 
-        self.queue_model = QueueTableModel(self.queue.jobs)
+        self.queue_model = QueueTableModel(self.queue.jobs, self.queue.max_nodes, self.queue.max_cpus)
 
         if self.action_show_all_jobs.isChecked():
             self.running_model = QueueSortFilterProxyModel(self, "RUNNING")
             self.running_model.setSourceModel(self.queue_model)
-            self.waiting_model = QueueSortFilterProxyModel(self, "PENDING")
+            self.waiting_model = QueueSortFilterProxyModel(self, "PENDING", show_progress=False)
             self.waiting_model.setSourceModel(self.queue_model)
         else:
             self.running_model = QueueSortFilterProxyModel(
                 self, "RUNNING", user)
             self.running_model.setSourceModel(self.queue_model)
             self.waiting_model = QueueSortFilterProxyModel(
-                self, "PENDING", user)
+                self, "PENDING", user, show_progress=False)
             self.waiting_model.setSourceModel(self.queue_model)
 
         self.running_table_view.setModel(self.running_model)
+        self.running_table_view.setItemDelegate(QueueTableDelegate())
         self.running_table_view.setSortingEnabled(True)
+        self.running_table_view.resizeColumnsToContents()
 
         self.waiting_table_view.setModel(self.waiting_model)
         self.waiting_table_view.setSortingEnabled(True)
+        self.waiting_table_view.resizeColumnsToContents()
 
         return
 
     def get_selected_job_list(self):
         """Get selected job list from table selection."""
 
-        selected_indexes = self.running_table_view.selectedIndexes()
-
+        if self.queue_tabs.currentIndex() == 0:
+            selected_indexes = self.running_table_view.selectedIndexes()
+            selected_model = self.running_model
+        else:
+            selected_indexes = self.waiting_table_view.selectedIndexes()
+            selected_model = self.waiting_model
+        
         selected_rows = []
 
         for selected_index in selected_indexes:
@@ -322,7 +442,7 @@ class SessionWindow(QtWidgets.QMainWindow):
         job_list = []
 
         for row in selected_rows:
-            job_id = self.running_model.index(row, 0).data()
+            job_id = selected_model.index(row, 0).data()
             job_list.append(int(job_id))
 
         return job_list
@@ -473,3 +593,67 @@ class JobInfoWindow(QtWidgets.QMainWindow):
         self.setWindowTitle("Information on job %d" % self.__job_id)
         self.query_job_info()
         self.update_table()
+
+class MonitorWindow(QtWidgets.QWidget):
+    def __init__(self, parent=None):
+        super(MonitorWindow, self).__init__(parent)
+        self.tool_path = settings.LaunchSettings.create().tool_path
+
+        if len(settings.LaunchSettings.create().args) > 1:
+            self.hostname = settings.LaunchSettings.create().args[1]
+            self.local_exec = False
+        else:
+            self.hostname = ""
+            self.local_exec = True
+
+        ui_path = os.path.join(self.tool_path, "ui")
+
+        # Load appropriate user interface
+
+        uic.loadUi(os.path.join(ui_path, "monitor.ui"), self)
+
+        self.remote_probe = remote.StatusProbe(local_exec=self.local_exec)
+        self.remote_probe.check_all(self.hostname)
+
+        self.update_controls()
+
+    def update_controls(self):
+        self.progressMemory.setMaximum(self.remote_probe.total_mem)
+        self.progressMemory.setValue(self.remote_probe.used_mem)
+        self.progressCPU.setMaximum(100)
+        self.progressCPU.setValue(self.remote_probe.cpu_usage)
+        self.hostnameEdit.setText(self.hostname)
+
+        self.progressGPU1.setEnabled(False)
+        self.progressGPU2.setEnabled(False)
+        self.progressGPU3.setEnabled(False)
+        self.progressGPU4.setEnabled(False)
+        self.progressGPU5.setEnabled(False)
+        self.progressGPU6.setEnabled(False)
+        self.progressGPU7.setEnabled(False)
+        self.progressGPU8.setEnabled(False)
+
+        if len(self.remote_probe.gpu_usage) >= 1:
+            self.progressGPU1.setEnabled(True)
+            self.progressGPU1.setValue(self.remote_probe.gpu_usage[0])
+        if len(self.remote_probe.gpu_usage) >= 2:
+            self.progressGPU2.setEnabled(True)
+            self.progressGPU2.setValue(self.remote_probe.gpu_usage[1])
+        if len(self.remote_probe.gpu_usage) >= 3:
+            self.progressGPU3.setEnabled(True)
+            self.progressGPU3.setValue(self.remote_probe.gpu_usage[2])
+        if len(self.remote_probe.gpu_usage) >= 4:
+            self.progressGPU4.setEnabled(True)
+            self.progressGPU4.setValue(self.remote_probe.gpu_usage[3])
+        if len(self.remote_probe.gpu_usage) >= 5:
+            self.progressGPU5.setEnabled(True)
+            self.progressGPU5.setValue(self.remote_probe.gpu_usage[4])
+        if len(self.remote_probe.gpu_usage) >= 6:
+            self.progressGPU6.setEnabled(True)
+            self.progressGPU6.setValue(self.remote_probe.gpu_usage[4])
+        if len(self.remote_probe.gpu_usage) >= 7:
+            self.progressGPU7.setEnabled(True)
+            self.progressGPU7.setValue(self.remote_probe.gpu_usage[7])
+        if len(self.remote_probe.gpu_usage) >= 8:
+            self.progressGPU8.setEnabled(True)
+            self.progressGPU8.setValue(self.remote_probe.gpu_usage[8])
