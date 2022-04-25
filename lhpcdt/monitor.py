@@ -95,6 +95,110 @@ class MonitorWindow(QtWidgets.QWidget):
             self.progressGPU8.setEnabled(True)
             self.progressGPU8.setValue(self.remote_probe.gpu_usage[8])
 
+class QueueSortFilterProxyModel(QtCore.QSortFilterProxyModel):
+    def __init__(self, parent, state_filter="", user_filter=""):
+        super().__init__(parent)
+        self.state_filter = state_filter
+        self.user_filter = user_filter
+
+    def lessThan(self, left, right):
+        left_data = self.sourceModel().data(left)
+        right_data = self.sourceModel().data(right)
+        return left_data < right_data
+    
+    def filterAcceptsRow(self, source_row, source_parent):
+        model = self.sourceModel()
+        job_id = model.job_keys[source_row]
+        if self.state_filter == "" and self.user_filter =="":
+            return True
+        else:
+            if self.state_filter == "" and self.user_filter!= "":
+                return model.job_dict[job_id]["user"] == self.user_filter
+            elif self.state_filter != ""  and self.user_filter == "":
+                return model.job_dict[job_id]["state"] == self.state_filter
+            elif self.state_filter != "" and self.user_filter != "":
+                if model.job_dict[job_id]["state"] == self.state_filter:
+                    return model.job_dict[job_id]["user"] == self.user_filter
+                else:
+                    return False
+            else:
+                return True
+
+
+class QueueTableModel(QtCore.QAbstractTableModel):
+    def __init__(self, data):
+        super(QueueTableModel, self).__init__()
+
+        self.__data = data
+        self.__headers = ["Id", "Partition", "Name", "User", "Account", "Progress", "Start", "Left", "Nodes", "CPUs", "Nodelist"]     
+        self.__column_keys = ["", "state, partition", "name", "user", "account", "timestart", "timeleft", "nodes", "cpus", "nodelist"]
+        self.__job_keys = list(self.__data.keys())
+
+    @property
+    def job_keys(self):
+        return self.__job_keys
+
+    @property
+    def job_dict(self):
+        return self.__data
+
+    def headerData(self, section, orientation, role):
+        if role == QtCore.Qt.DisplayRole:
+            if orientation == QtCore.Qt.Horizontal:
+                return str(self.__headers[section])
+
+            if orientation == QtCore.Qt.Vertical:
+                return str(section)            
+
+    def data(self, index, role=QtCore.Qt.DisplayRole):
+        if role == QtCore.Qt.DisplayRole:
+
+            job_key = self.__job_keys[index.row()]
+
+            job_values = self.__data[job_key]
+
+            value = ""
+
+            if index.column() == 0:
+                return int(job_key)
+
+            if index.column() == 1:
+                return str(job_values["partition"])
+
+            if index.column() == 2:
+                return str(job_values["name"])
+
+            if index.column() == 3:
+                return str(job_values["user"])
+
+            if index.column() == 4:
+                return str(job_values["account"])
+
+            if index.column() == 5:
+                return str(0)
+
+            if index.column() == 6:
+                return str(job_values["timestart"])
+
+            if index.column() == 7:
+                return str(job_values["timeleft"])
+
+            if index.column() == 8:
+                return int(job_values["nodes"])
+
+            if index.column() == 9:
+                return int(job_values["cpus"])
+
+            if index.column() == 10:
+                return str(job_values["nodelist"])
+
+            return ""
+
+    def rowCount(self, index):
+        return len(self.__data.keys())
+
+    def columnCount(self, index):
+        return 11
 
 class SessionWindow(QtWidgets.QMainWindow):
     """Session Window class"""
@@ -120,6 +224,8 @@ class SessionWindow(QtWidgets.QMainWindow):
         self.refresh_timer.timeout.connect(self.on_refresh_timer_timeout)
 
         self.job_info_window = None
+
+        self.use_progress_control = False
 
         self.update_table()
         self.processing_progress.setVisible(False)
@@ -159,191 +265,70 @@ class SessionWindow(QtWidgets.QMainWindow):
     def update_table(self):
         """Update session table"""
 
+        print("update_table()")
+
         # Query the queue
 
         self.queue.update()
-
-        # Clear all tables
-
-        self.running_session_table.clear()
-        self.waiting_session_table.clear()
-        self.bonus_session_table.clear()
 
         # Get user information
 
         user = getpass.getuser()
 
-        #  JOBID PARTITION                      NAME     USER ACCOUNT        ST          START_TIME  TIME_LEFT  NODES CPUS NODELIST(REASON)
-        #6385516        lu           LDMX_Prod_Simul      rpt lu2021-2-100    R 2022-03-04T05:00:49       0:23      1    1 au027
+        # Test tableview
 
-        tables = [self.running_session_table, self.waiting_session_table, self.bonus_session_table]
-        table_states = ['RUNNING', 'PENDING', '']
-        job_dicts = [self.queue.running_jobs, self.queue.pending_jobs, {}]
-
-        self.processing_progress.setVisible(True)
-        self.processing_progress.setValue(0)
-
-        job_counter = 0
-        total_jobs = len(self.queue.jobs.keys())
+        self.queue_model = QueueTableModel(self.queue.jobs)
 
         if self.action_show_all_jobs.isChecked():
-
-            for table, table_state, jobs in zip(tables, table_states, job_dicts):
-
-                table.setColumnCount(12)
-
-                table.setHorizontalHeaderLabels(
-                    ["Id", "Partition", "Name", "User", "Account", "State",
-                    "Progress", "Start", "Left", "Nodes", "CPUs", "Nodelist"]
-                    )
-
-                if len(jobs.keys())>0:
-                    table.setRowCount(
-                        len(list(jobs.keys())))
-                else:
-                    table.setRowCount(0)
-                    return
-
-                row = 0
-
-                for id in list(jobs.keys()):
-
-                    if jobs[id]["state"] == table_state:
-
-                        job_counter += 1
-                        self.processing_progress.setValue(100*job_counter/total_jobs)
-
-                        state_str = str(jobs[id]["state"])
-                        state_item = QtWidgets.QTableWidgetItem(state_str)
-                        state_item.setBackground(self.state_bg_color(state_str))
-
-                        time_str = jobs[id]["time"]
-                        timelimit_str = jobs[id]["timelimit"]
-
-                        time_value = self.time_to_decimal(time_str)
-                        timelimit_value = self.time_to_decimal(timelimit_str)
-
-                        percent_value = int(100*time_value/timelimit_value)
-
-                        progress_bar = QtWidgets.QProgressBar(self)
-                        progress_bar.setValue(percent_value)
-
-                        #  JOBID PARTITION                      NAME     USER ACCOUNT        ST          START_TIME  TIME_LEFT  NODES CPUS NODELIST(REASON)                
-
-                        table.setItem(row, 0, QtWidgets.QTableWidgetItem(str(id)))
-
-                        table.setItem(row, 1, QtWidgets.QTableWidgetItem(
-                            str(jobs[id]["partition"])))
-
-                        table.setItem(row, 2, QtWidgets.QTableWidgetItem(
-                            str(jobs[id]["name"])))
-
-                        table.setItem(row, 3, QtWidgets.QTableWidgetItem(
-                            str(jobs[id]["user"])))
-
-                        table.setItem(row, 4, QtWidgets.QTableWidgetItem(
-                            str(jobs[id]["account"])))
-
-                        table.setItem(row, 5, state_item)
-
-                        table.setCellWidget(row, 6, progress_bar)
-
-                        table.setItem(row, 7, QtWidgets.QTableWidgetItem(
-                            str(jobs[id]["timestart"])))
-                        table.setItem(row, 8, QtWidgets.QTableWidgetItem(
-                            str(jobs[id]["timeleft"])))
-                        table.setItem(row, 9, QtWidgets.QTableWidgetItem(
-                            str(jobs[id]["nodes"])))
-                        table.setItem(row, 10, QtWidgets.QTableWidgetItem(
-                            str(jobs[id]["cpus"])))
-                        table.setItem(row, 11, QtWidgets.QTableWidgetItem(
-                            str(jobs[id]["nodelist"])))
-
-                        row += 1
-
-                    table.resizeColumnsToContents()
-
+            self.running_model = QueueSortFilterProxyModel(self, "RUNNING")
+            self.running_model.setSourceModel(self.queue_model)
+            self.waiting_model = QueueSortFilterProxyModel(self, "PENDING")
+            self.waiting_model.setSourceModel(self.queue_model)
         else:
+            self.running_model = QueueSortFilterProxyModel(self, "RUNNING", user)
+            self.running_model.setSourceModel(self.queue_model)
+            self.waiting_model = QueueSortFilterProxyModel(self, "PENDING", user)
+            self.waiting_model.setSourceModel(self.queue_model)
 
-            self.running_session_table.setColumnCount(8)
-            self.running_session_table.setHorizontalHeaderLabels(
-                ["Id", "Name", "State", "Percent", "Time",
-                "Requested", "Count", "Nodes"]
-                )
+        self.running_table_view.setModel(self.running_model)
+        self.running_table_view.setSortingEnabled(True)
 
-            if user in self.queue.userJobs:
-                self.running_session_table.setRowCount(
-                    len(list(self.queue.userJobs[user].keys())))
-            else:
-                self.running_session_table.setRowCount(0)
-                return
+        self.waiting_table_view.setModel(self.waiting_model)
+        self.waiting_table_view.setSortingEnabled(True)
 
-            row = 0
-            for id in list(self.queue.userJobs[user].keys()):
-
-
-                self.running_session_table.setItem(row, 0, QtWidgets.QTableWidgetItem(str(id)))
-
-                self.running_session_table.setItem(row, 1, QtWidgets.QTableWidgetItem(
-                    str(self.queue.userJobs[user][id]["name"])))
-
-                state_str = str(self.queue.userJobs[user][id]["state"])
-                state_item = QtWidgets.QTableWidgetItem(state_str)
-                state_item.setBackground(self.state_bg_color(state_str))
-
-                time_str = self.queue.userJobs[user][id]["time"]
-                timelimit_str = self.queue.userJobs[user][id]["timelimit"]
-
-                time_value = self.time_to_decimal(time_str)
-                timelimit_value = self.time_to_decimal(timelimit_str)
-
-                percent_value = int(100*time_value/timelimit_value)
-
-                self.running_session_table.setItem(row, 2, state_item)
-
-                progress_bar = QtWidgets.QProgressBar(self)
-                progress_bar.setValue(percent_value)
-
-                self.running_session_table.setCellWidget(row, 3, progress_bar)
-
-                self.running_session_table.setItem(row, 4, QtWidgets.QTableWidgetItem(
-                    str(self.queue.userJobs[user][id]["time"])))
-                self.running_session_table.setItem(row, 5, QtWidgets.QTableWidgetItem(
-                    str(self.queue.userJobs[user][id]["timelimit"])))
-                self.running_session_table.setItem(row, 6, QtWidgets.QTableWidgetItem(
-                    str(self.queue.userJobs[user][id]["nodes"])))
-                self.running_session_table.setItem(row, 7, QtWidgets.QTableWidgetItem(
-                    str(self.queue.userJobs[user][id]["nodelist"])))
-
-                row += 1
-
-            self.running_session_table.resizeColumnsToContents()
+        return
 
     def get_selected_job_list(self):
         """Get selected job list from table selection."""
 
-        selected_ranges = self.running_session_table.selectedRanges()
+        selected_indexes = self.running_table_view.selectedIndexes()
+
+        selected_rows = []
+
+        for selected_index in selected_indexes:
+            selected_rows.append(selected_index.row())
+
+        selected_rows = list(set(selected_rows))
 
         job_list = []
 
-        for selected_range in selected_ranges:
-            start_row = int(selected_range.topRow())
-            end_row = int(selected_range.bottomRow())
+        for row in selected_rows:
+            job_id = self.running_model.index(row, 0).data()
+            job_list.append(int(job_id))
 
-            for row in range(start_row, end_row+1):
-                job_id = self.running_session_table.item(row, 0).text()
-                job_list.append(int(job_id))
+        print(job_list)
 
         return job_list
 
-
+    @QtCore.pyqtSlot()
     def on_action_show_all_jobs_triggered(self):
         """Toggle showing all jobs event method."""
 
+        print("show_all_jobs_triggered")
         self.update_table()
         self.processing_progress.setVisible(False)
 
-
+    @QtCore.pyqtSlot()
     def on_action_cancel_job_triggered(self):
         """Cancel selected job event method."""
 
@@ -355,6 +340,7 @@ class SessionWindow(QtWidgets.QMainWindow):
         self.update_table()
         self.processing_progress.setVisible(False)
 
+    @QtCore.pyqtSlot()
     def on_action_job_info_triggered(self):
         """Show job info window."""
 
@@ -376,11 +362,14 @@ class SessionWindow(QtWidgets.QMainWindow):
         self.job_info_window.show()
 
 
+    @QtCore.pyqtSlot()
     def on_action_refresh_triggered(self):
         """Refresh button event method."""
+        print("refresh_triggered")
         self.update_table()
         self.processing_progress.setVisible(False)
 
+    @QtCore.pyqtSlot()
     def on_action_auto_refresh_triggered(self):
         """Auto refresh button event method."""
 
@@ -389,14 +378,16 @@ class SessionWindow(QtWidgets.QMainWindow):
         else:
             self.refresh_timer.stop()
 
+    @QtCore.pyqtSlot(QtWidgets.QTableWidgetItem)
+    def on_session_table_itemDoubleClicked(self, item):
+        self.on_action_job_info_triggered()
+
     def on_refresh_timer_timeout(self):
         """Refresh timer event method."""
 
+        print("timer_timeout")
         self.update_table()
         self.processing_progress.setVisible(False)
-
-    def on_session_table_itemDoubleClicked(self, item):
-        self.on_action_job_info_triggered()
 
 class JobInfoWindow(QtWidgets.QMainWindow):
     """Session Window class"""
