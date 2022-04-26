@@ -1,7 +1,7 @@
 #!/bin/env python
 #
 # LUNARC HPC Desktop On-Demand graphical launch tool
-# Copyright (C) 2017-2021 LUNARC, Lund University
+# Copyright (C) 2017-2022 LUNARC, Lund University
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,7 +23,11 @@ This module implements the main user interface of the application
 launcher.
 """
 
-import os, sys, time, glob, getpass
+import os
+import sys
+import time
+import glob
+import getpass
 from datetime import datetime
 
 from PyQt5 import Qt, QtCore, QtGui, QtWidgets, uic
@@ -84,7 +88,7 @@ class SubmitThread(QtCore.QThread):
         self.vgl = remote.VGLConnect()
         self.vgl.vglrun = vglrun
 
-        if vgl_path!="":
+        if vgl_path != "":
             self.vgl_path = vgl_path
 
         self.slurm = lrms.Slurm()
@@ -133,6 +137,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         """Launch window constructor"""
         super(GfxLaunchWindow, self).__init__(parent)
 
+        print("Initialising launch window...")
+
         # Initialise properties
 
         self.slurm = lrms.Slurm()
@@ -174,7 +180,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         self.slurm.query_partitions(exclude_set=self.part_exclude_set)
 
-        self.features = self.slurm.query_features(self.part, self.feature_exclude_set)
+        self.features = self.slurm.query_features(
+            self.part, self.feature_exclude_set)
         self.selected_part = self.part
 
         # Check for available project
@@ -191,14 +198,17 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         uic.loadUi(os.path.join(ui_path, "mainwindow_simplified.ui"), self)
 
+        if self.silent:
+            self.enable_silent_ui()
+
         # Update controls to reflect parameters
 
         self.update_controls()
 
         # Setup timer callback for updating job status
 
-        self.statusTimer = QtCore.QTimer()
-        self.statusTimer.timeout.connect(self.on_status_timeout)
+        self.status_timer = QtCore.QTimer()
+        self.status_timer.timeout.connect(self.on_status_timeout)
 
         self.status_output.setText(
             self.copyright_short_info % self.version_info)
@@ -207,7 +217,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         self.autostart_timer = QtCore.QTimer()
         self.autostart_timer.timeout.connect(self.on_autostart_timeout)
-        
+
         if self.autostart:
             self.autostart_timer.start(2000)
 
@@ -215,6 +225,28 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         self.launcherTabs.setHidden(True)
         self.adjustSize()
+
+    def enable_silent_ui(self):
+        """Hides controls for running in silent mode."""
+
+        msg = "Below shows the amount of time allocated for running this application.\n\n" +\
+              "Closing this window will close the running application.\n\n" +\
+              "Walltime allocated:\n%s (HH:MM:SS) " % self.time
+
+        self.walltime_group.setVisible(False)
+        self.resource_group.setVisible(False)
+        self.feature_group.setVisible(False)
+        self.project_group.setVisible(False)
+        self.application_req_label.setText(msg)
+        self.helpButton.setVisible(False)
+        # self.application_req_label.setVisible(False)
+        self.sep_first.setVisible(False)
+        self.sep_before_buttons.setVisible(False)
+        self.sep_after_buttons.setVisible(False)
+        self.startButton.setVisible(False)
+        self.showDetails.setVisible(False)
+        self.cancelButton.setVisible(False)
+        self.setMaximumHeight(250)
 
     def time_to_decimal(self, time_string):
         """Time to decimal conversion routine"""
@@ -246,63 +278,85 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         else:
             user = self.user
 
-        grant_filename = self.config.grantfile
+        if self.config.use_sacctmgr:
 
-        #if self.config.grantfile_base != "":
-        #    grant_filename = self.config.grantfile_base % self.part
+            # Querying SLURM directly to find active projects as an alternative to grant files.
 
-        self.grantfile_list = []
-
-        # --- If we have a explicit grantfile use that only.
-
-        if self.grant_filename != "":
-
-            print("Explicit grantfile %s used." % self.grant_filename)
-
-            grant_filename = self.grant_filename
-            self.grantfile_list.append(lrms.GrantFile(grant_filename))
-        else:
-            # --- No explicit grantfile given. Search for grantfiles
-
-            if self.config.grantfile_dir != "":
-
-                # --- Grant file directory given. Search it for grantfiles
-
-                print("Searching for grantfiles in %s." % self.config.grantfile_dir)
-
-                grant_files = glob.glob(self.config.grantfile_dir+'/grantfile.*')
-
-                for grant_filename in grant_files:
-                    if (not '~' in grant_filename) and (len(grant_filename.split("."))==2):
-                        suffix = grant_filename.split('.')[1]
-                        if self.config.grantfile_suffix=='':
-                            print("Parsing grantfile: %s" % grant_filename)
-                            self.grantfile_list.append(lrms.GrantFile(grant_filename))
-                        elif self.config.grantfile_suffix == suffix:
-                            print("Parsing grantfile (suffix match): %s" % grant_filename)
-                            self.grantfile_list.append(lrms.GrantFile(grant_filename))
-            else:
-
-                # --- Do we have a grantile_base directive?
-
-                grant_filename = self.config.grantfile_base % self.part
-                if os.path.exists(grant_filename):
-                    self.grantfile_list.append(lrms.GrantFile(grant_filename))
-
-        self.active_projects = []
-                
-        if len(self.grantfile_list)>0:
-
-            for grant_file in self.grantfile_list:
-                self.active_projects += grant_file.query_active_projects(user)
+            acctmgr = lrms.AccountManager()
+            self.active_projects = acctmgr.query_active_projects(user)
 
             if len(self.active_projects) > 0:
                 self.account = self.active_projects[0]
                 return True
             else:
                 return False
+
         else:
-            return False
+
+            grant_filename = self.config.grantfile
+
+            # if self.config.grantfile_base != "":
+            #    grant_filename = self.config.grantfile_base % self.part
+
+            self.grantfile_list = []
+
+            # --- If we have a explicit grantfile use that only.
+
+            if self.grant_filename != "":
+
+                print("Explicit grantfile %s used." % self.grant_filename)
+
+                grant_filename = self.grant_filename
+                self.grantfile_list.append(lrms.GrantFile(grant_filename))
+            else:
+
+                # --- No explicit grantfile given. Search for grantfiles
+
+                if self.config.grantfile_dir != "":
+
+                    # --- Grant file directory given. Search it for grantfiles
+
+                    print("Searching for grantfiles in %s." %
+                        self.config.grantfile_dir)
+
+                    grant_files = glob.glob(
+                        self.config.grantfile_dir+'/grantfile.*')
+
+                    for grant_filename in grant_files:
+                        if (not '~' in grant_filename) and (len(grant_filename.split(".")) == 2):
+                            suffix = grant_filename.split('.')[1]
+                            if self.config.grantfile_suffix == '':
+                                print("Parsing grantfile: %s" % grant_filename)
+                                self.grantfile_list.append(
+                                    lrms.GrantFile(grant_filename))
+                            elif self.config.grantfile_suffix == suffix:
+                                print("Parsing grantfile (suffix match): %s" %
+                                    grant_filename)
+                                self.grantfile_list.append(
+                                    lrms.GrantFile(grant_filename))
+                else:
+
+                    # --- Do we have a grantile_base directive?
+
+                    grant_filename = self.config.grantfile_base % self.part
+                    if os.path.exists(grant_filename):
+                        self.grantfile_list.append(lrms.GrantFile(grant_filename))
+
+            self.active_projects = []
+
+            if len(self.grantfile_list) > 0:
+
+                for grant_file in self.grantfile_list:
+                    self.active_projects += grant_file.query_active_projects(user)
+
+                if len(self.active_projects) > 0:
+                    self.account = self.active_projects[0]
+                    return True
+                else:
+                    return False
+            else:
+                return False
+
 
     def init_defaults(self):
         """Basic property defaults"""
@@ -336,6 +390,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.autostart = False
         self.locked = False
         self.group = ""
+        self.silent = False
 
     def get_defaults_from_cmdline(self):
         """Get properties from command line"""
@@ -364,6 +419,10 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.autostart = self.args.autostart
         self.locked = self.args.locked
         self.group = self.args.group
+        self.silent = self.args.silent
+
+        if self.silent:
+            self.autostart = True
 
     def update_status_panel(self, text):
         self.status_output.setText(text)
@@ -393,7 +452,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
     def update_feature_combo(self):
         """Update only feature combo box."""
 
-        self.features = self.slurm.query_features(self.selected_part, self.feature_exclude_set)
+        self.features = self.slurm.query_features(
+            self.selected_part, self.feature_exclude_set)
 
         self.filtered_features = []
         self.filtered_features.append("")
@@ -419,7 +479,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         self.update_feature_combo()
 
-        if self.partCombo.count()==0:
+        if self.partCombo.count() == 0:
 
             self.filtered_parts = []
             self.filtered_parts.append("")
@@ -428,7 +488,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
             self.partCombo.addItem("None")
 
             for part in self.slurm.partitions:
-                descr = part                
+                descr = part
                 if part.lower() in self.config.partition_descriptions:
                     descr = self.config.partition_descriptions[part.lower()]
 
@@ -436,7 +496,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
                     self.partCombo.addItem(descr)
                     self.filtered_parts.append(part)
 
-        if self.projectCombo.count()==0:
+        if self.projectCombo.count() == 0:
 
             self.projectCombo.clear()
             for project in self.active_projects:
@@ -490,12 +550,12 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
                 self.wallTimeEdit.setEnabled(True)
 
         self.wallTimeEdit.setEditText(str(self.time))
-        #self.projectEdit.setText(str(self.account))
+        # self.projectEdit.setText(str(self.account))
 
         if self.args.title != "":
             self.setWindowTitle(self.args.title)
 
-    def enableExtrasPanel(self):
+    def enable_extras_panel(self):
         """Clear user interface components in extras panel"""
 
         self.extraControlsLayout.setEnabled(True)
@@ -505,7 +565,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         if not self.reconnect_nb_button is None:
             self.reconnect_nb_button.setEnabled(True)
 
-    def disableExtrasPanel(self):
+    def disable_extras_panel(self):
         """Clear user interface components in extras panel"""
 
         self.extraControlsLayout.setEnabled(False)
@@ -521,7 +581,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         if self.job is not None:
             self.slurm.cancel_job(self.job)
 
-        if self.rdp!=None:
+        if self.rdp != None:
             self.rdp.terminate()
 
         event.accept()  # let the window close
@@ -531,7 +591,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         self.update_properties()
 
-        self.disableExtrasPanel()
+        self.disable_extras_panel()
 
         # Note - This should be modularised
 
@@ -545,7 +605,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
             # Create a Jupyter notbook job
 
-            self.job = jobs.JupyterNotebookJob(notebook_module=self.notebook_module)
+            self.job = jobs.JupyterNotebookJob(
+                notebook_module=self.notebook_module)
             self.job.on_notebook_url_found = self.on_notebook_url_found
 
             # Create extra user interface controls for reconnection
@@ -564,7 +625,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
             # Create a Jupyter lab job
 
-            self.job = jobs.JupyterLabJob(jupyterlab_module=self.jupyterlab_module)
+            self.job = jobs.JupyterLabJob(
+                jupyterlab_module=self.jupyterlab_module)
             self.job.on_notebook_url_found = self.on_notebook_url_found
 
             # Create extra user interface controls for reconnection
@@ -621,29 +683,28 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         # Create a job submission thread
 
-        self.submitThread = SubmitThread(
+        self.submit_thread = SubmitThread(
             self.job, self.cmd, self.vgl, self.vglrun, self.only_submit, self.vgl_path)
-        self.submitThread.finished.connect(self.on_submit_finished)
-        self.submitThread.start()
+        self.submit_thread.finished.connect(self.on_submit_finished)
+        self.submit_thread.start()
 
         # Make sure we only manage a single job ;)
 
         self.startButton.setEnabled(False)
 
-
     def on_submit_finished(self):
         """Event called from submit thread when job has been submitted"""
 
         self.running = True
-        self.statusTimer.start(5000)
+        self.status_timer.start(5000)
         self.update_controls()
-        self.active_connection = self.submitThread.active_connection
+        self.active_connection = self.submit_thread.active_connection
 
-        if self.submitThread.error_status == SubmitThread.SUBMIT_FAILED:
+        if self.submit_thread.error_status == SubmitThread.SUBMIT_FAILED:
             QtWidgets.QMessageBox.about(
                 self, self.title, "Session start failed.")
             self.running = False
-            self.statusTimer.stop()
+            self.status_timer.stop()
             self.update_controls()
             self.active_connection = None
 
@@ -654,14 +715,14 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         Popen("firefox %s" % url, shell=True)
 
-        self.enableExtrasPanel()
+        self.enable_extras_panel()
 
     def on_vm_available(self, hostname):
         """Start an RDP session to host"""
 
         self.reset_status_panel()
 
-        if (hostname!="0.0.0.0") and (hostname!="0.0.0.1"):
+        if (hostname != "0.0.0.0") and (hostname != "0.0.0.1"):
 
             print("Starting RDP: " + hostname)
 
@@ -669,7 +730,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
             self.rdp.xfreerdp_path = self.config.xfreerdp_path
             self.rdp.execute()
 
-            self.enableExtrasPanel()
+            self.enable_extras_panel()
         else:
             if hostname == "0.0.0.0":
                 QtWidgets.QMessageBox.information(
@@ -677,10 +738,9 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
             if hostname == "0.0.0.1":
                 QtWidgets.QMessageBox.information(
-                    self, self.title, "A windows session was not currently available. Try launching the session again later. If the problem persists contact support.")             
+                    self, self.title, "A windows session was not currently available. Try launching the session again later. If the problem persists contact support.")
 
             self.close()
-
 
     def on_status_timeout(self):
         """Status timer callback. Updates job status."""
@@ -717,7 +777,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
                     if not self.active_connection.is_active():
                         print("Active connection closed. Terminating session.")
                         self.running = False
-                        self.statusTimer.stop()
+                        self.status_timer.stop()
                         self.usageBar.setValue(0)
                         self.update_controls()
                         if self.job is not None:
@@ -729,14 +789,13 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
                 print("Session completed.")
                 self.running = False
-                self.statusTimer.stop()
+                self.status_timer.stop()
                 self.usageBar.setValue(0)
                 self.update_controls()
-                self.disableExtrasPanel()
-                
+                self.disable_extras_panel()
+
                 QtWidgets.QMessageBox.information(
                     self, self.title, "Your application was closed as the session time expired.")
-
 
     def on_autostart_timeout(self):
         """Automatically submit jobn"""
@@ -762,10 +821,9 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
     @QtCore.pyqtSlot(int)
     def on_partCombo_currentIndexChanged(self, idx):
-        if idx!=0:
+        if idx != 0:
             self.selected_part = self.filtered_parts[idx]
         self.update_feature_combo()
-        
 
     @QtCore.pyqtSlot(int)
     def on_launcherTabs_currentChanged(self, idx):
@@ -821,7 +879,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         """Open resources specification window"""
 
         self.resource_window = resource_win.ResourceSpecWindow(self)
-        self.resource_window.setGeometry(self.x()+self.width(), self.y(), self.resource_window.width(), self.resource_window.height())
+        self.resource_window.setGeometry(self.x(
+        )+self.width(), self.y(), self.resource_window.width(), self.resource_window.height())
         self.resource_window.show()
 
     @QtCore.pyqtSlot()
@@ -852,13 +911,12 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         if self.rdp != None:
             self.rdp.terminate()
 
-
         self.running = False
         self.job = None
-        self.statusTimer.stop()
+        self.status_timer.stop()
         self.update_controls()
 
-        self.disableExtrasPanel()
+        self.disable_extras_panel()
 
         if self.locked:
             print("Closing launcher")
@@ -874,16 +932,15 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
             self.launcherTabs.setHidden(False)
         else:
             self.launcherTabs.setHidden(True)
-            self.resize(0,0)
+            self.resize(0, 0)
             self.adjustSize()
 
     @QtCore.pyqtSlot()
     def on_helpButton_clicked(self):
         """Open help page if set"""
 
-        if self.config.help_url!="":
+        if self.config.help_url != "":
             Popen("firefox %s" % self.config.help_url, shell=True)
-
 
     @QtCore.pyqtSlot(str)
     def on_append_text(self, text):

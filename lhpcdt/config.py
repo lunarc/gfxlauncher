@@ -1,7 +1,7 @@
 #!/bin/env python
 #
 # LUNARC HPC Desktop On-Demand graphical launch tool
-# Copyright (C) 2017-2021 LUNARC, Lund University
+# Copyright (C) 2017-2022 LUNARC, Lund University
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,9 +23,11 @@ This reads the configuration file and maintains a configuration singleton
 for other parts of the application to access configuration options.
 """
 
-import os, configparser
+import os
+import configparser
 
 from . singleton import *
+
 
 def print_error(msg):
     """Print error message"""
@@ -35,7 +37,8 @@ def print_error(msg):
 @Singleton
 class GfxConfig(object):
     """Launcher configuration"""
-    def __init__(self, config_filename = ""):
+
+    def __init__(self, config_filename=""):
 
         self._default_props()
 
@@ -48,14 +51,13 @@ class GfxConfig(object):
             elif os.path.isfile(self.config_file_alt2):
                 self.config_filename = self.config_file_alt2
         else:
-            self.config_filename = config_filename            
+            self.config_filename = config_filename
 
         if not self.parse_config_file():
             print_error("Couldn't parse configuration")
             self.is_ok = False
         else:
             self.is_ok = True
-
 
     def _default_props(self):
         """Assign default properties"""
@@ -73,7 +75,7 @@ class GfxConfig(object):
         self.menu_dir = "/home/bmjl/test-menu/etc/xdg/menus/applications-merged"
         self.menu_filename = "Lunarc-On-Demand.menu"
         self.help_url = ""
-        
+
         self.vgl_path = "/sw/pkg/rviz/vgl/bin/latest"
         self.vgl_connect_template = '%s/vglconnect %s %s/%s'
         self.backend_node = "gfx0"
@@ -86,9 +88,10 @@ class GfxConfig(object):
         self.only_submit = False
         self.feature_ignore = ""
         self.part_ignore = ""
-        
+        self.use_sacctmgr = False
+
         self.module_json_file = "/sw/pkg/rviz/share/modules.json"
-        
+
         self.xfreerdp_path = "/sw/pkg/freerdp/2.0.0-rc4/bin"
         self.xfreerdp_cmdline = '%s /v:%s /u:$USER /d:ad.lunarc /sec:tls /cert-ignore /audio-mode:1 /gfx +gfx-progressive -bitmap-cache -offscreen-cache -glyph-cache +clipboard -themes -wallpaper /size:1280x1024 /dynamic-resolution /t:"LUNARC HPC Desktop Windows 10 (NVIDA V100)"'
 
@@ -127,6 +130,7 @@ class GfxConfig(object):
         print("adv_launch_template = %s" % self.adv_launch_template)
         print("feature_ignore = %s" % self.feature_ignore)
         print("part_ignore = %s" % self.part_ignore)
+        print("use_sacctmgr = %s" % self.use_sacctmgr)
 
         print("")
         print("Menu settings")
@@ -157,28 +161,29 @@ class GfxConfig(object):
 
         print("notebook_module = %s" % self.notebook_module)
         print("jupyterlab_module = %s" % self.jupyterlab_module)
-        
-    def _config_get(self, config, section, option):
+
+    def _config_get(self, config, section, option, default_value=""):
         """Safe config retrieval"""
-        
+
         if config.has_option(section, option):
             return config.get(section, option)
         else:
-            return ""
+            return default_value
 
-    def _config_getboolean(self, config, section, option):
+    def _config_getboolean(self, config, section, option, default_value=False):
         """Safe config retrieval"""
 
         if config.has_option(section, option):
             return config.getboolean(section, option)
         else:
-            return ""
+            return default_value
 
     def parse_config_file(self):
         """Parse configuration file"""
 
         if not os.path.isfile(self.config_filename):
-            print_error("Configuration file %s not found" % self.config_filename)
+            print_error("Configuration file %s not found" %
+                        self.config_filename)
             return False
 
         print("Using configuration file : %s" % self.config_filename)
@@ -190,39 +195,62 @@ class GfxConfig(object):
 
         try:
             self.script_dir = self._config_get(config, "general", "script_dir")
-            self.client_script_dir = self._config_get(config, "general", "client_script_dir")
-            self.debug_mode = self._config_getboolean(config, "general", "debug_mode")
-            self.only_submit = self._config_getboolean(config, "general", "only_submit")
-            self.modules_json_file = self._config_get(config, "general", "modules_json_file")
-            self.help_url = self._config_get(config, "general", "help_url").replace('"', '')
+            self.client_script_dir = self._config_get(
+                config, "general", "client_script_dir")
+            self.debug_mode = self._config_getboolean(
+                config, "general", "debug_mode")
+            self.only_submit = self._config_getboolean(
+                config, "general", "only_submit")
+            self.modules_json_file = self._config_get(
+                config, "general", "modules_json_file")
+            self.help_url = self._config_get(
+                config, "general", "help_url").replace('"', '')
 
-            self.default_part = self._config_get(config, "slurm", "default_part")
-            self.default_account = self._config_get(config, "slurm", "default_account")
+            self.default_part = self._config_get(
+                config, "slurm", "default_part")
+            self.default_account = self._config_get(
+                config, "slurm", "default_account")
             self.grantfile = self._config_get(config, "slurm", "grantfile")
-            self.grantfile_base = self._config_get(config, "slurm", "grantfile_base")
-            self.grantfile_dir = self._config_get(config, "slurm", "grantfile_dir")
-            self.grantfile_suffix = self._config_get(config, "slurm", "grantfile_suffix")
-            self.feature_ignore = self._config_get(config, "slurm", "feature_ignore")
+            self.grantfile_base = self._config_get(
+                config, "slurm", "grantfile_base")
+            self.grantfile_dir = self._config_get(
+                config, "slurm", "grantfile_dir")
+            self.grantfile_suffix = self._config_get(
+                config, "slurm", "grantfile_suffix")
+            self.feature_ignore = self._config_get(
+                config, "slurm", "feature_ignore")
             self.part_ignore = self._config_get(config, "slurm", "part_ignore")
 
-            self.simple_launch_template = self._config_get(config, "slurm", "simple_launch_template")
-            self.adv_launch_template = self._config_get(config, "slurm", "adv_launch_template")
-            self.submit_only_slurm_template = self._config_get(config, "slurm", "submit_only_slurm_template")
+            self.simple_launch_template = self._config_get(
+                config, "slurm", "simple_launch_template")
+            self.adv_launch_template = self._config_get(
+                config, "slurm", "adv_launch_template")
+            self.submit_only_slurm_template = self._config_get(
+                config, "slurm", "submit_only_slurm_template")
+            self.use_sacctmgr = self._config_getboolean(config, "slurm", "use_sacctmgr", False)
 
-            self.applications_dir = self._config_get(config, "menus", "applications_dir")
-            self.directories_dir = self._config_get(config, "menus", "directories_dir")
+            self.applications_dir = self._config_get(
+                config, "menus", "applications_dir")
+            self.directories_dir = self._config_get(
+                config, "menus", "directories_dir")
             self.menu_dir = self._config_get(config, "menus", "menu_dir")
-            self.menu_filename = self._config_get(config, "menus", "menu_filename")
-            self.direct_scripts = self._config_getboolean(config, "menus", "direct_scripts")
+            self.menu_filename = self._config_get(
+                config, "menus", "menu_filename")
+            self.direct_scripts = self._config_getboolean(
+                config, "menus", "direct_scripts")
 
             self.vgl_path = self._config_get(config, "vgl", "vgl_path")
             self.backend_node = self._config_get(config, "vgl", "backend_node")
-            self.vgl_connect_template = self._config_get(config, "vgl", "vglconnect_template")
+            self.vgl_connect_template = self._config_get(
+                config, "vgl", "vglconnect_template")
 
-            self.xfreerdp_path = self._config_get(config, "xfreerdp", "xfreerdp_path")
+            self.xfreerdp_path = self._config_get(
+                config, "xfreerdp", "xfreerdp_path")
 
-            self.notebook_module = self._config_get(config, "jupyter", "notebook_module")
-            self.jupyterlab_module = self._config_get(config, "jupyter", "jupyterlab_module")
+            self.notebook_module = self._config_get(
+                config, "jupyter", "notebook_module")
+            self.jupyterlab_module = self._config_get(
+                config, "jupyter", "jupyterlab_module")
         except configparser.Error as e:
             print_error(e)
             return False
@@ -232,7 +260,7 @@ class GfxConfig(object):
         try:
             slurm_options = config.options("slurm")
             for option in slurm_options:
-                if option.find("feature_")!=-1:
+                if option.find("feature_") != -1:
                     descr = self._config_get(config, "slurm", option)
                     feature = option.split("_")[1]
                     self.feature_descriptions[feature] = descr.strip('"')
@@ -245,7 +273,7 @@ class GfxConfig(object):
         try:
             slurm_options = config.options("slurm")
             for option in slurm_options:
-                if option.find("part_")!=-1:
+                if option.find("part_") != -1:
                     descr = self._config_get(config, "slurm", option)
                     partition = option.split("_")[1]
                     self.partition_descriptions[partition] = descr.strip('"')
@@ -260,7 +288,7 @@ class GfxConfig(object):
         try:
             slurm_options = config.options("slurm")
             for option in slurm_options:
-                if option.find("group_")!=-1:
+                if option.find("group_") != -1:
                     parts = self._config_get(config, "slurm", option)
                     group = option.split("_")[1].strip()
                     partitions = parts.split(",")
@@ -271,7 +299,5 @@ class GfxConfig(object):
         except configparser.Error as e:
             print_error(e)
             return False
-
-        print(self.part_groups)
 
         return True

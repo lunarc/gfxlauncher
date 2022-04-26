@@ -1,7 +1,7 @@
 #!/bin/env python
 #
 # LUNARC HPC Desktop On-Demand graphical launch tool
-# Copyright (C) 2017-2021 LUNARC, Lund University
+# Copyright (C) 2017-2022 LUNARC, Lund University
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,6 +22,9 @@ import os
 import subprocess
 import time
 import datetime
+import getpass
+import sys
+
 from subprocess import Popen, PIPE, STDOUT
 
 from . import hostlist
@@ -60,7 +63,7 @@ class GrantFile:
         for line in lines:
             if line[0] != '#':
                 items = line.split(",")
-                if len(items)==6:
+                if len(items) == 6:
                     name = items[0]
                     self.projects[name] = {}
                     self.projects[name]["start_date"] = items[1]
@@ -68,7 +71,8 @@ class GrantFile:
                     self.projects[name]["core_hours"] = int(items[3])
                     self.projects[name]["partition"] = items[4]
                     self.projects[name]["pi"] = items[5].split("#")[0]
-                    self.projects[name]["users"] = items[5].split("#")[1].split()
+                    self.projects[name]["users"] = items[5].split("#")[
+                        1].split()
 
     def query_active_projects(self, user):
         """Query for an active project for user"""
@@ -78,9 +82,12 @@ class GrantFile:
         for project in list(self.projects.keys()):
             if user in self.projects[project]["users"]:
                 if self.verbose:
-                    print("Found user %s in project %s in grantfile %s" % (user, project, self.filename))
-                start_date = datetime.datetime.strptime(self.projects[project]["start_date"], "%Y%m%d")
-                end_date = datetime.datetime.strptime(self.projects[project]["end_date"], "%Y%m%d")
+                    print("Found user %s in project %s in grantfile %s" %
+                          (user, project, self.filename))
+                start_date = datetime.datetime.strptime(
+                    self.projects[project]["start_date"], "%Y%m%d")
+                end_date = datetime.datetime.strptime(
+                    self.projects[project]["end_date"], "%Y%m%d")
 
                 current_date = datetime.datetime.today()
 
@@ -92,7 +99,7 @@ class GrantFile:
                         print("Project is ACTIVE")
                     active_projects.append(project)
                 else:
-                    if self.verbose:                    
+                    if self.verbose:
                         print("Project is EXPIRED")
 
         return active_projects
@@ -107,11 +114,19 @@ class Queue(object):
         2981700		brand 5cpu.scr	 kurs16	 RUNNING 2-02:39:48 6-00:00:00		1 an225
         """
         self.squeueParams = ["jobid", "partition", "name", "user",
-                             "state", "time", "timelimit", "nodes", "nodelist", "timeleft"]
-        self.squeueFormat = "%.7i;%.9P;%.20j;%.8u;%.8T;%.10M;%.9l;%.6D;%R;%S"
+                             "state", "time", "timelimit", "nodes", "nodelist", "timeleft",
+                             "deps", "account", "cpus", "features", "timestart"]
+
+        # jobinfo squeue format  - %.7i %.9P %.25j %.8u %14a %.2t %.19S %.10L %.8Q %.4C %.16R %.12f %E
+        #                             x    x     x    x         x     x                     x
+        self.squeueFormat = "%.7i;%.9P;%.20j;%.8u;%.8T;%.10M;%.9l;%.6D;%R;%L;%E;%14a;%4C;%.12f;%S"
         self.jobList = []
         self.jobs = {}
         self.userJobs = {}
+        self.running_jobs = {}
+        self.pending_jobs = {}
+        self.max_nodes = -1
+        self.max_cpus = -1
 
     def job_info(self, jobid):
         """Return information on job jobid"""
@@ -120,8 +135,11 @@ class Queue(object):
     def update(self):
         """Update queue information"""
         output = execute_cmd(
-            'squeue --long --noheader --format="%s"' % self.squeueFormat)
+            'squeue --noheader --format="%s"' % self.squeueFormat)
         lines = output.split("\n")
+
+        self.max_nodes = -1
+        self.max_cpus = -1
 
         self.jobs = {}
         self.jobList = []
@@ -134,9 +152,21 @@ class Queue(object):
                 if not (id in self.jobs):
                     self.jobs[id] = {}
                     job = {"jobid": id}
-                for i in range(1, 10):
+                for i in range(1, 15):
                     self.jobs[id][self.squeueParams[i]] = parts[i].strip()
                     job[self.squeueParams[i]] = parts[i].strip()
+
+                if job["state"] == "RUNNING":
+                    self.running_jobs[id] = job
+
+                if job["state"] == "PENDING":
+                    self.pending_jobs[id] = job
+
+                if int(job["nodes"]) > self.max_nodes:
+                    self.max_nodes = int(job["nodes"])
+
+                if int(job["cpus"]) > self.max_cpus:
+                    self.max_cpus = int(job["cpus"])
 
                 self.jobList.append(job)
 
@@ -167,7 +197,8 @@ class Slurm(object):
 
     def query_partitions(self, exclude_set={}):
         """Query partitions in slurm."""
-        p = Popen("sinfo", stdout=PIPE, stderr=PIPE, shell=True, universal_newlines=True)
+        p = Popen("sinfo", stdout=PIPE, stderr=PIPE,
+                  shell=True, universal_newlines=True)
         squeue_output = p.communicate()[0].split("\n")
 
         self.partitions = []
@@ -184,9 +215,11 @@ class Slurm(object):
                 if self.__include_part(part_name, exclude_set):
                     self.partitions.append(part_name)
                     if part_name in self.node_lists:
-                        self.node_lists[part_name] = self.node_lists[part_name] + hostlist.expand_hostlist(node_list)
+                        self.node_lists[part_name] = self.node_lists[part_name] + \
+                            hostlist.expand_hostlist(node_list)
                     else:
-                        self.node_lists[part_name] = hostlist.expand_hostlist(node_list)
+                        self.node_lists[part_name] = hostlist.expand_hostlist(
+                            node_list)
 
         self.partitions = list(set(self.partitions))
 
@@ -210,7 +243,8 @@ class Slurm(object):
 
     def query_node(self, node):
         """Query information on node"""
-        p = Popen("scontrol show node %s" % node, stdout=PIPE, stderr=PIPE, shell=True, universal_newlines=True)
+        p = Popen("scontrol show node %s" % node, stdout=PIPE,
+                  stderr=PIPE, shell=True, universal_newlines=True)
         scontrol_output = p.communicate()[0].split("\n")
 
         node_dict = {}
@@ -219,8 +253,8 @@ class Slurm(object):
             var_pairs = line.strip().split(" ")
             if len(var_pairs) >= 1:
                 for var_pair in var_pairs:
-                    if len(var_pair)>0:
-                        if var_pair.find("=")!=-1:
+                    if len(var_pair) > 0:
+                        if var_pair.find("=") != -1:
                             var_name = var_pair.split("=")[0]
                             var_value = var_pair.split("=")[1]
                             node_dict[var_name] = var_value
@@ -229,7 +263,8 @@ class Slurm(object):
 
     def query_nodes(self):
         """Query information on node"""
-        p = Popen("scontrol show nodes -o", stdout=PIPE, stderr=PIPE, shell=True, universal_newlines=True)
+        p = Popen("scontrol show nodes -o", stdout=PIPE,
+                  stderr=PIPE, shell=True, universal_newlines=True)
         scontrol_output = p.communicate()[0].split("\n")
 
         node_dict = {}
@@ -240,8 +275,8 @@ class Slurm(object):
             var_pairs = line.strip().split(" ")
             if len(var_pairs) >= 1:
                 for var_pair in var_pairs:
-                    if len(var_pair)>0:
-                        if var_pair.find("=")!=-1:
+                    if len(var_pair) > 0:
+                        if var_pair.find("=") != -1:
                             var_name = var_pair.split("=")[0]
                             var_value = var_pair.split("=")[1]
 
@@ -269,7 +304,7 @@ class Slurm(object):
 
         node_info = self.query_nodes()
 
-        feature_list =[]
+        feature_list = []
 
         for node in list(node_info.keys()):
             if "Partitions" in node_info[node]:
@@ -280,7 +315,7 @@ class Slurm(object):
                             feature_list.append(feature)
 
         if self.verbose:
-            #print(list(set(feature_list)))
+            # print(list(set(feature_list)))
             print("Done.")
 
         return list(set(feature_list))
@@ -290,7 +325,7 @@ class Slurm(object):
 
         node_list = self.node_lists[part]
 
-        gres_list =[]
+        gres_list = []
 
         for node in node_list:
             node_info = self.query_node(node)
@@ -322,7 +357,8 @@ class Slurm(object):
 
         # Start a sbatch process for job submission
 
-        p = Popen("sbatch", stdout=PIPE, stdin=PIPE, stderr=PIPE, shell=True, universal_newlines=True)
+        p = Popen("sbatch", stdout=PIPE, stdin=PIPE, stderr=PIPE,
+                  shell=True, universal_newlines=True)
         sbatch_output = p.communicate(input=job.script)[0].strip()
 
         if sbatch_output.find("Submitted batch") != -1:
@@ -364,13 +400,14 @@ class Slurm(object):
             job.status = ""
         except:
             return -1
-        
+
         return result
 
     def job_output(self, job):
         """Query job output"""
         if self.is_running(job):
-            output_filename = os.path.join(os.environ["HOME"],"slurm-%d.out" % job.id)
+            output_filename = os.path.join(
+                os.environ["HOME"], "slurm-%d.out" % job.id)
             if os.path.exists(output_filename):
                 output_file = open(output_filename, "r")
                 output = output_file.readlines()
@@ -405,8 +442,75 @@ class Slurm(object):
         return job.status != "R"
 
 
+class AccountManager:
+    def __init__(self, user=""):
+        self.user = user
+        self.user_account_dict = {}
+        self.account_dict = {}
+
+        if self.user == "":
+            self.user = getpass.getuser()
+
+        self.query()
+
+    def query(self):
+        self.query_user_account_info()
+        self.query_account_info()
+
+    def query_user_account_info(self) -> list:
+        output = execute_cmd("sacctmgr -P show user %s withassoc" % self.user)
+        lines = output.split("\n")
+        headers = lines[0].split("|")
+
+        lines = lines[1:]
+
+        account_dict = {}
+
+        for line in lines:
+            columns = line.split("|")
+            if len(columns) > 1:
+                account = columns[4]
+                if account != "no_project":
+                    partition = columns[5]
+                    if not account in account_dict:
+                        account_dict[account] = {}
+                    if not 'partitions' in account_dict[account]:
+                        account_dict[account]['partitions'] = []
+                    account_dict[account]["partitions"].append(partition)
+
+        self.user_account_dict = account_dict
+
+    def query_account_info(self) -> dict:
+        # sacctmgr -P show user
+        output = execute_cmd("sacctmgr -P show user")
+        lines = output.split("\n")
+        headers = lines[0].split("|")
+        lines = lines[1:]
+
+        account_dict = {}
+
+        for line in lines:
+            columns = line.split("|")
+            if len(columns) > 1:
+                account = columns[1]
+                user = columns[0]
+                if not account in account_dict:
+                    account_dict[account] = {}
+                if not 'users' in account_dict[account]:
+                    account_dict[account]['users'] = []
+                account_dict[account]["users"].append(user)
+
+        self.account_dict = account_dict
+
+    def query_active_projects(self, user):
+        return list(self.user_account_dict.keys())
+
+
 if __name__ == "__main__":
 
-    slurm = Slurm()
-    features = slurm.query_features("snic")
-    print(features)
+    #slurm = Slurm()
+    #features = slurm.query_features("snic")
+    # print(features)
+
+    accmgr = AccountManager()
+    accmgr.query_user_account_info()
