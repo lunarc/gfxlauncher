@@ -248,7 +248,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.cancelButton.setVisible(False)
         self.setMaximumHeight(250)
 
-    def time_to_decimal(self, time_string: str) -> int:
+    def time_to_decimal(self, time_string):
         """Time to decimal conversion routine"""
         d = "0"
         h = "0"
@@ -267,7 +267,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         return int(d) * 86400 + int(h) * 3600 + int(m) * 60 + int(s)
 
-    def has_project(self) -> bool:
+    def has_project(self):
         """Check for user in grantfile"""
 
         if self.args.ignore_grantfile:
@@ -424,7 +424,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         if self.silent:
             self.autostart = True
 
-    def update_status_panel(self, text: str):
+    def update_status_panel(self, text):
         self.status_output.setText(text)
 
     def reset_status_panel(self):
