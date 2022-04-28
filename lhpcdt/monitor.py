@@ -224,7 +224,7 @@ class QueueTableModel(QtCore.QAbstractTableModel):
             value = ""
 
             if index.column() == 0:
-                return int(job_key)
+                return str(job_key)
 
             if index.column() == 1:
                 return str(job_values["partition"])
