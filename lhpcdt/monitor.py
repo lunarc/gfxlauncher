@@ -98,6 +98,7 @@ class QueueSortFilterProxyModel(QtCore.QSortFilterProxyModel):
         self.state_filter = state_filter
         self.user_filter = user_filter
         self.show_progress = show_progress
+        self.search_text = ""
 
     def lessThan(self, left, right):
         """Sorting comparison function."""
@@ -105,24 +106,38 @@ class QueueSortFilterProxyModel(QtCore.QSortFilterProxyModel):
         right_data = self.sourceModel().data(right)
         return left_data < right_data
 
+    def search_filter(self, job_id, flag):
+        if self.search_text == "":
+            return flag
+        else:
+            if flag:
+                model = self.sourceModel()
+                values = model.job_dict[job_id]
+                for key, value in values.items():
+                    if self.search_text in str(value):
+                        return True
+                return False
+            else:
+                return flag
+
     def filterAcceptsRow(self, source_row, source_parent):
         """Filter function."""
         model = self.sourceModel()
         job_id = model.job_keys[source_row]
         if self.state_filter == "" and self.user_filter == "":
-            return True
+            return self.search_filter(job_id, True)
         else:
             if self.state_filter == "" and self.user_filter != "":
-                return model.job_dict[job_id]["user"] == self.user_filter
+                return self.search_filter(job_id, (model.job_dict[job_id]["user"] == self.user_filter))
             elif self.state_filter != "" and self.user_filter == "":
-                return model.job_dict[job_id]["state"] == self.state_filter
+                return self.search_filter(job_id, (model.job_dict[job_id]["state"] == self.state_filter))
             elif self.state_filter != "" and self.user_filter != "":
                 if model.job_dict[job_id]["state"] == self.state_filter:
-                    return model.job_dict[job_id]["user"] == self.user_filter
+                    return self.search_filter(job_id, model.job_dict[job_id]["user"] == self.user_filter)
                 else:
                     return False
             else:
-                return True
+                return False
 
     def filterAcceptsColumn(self, source_column, source_parent):
         if not self.show_progress and source_column == 5:
@@ -364,6 +379,8 @@ class SessionWindow(QtWidgets.QMainWindow):
 
         self.use_progress_control = False
 
+        self.search_panel.setVisible(False)
+
         self.update_table()
         self.processing_progress.setVisible(False)
 
@@ -453,6 +470,24 @@ class SessionWindow(QtWidgets.QMainWindow):
 
         self.update_table()
         self.processing_progress.setVisible(False)
+
+    @QtCore.pyqtSlot()
+    def on_action_search_triggered(self):
+        if not self.action_search.isChecked():
+            self.running_model.search_text = ""
+            self.waiting_model.search_text = ""
+            self.running_model.invalidateFilter()
+            self.waiting_model.invalidateFilter()
+            self.search_combo.setCurrentText("")
+
+        self.search_panel.setVisible(self.action_search.isChecked())
+
+    @QtCore.pyqtSlot(str)
+    def on_search_combo_currentTextChanged(self, text):
+        self.running_model.search_text = text
+        self.waiting_model.search_text = text
+        self.running_model.invalidateFilter()
+        self.waiting_model.invalidateFilter()
 
     @QtCore.pyqtSlot()
     def on_action_cancel_job_triggered(self):

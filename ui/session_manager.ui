@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>800</width>
-    <height>600</height>
+    <height>640</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -15,18 +15,50 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
+    <property name="spacing">
+     <number>7</number>
+    </property>
     <property name="leftMargin">
-     <number>8</number>
+     <number>7</number>
     </property>
     <property name="topMargin">
-     <number>8</number>
+     <number>7</number>
     </property>
     <property name="rightMargin">
-     <number>8</number>
+     <number>7</number>
     </property>
     <property name="bottomMargin">
-     <number>8</number>
+     <number>7</number>
     </property>
+    <item>
+     <widget class="QWidget" name="search_panel" native="true">
+      <layout class="QHBoxLayout" name="search_layout">
+       <property name="spacing">
+        <number>6</number>
+       </property>
+       <item>
+        <widget class="QLabel" name="label">
+         <property name="text">
+          <string>Search:</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QComboBox" name="search_combo">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>10</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="editable">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
     <item>
      <widget class="QTabWidget" name="queue_tabs">
       <property name="currentIndex">
@@ -111,6 +143,63 @@
      </widget>
     </item>
     <item>
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <item>
+       <widget class="QLabel" name="label_2">
+        <property name="text">
+         <string>Jobs running:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="running_jobs_label">
+        <property name="frameShape">
+         <enum>QFrame::StyledPanel</enum>
+        </property>
+        <property name="text">
+         <string>0</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_3">
+        <property name="text">
+         <string>jobs waiting:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="waiting_jobs_label">
+        <property name="frameShape">
+         <enum>QFrame::StyledPanel</enum>
+        </property>
+        <property name="text">
+         <string>0</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="horizontalSpacer">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+     </layout>
+    </item>
+    <item>
      <widget class="QProgressBar" name="processing_progress">
       <property name="value">
        <number>0</number>
@@ -132,7 +221,6 @@
     </rect>
    </property>
   </widget>
-  <widget class="QStatusBar" name="statusbar"/>
   <widget class="QToolBar" name="toolBar">
    <property name="windowTitle">
     <string>toolBar</string>
@@ -150,6 +238,8 @@
    <addaction name="action_cancel_job"/>
    <addaction name="action_refresh"/>
    <addaction name="action_show_all_jobs"/>
+   <addaction name="separator"/>
+   <addaction name="action_search"/>
    <addaction name="separator"/>
    <addaction name="action_auto_refresh"/>
   </widget>
@@ -202,6 +292,20 @@
    </property>
    <property name="text">
     <string>Auto refresh</string>
+   </property>
+  </action>
+  <action name="action_search">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset theme="edit-find"/>
+   </property>
+   <property name="text">
+    <string>Search</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+F</string>
    </property>
   </action>
  </widget>
