@@ -104,7 +104,7 @@ class GfxConfig(object):
         self.only_submit = False
         self.feature_ignore = ""
         self.part_ignore = ""
-        self.use_sacctmgr = False
+        self.use_sacctmgr = True
 
         self.module_json_file = "/sw/pkg/rviz/share/modules.json"
 
