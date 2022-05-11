@@ -1,7 +1,7 @@
 #!/bin/env python
 #
 # LUNARC HPC Desktop On-Demand graphical launch tool
-# Copyright (C) 2017-2021 LUNARC, Lund University
+# Copyright (C) 2017-2022 LUNARC, Lund University
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -222,7 +222,12 @@ class JupyterNotebookJob(Job):
         self.processing_description = "Waiting for notebook instance to start."
         self.notebook_module = notebook_module
 
-        self.add_module(self.notebook_module)
+        if ',' in self.notebook_module:
+            modules = self.notebook_module.split(",")
+            for module in modules:
+                self.add_module(module.strip())
+        else:
+            self.add_module(self.notebook_module)
 
         self.add_custom_script("unset XDG_RUNTIME_DIR")
         self.add_custom_script('jupyter-notebook --no-browser --ip=$HOSTNAME')
@@ -242,10 +247,11 @@ class JupyterNotebookJob(Job):
             for line in output_lines:
                 if line.find("?token=") != -1:
                     if line.find("127.0.0.1") == -1:
-                        url = line[line.find("http:"):].strip()
-                        self.notebook_url = url
-                        self.process_output = False
-                        self.on_notebook_url_found(self.notebook_url)
+                        if self.process_output:
+                            url = line[line.find("http:"):].strip()
+                            self.notebook_url = url
+                            self.process_output = False
+                            self.on_notebook_url_found(self.notebook_url)
 
 
 class JupyterLabJob(Job):
@@ -262,7 +268,12 @@ class JupyterLabJob(Job):
         self.use_conda_env = False
         self.conda_env = ""
 
-        self.add_module(self.jupyterlab_module)
+        if ',' in self.jupyterlab_module:
+            modules = self.jupyterlab_module.split(",")
+            for module in modules:
+                self.add_module(module.strip())
+        else:
+            self.add_module(self.jupyterlab_module)
 
         self.add_custom_script("unset XDG_RUNTIME_DIR")
 
@@ -289,10 +300,11 @@ class JupyterLabJob(Job):
             for line in output_lines:
                 if line.find("?token=") != -1:
                     if line.find("127.0.0.1") == -1:
-                        url = line[line.find("http:"):].strip()
-                        self.notebook_url = url
-                        self.process_output = False
-                        self.on_notebook_url_found(self.notebook_url)
+                        if self.process_output:
+                            url = line[line.find("http:"):].strip()
+                            self.notebook_url = url
+                            self.process_output = False
+                            self.on_notebook_url_found(self.notebook_url)
 
 
 class VMJob(Job):

@@ -23,11 +23,8 @@ This module implements the main user interface of the application
 launcher.
 """
 
-import os
-import sys
-import time
-import glob
-import getpass
+import os, sys, time, glob, getpass, shutil
+
 from datetime import datetime
 
 from PyQt5 import Qt, QtCore, QtGui, QtWidgets, uic
@@ -62,10 +59,11 @@ class OutputReceiver(QtCore.QObject):
     def __init__(self, queue, *args, **kwargs):
         QtCore.QObject.__init__(self, *args, **kwargs)
         self.queue = queue
+        self.running = True
 
     @QtCore.pyqtSlot()
     def run(self):
-        while True:
+        while self.running:
             text = self.queue.get()
             self.mysignal.emit(text)
 
@@ -137,6 +135,10 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         """Launch window constructor"""
         super(GfxLaunchWindow, self).__init__(parent)
 
+        self.__console_output = sys.stdout
+        self.__redirect_thread = None
+        self.error_log = []
+
         print("Initialising launch window...")
 
         # Initialise properties
@@ -148,29 +150,47 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.copyright_short_info = settings.LaunchSettings.create().copyright_short_info
         self.version_info = settings.LaunchSettings.create().version_info
         self.rdp = None
+        self.job = None
+
 
         self.reconnect_nb_button = None
         self.reconnect_vm_button = None
+
+        # Where can we find the user interface definitions (ui-files)
+
+        ui_path = os.path.join(self.tool_path, "ui")
+
+        # Load appropriate user interface
+
+        uic.loadUi(os.path.join(ui_path, "mainwindow_simplified.ui"), self)
 
         # Read configuration
 
         self.config = config.GfxConfig.create()
 
         if not self.config.is_ok:
-            print("Please check configuration.")
+            QtWidgets.QMessageBox.information(self, 'Error', self.config.errors)
             sys.exit(1)
 
         # Parse partition and feature excludes
 
         self.feature_ignore = self.config.feature_ignore[1:-1]
-        self.feature_exclude_set = set(self.feature_ignore.split(","))
+
+        if self.feature_ignore == "":
+            self.feature_exclude_set = set()
+        else:
+            self.feature_exclude_set = set(self.feature_ignore.split(","))
 
         self.part_ignore = self.config.part_ignore[1:-1]
-        self.part_exclude_set = set(self.part_ignore.split(","))
+
+        if self.part_ignore == "":
+            self.part_exclude_set = set()
+        else:
+            self.part_exclude_set = set(self.part_ignore.split(","))     
 
         # Setup default launch properties
 
-        self.init_defaults()
+        self.init_defaults() 
 
         # Get changes from command line
 
@@ -182,6 +202,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         self.features = self.slurm.query_features(
             self.part, self.feature_exclude_set)
+
         self.selected_part = self.part
 
         # Check for available project
@@ -190,13 +211,6 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
             QtWidgets.QMessageBox.information(
                 self, self.title, "No project allocation found. Please apply for a project in SUPR.")
 
-        # Where can we find the user interface definitions (ui-files)
-
-        ui_path = os.path.join(self.tool_path, "ui")
-
-        # Load appropriate user interface
-
-        uic.loadUi(os.path.join(ui_path, "mainwindow_simplified.ui"), self)
 
         if self.silent:
             self.enable_silent_ui()
@@ -225,6 +239,37 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         self.launcherTabs.setHidden(True)
         self.adjustSize()
+
+    @property
+    def console_output(self):
+        return self.__console_output
+
+    @console_output.setter
+    def console_output(self, output):
+        self.__console_output = output
+
+    def console_write(self, text):
+        self.console_output.write(text+"\n")
+
+    def dump_error_log(self):
+        """Dump errors on standard output"""
+        self.stop_redirect()
+        for line in self.error_log:
+            self.__console_output.write(line+"\n")
+
+    @property
+    def redirect_thread(self):
+        return self.__redirect_thread
+
+    @redirect_thread.setter
+    def redirect_thread(self, thread):
+        self.__redirect_thread = thread
+
+    def stop_redirect(self):
+        if self.__redirect_thread != None:
+            self.__redirect_thread.running = False
+            print("Stopping redirection")
+
 
     def enable_silent_ui(self):
         """Hides controls for running in silent mode."""
@@ -391,6 +436,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.locked = False
         self.group = ""
         self.silent = False
+        self.browser_command = self.config.browser_command
 
     def get_defaults_from_cmdline(self):
         """Get properties from command line"""
@@ -414,8 +460,16 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.cpus_per_task = self.args.cpus_per_task
         self.no_requeue = self.args.no_requeue
         self.user = self.args.user
-        self.notebook_module = self.args.notebook_module
-        self.jupyterlab_module = self.args.jupyterlab_module
+        if self.args.notebook_module!="":
+            self.notebook_module = self.args.notebook_module
+        else:
+            self.notebook_module = self.config.notebook_module
+
+        if self.args.jupyterlab_module!="":
+            self.jupyterlab_module = self.args.jupyterlab_module
+        else:
+            self.jupyterlab_module = self.config.jupyterlab_module
+
         self.autostart = self.args.autostart
         self.locked = self.args.locked
         self.group = self.args.group
@@ -692,6 +746,17 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         self.startButton.setEnabled(False)
 
+    def launch_browser(self, url):
+        """Open a configured browser for the url."""
+
+        browser_path = shutil.which(self.browser_command)
+
+        if browser_path is not None:
+            Popen("%s %s" % (browser_path, url), shell=True)
+            return True
+        else:
+            return False
+
     def on_submit_finished(self):
         """Event called from submit thread when job has been submitted"""
 
@@ -713,7 +778,9 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         self.reset_status_panel()
 
-        Popen("firefox %s" % url, shell=True)
+        if not self.launch_browser(url):
+            QtWidgets.QMessageBox.information(
+                self, self.title, "A suitable browser couldn't be found. The notebook instance can be found at:\n\n%s" % url )
 
         self.enable_extras_panel()
 
@@ -806,7 +873,11 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         """Reopen connection to notebook."""
 
         if self.job != None:
-            Popen("firefox %s" % self.job.notebook_url, shell=True)
+            if not self.launch_browser(self.job.notebook_url):
+                QtWidgets.QMessageBox.information(
+                    self, self.title, "A suitable browser couldn't be found. The notebook instance can be found at:\n\n%s" % self.job.notebook_url )
+
+        #Popen("firefox %s" % self.job.notebook_url, shell=True)
 
     def on_reconnect_vm(self):
         """Reopen connection to vm"""
@@ -842,13 +913,13 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
                 # Create a Jupyter notbook job
 
-                job = jobs.JupyterNotebookJob()
+                job = jobs.JupyterNotebookJob(notebook_module = self.notebook_module)
 
             elif self.job_type == "jupyterlab":
 
                 # Create a Jupyter notbook job
 
-                job = jobs.JupyterLabJob()
+                job = jobs.JupyterLabJob(jupyterlab_module = self.jupyterlab_module)
 
             elif self.job_type == "vm":
 
@@ -940,7 +1011,12 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         """Open help page if set"""
 
         if self.config.help_url != "":
-            Popen("firefox %s" % self.config.help_url, shell=True)
+
+            if not self.launch_browser(self.config.help_url):
+                QtWidgets.QMessageBox.information(
+                    self, self.title, "A suitable browser couldn't be found. Documentation can be found at:\n\n%s" % self.config.help_url )
+           
+        # Popen("firefox %s" % self.config.help_url, shell=True)
 
     @QtCore.pyqtSlot(str)
     def on_append_text(self, text):
@@ -950,7 +1026,9 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.statusText.moveCursor(QtGui.QTextCursor.End)
         if text != "\n":
             self.statusText.insertPlainText(now.strftime("[%H:%M:%S] ") + text)
+            self.error_log.append(text)
         else:
             self.statusText.insertPlainText(text)
+            self.error_log.append(text)
 
         self.statusText.moveCursor(QtGui.QTextCursor.StartOfLine)

@@ -182,10 +182,10 @@ if __name__ == '__main__':
                         action="store_true", default=False, help="Ignore grantfile checking.")
 
     parser.add_argument("--jupyterlab-module", dest="jupyterlab_module", action="store",
-                        default="Anaconda3", help="Specify module to load for Jupyter Lab jobs.")
+                        default="", help="Specify module to load for Jupyter Lab jobs.")
 
     parser.add_argument("--notebook-module", dest="notebook_module", action="store",
-                        default="Anaconda3", help="Specify module to load for Jupyter Notebook jobs.")
+                        default="", help="Specify module to load for Jupyter Notebook jobs.")
 
     parser.add_argument("--autostart", dest="autostart",
                         action="store_true", default=False)
@@ -222,6 +222,8 @@ if __name__ == '__main__':
 
     # Create Queue and redirect sys.stdout to this queue
 
+    old_stdout = sys.stdout
+
     if redirect:
         queue = Queue()
         sys.stdout = launcher.WriteStream(queue)
@@ -247,6 +249,7 @@ if __name__ == '__main__':
     # Show user interface
 
     form = launcher.GfxLaunchWindow()
+    form.console_output = old_stdout
     form.show()
 
     # Create receiver thread for catching stdout events and redirecting
@@ -259,7 +262,8 @@ if __name__ == '__main__':
         receiver.moveToThread(thread)
 
         thread.started.connect(receiver.run)
-        thread.start()
+        thread.start()        
+        form.redirect_thread = thread
 
     # Start main application loop
 
