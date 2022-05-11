@@ -245,8 +245,8 @@
   </widget>
   <action name="action_job_info">
    <property name="icon">
-    <iconset theme="document-open">
-     <normaloff>.</normaloff>.</iconset>
+    <iconset resource="../icons/toolbar_icons.qrc">
+     <normaloff>:/icons/outline_info_black_24dp.png</normaloff>:/icons/outline_info_black_24dp.png</iconset>
    </property>
    <property name="text">
     <string>Job info</string>
@@ -254,8 +254,8 @@
   </action>
   <action name="action_cancel_job">
    <property name="icon">
-    <iconset theme="process-stop">
-     <normaloff>.</normaloff>.</iconset>
+    <iconset resource="../icons/toolbar_icons.qrc">
+     <normaloff>:/icons/round_cancel_black_24dp.png</normaloff>:/icons/round_cancel_black_24dp.png</iconset>
    </property>
    <property name="text">
     <string>Cancel job</string>
@@ -263,8 +263,8 @@
   </action>
   <action name="action_refresh">
    <property name="icon">
-    <iconset theme="view-refresh">
-     <normaloff>.</normaloff>.</iconset>
+    <iconset resource="../icons/toolbar_icons.qrc">
+     <normaloff>:/icons/round_refresh_black_24dp.png</normaloff>:/icons/round_refresh_black_24dp.png</iconset>
    </property>
    <property name="text">
     <string>Refresh</string>
@@ -275,8 +275,8 @@
     <bool>true</bool>
    </property>
    <property name="icon">
-    <iconset theme="edit-find">
-     <normaloff>.</normaloff>.</iconset>
+    <iconset resource="../icons/toolbar_icons.qrc">
+     <normaloff>:/icons/round_visibility_black_24dp.png</normaloff>:/icons/round_visibility_black_24dp.png</iconset>
    </property>
    <property name="text">
     <string>All jobs</string>
@@ -287,8 +287,8 @@
     <bool>true</bool>
    </property>
    <property name="icon">
-    <iconset theme="media-playlist-repeat">
-     <normaloff>.</normaloff>.</iconset>
+    <iconset resource="../icons/toolbar_icons.qrc">
+     <normaloff>:/icons/round_autorenew_black_24dp.png</normaloff>:/icons/round_autorenew_black_24dp.png</iconset>
    </property>
    <property name="text">
     <string>Auto refresh</string>
@@ -299,7 +299,8 @@
     <bool>true</bool>
    </property>
    <property name="icon">
-    <iconset theme="edit-find"/>
+    <iconset resource="../icons/toolbar_icons.qrc">
+     <normaloff>:/icons/round_search_black_24dp.png</normaloff>:/icons/round_search_black_24dp.png</iconset>
    </property>
    <property name="text">
     <string>Search</string>
@@ -309,6 +310,8 @@
    </property>
   </action>
  </widget>
- <resources/>
+ <resources>
+  <include location="../icons/toolbar_icons.qrc"/>
+ </resources>
  <connections/>
 </ui>

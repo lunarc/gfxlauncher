@@ -1,0 +1,10 @@
+<RCC>
+    <qresource prefix="/icons">
+        <file>outline_info_black_24dp.png</file>
+        <file>round_autorenew_black_24dp.png</file>
+        <file>round_cancel_black_24dp.png</file>
+        <file>round_refresh_black_24dp.png</file>
+        <file>round_search_black_24dp.png</file>
+        <file>round_visibility_black_24dp.png</file>
+    </qresource>
+</RCC>

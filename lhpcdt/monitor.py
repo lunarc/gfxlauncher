@@ -28,6 +28,7 @@ from . import lrms
 from . import remote
 from . import settings
 from . import config
+from . import resources
 
 from subprocess import Popen, PIPE, STDOUT
 
