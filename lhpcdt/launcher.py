@@ -127,6 +127,29 @@ class SubmitThread(QtCore.QThread):
                 self.ssh.execute(self.job.nodes, self.cmd)
                 self.active_connection = self.ssh
 
+class TunnelThread(QtCore.QThread):
+    """Job submission thread"""
+    NO_ERROR = 0
+    SUBMIT_FAILED = 1
+
+    def __init__(self, ssh_tunnel):
+        QtCore.QThread.__init__(self)
+
+        self.error_status = SubmitThread.NO_ERROR
+        self.ssh_tunnel = ssh_tunnel
+        self.connected = False
+
+    def disconnect(self):
+        self.connected = False
+
+    def run(self):
+        """Main thread method"""
+
+        self.ssh_tunnel.execute()
+        self.connected = True
+
+        while self.connected and self.ssh_tunnel.is_active():
+            time.sleep(1)
 
 class GfxLaunchWindow(QtWidgets.QMainWindow):
     """Main launch window user interface"""
@@ -432,6 +455,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.user = ""
         self.notebook_module = self.config.notebook_module
         self.jupyterlab_module = self.config.jupyterlab_module
+        self.jupyter_use_localhost = self.config.jupyter_use_localhost
+        self.ssh_tunnel = None
         self.autostart = False
         self.locked = False
         self.group = ""
@@ -660,7 +685,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
             # Create a Jupyter notbook job
 
             self.job = jobs.JupyterNotebookJob(
-                notebook_module=self.notebook_module)
+                notebook_module=self.notebook_module, use_localhost=self.jupyter_use_localhost)
             self.job.on_notebook_url_found = self.on_notebook_url_found
 
             # Create extra user interface controls for reconnection
@@ -680,7 +705,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
             # Create a Jupyter lab job
 
             self.job = jobs.JupyterLabJob(
-                jupyterlab_module=self.jupyterlab_module)
+                jupyterlab_module=self.jupyterlab_module, use_localhost=self.jupyter_use_localhost)
             self.job.on_notebook_url_found = self.on_notebook_url_found
 
             # Create extra user interface controls for reconnection
@@ -778,9 +803,28 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         self.reset_status_panel()
 
-        if not self.launch_browser(url):
-            QtWidgets.QMessageBox.information(
-                self, self.title, "A suitable browser couldn't be found. The notebook instance can be found at:\n\n%s" % url )
+        if self.jupyter_use_localhost:
+
+            # Setup a tunnel to notebook server running on localhost on the node.
+
+            if self.ssh_tunnel is not None:
+                self.ssh_tunnel.terminate()
+
+            self.ssh_tunnel = remote.SSHForwardTunnel(dest_server="localhost", remote_port=8888, server_hostname=self.job.nodes)
+            self.ssh_tunnel.execute()
+
+            # Update the job url to use the localhost port.
+
+            fixed_url = url.replace("8888", str(self.ssh_tunnel.local_port))
+            self.job.notebook_url = fixed_url
+
+            if not self.launch_browser(self.job.notebook_url):
+                QtWidgets.QMessageBox.information(
+                    self, self.title, "A suitable browser couldn't be found. The notebook instance can be found at:\n\n%s" % self.job.notebook_url )
+        else:
+            if not self.launch_browser(url):
+                QtWidgets.QMessageBox.information(
+                    self, self.title, "A suitable browser couldn't be found. The notebook instance can be found at:\n\n%s" % url )
 
         self.enable_extras_panel()
 
@@ -913,13 +957,13 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
                 # Create a Jupyter notbook job
 
-                job = jobs.JupyterNotebookJob(notebook_module = self.notebook_module)
+                job = jobs.JupyterNotebookJob(notebook_module = self.notebook_module, use_localhost=self.jupyter_use_localhost)
 
             elif self.job_type == "jupyterlab":
 
                 # Create a Jupyter notbook job
 
-                job = jobs.JupyterLabJob(jupyterlab_module = self.jupyterlab_module)
+                job = jobs.JupyterLabJob(jupyterlab_module = self.jupyterlab_module, use_localhost=self.jupyter_use_localhost)
 
             elif self.job_type == "vm":
 
@@ -970,6 +1014,9 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         if self.rdp != None:
             self.rdp.terminate()
 
+        if self.ssh_tunnel is not None:
+            self.ssh_tunnel.terminate()
+
         self.close()
 
     @QtCore.pyqtSlot()
@@ -981,6 +1028,10 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         if self.rdp != None:
             self.rdp.terminate()
+
+        if self.ssh_tunnel is not None:
+            self.ssh_tunnel.terminate()
+            self.ssh_tunnel = None
 
         self.running = False
         self.job = None

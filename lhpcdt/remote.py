@@ -22,11 +22,17 @@ Remote launch module
 This module implements different classes for remote launch methods.
 """
 
-import os
-import sys
-import subprocess
-import time
+import os, sys, subprocess, socketserver
+
 from subprocess import Popen, PIPE, STDOUT
+
+def find_available_port():
+    """Find an available tcp port."""
+
+    with socketserver.TCPServer(("localhost", 0), None) as s:
+        free_port = s.server_address[1]
+
+    return free_port
 
 
 class SSH(object):
@@ -99,6 +105,44 @@ class SSH(object):
 
         return output
 
+class SSHForwardTunnel(object):
+    def __init__(self, local_port=-1, dest_server="", remote_port=-1, server_hostname=""):
+        self.local_port = local_port 
+        self.remote_port = remote_port
+        self.dest_server = dest_server
+        self.server_hostname = server_hostname
+        self.strict_host_key_check = False
+        self.__options = ""
+        self.__process = None
+
+    def __update_options(self):
+        """Update SSH options"""
+
+        if self.local_port<0:
+            self.local_port = find_available_port()
+
+        self.__options = "-N -L %d:%s:%d %s" % (self.local_port, self.dest_server, self.remote_port, self.server_hostname)
+        if not self.strict_host_key_check:
+            self.__options += " -oStrictHostKeyChecking=no"
+
+    def terminate(self):
+        """Terminate SSH connection process"""
+        if self.__process != None:
+            self.__process.terminate()
+
+    def is_active(self):
+        """Return SSH connection status"""
+        self.__process.poll()
+        return self.__process.returncode == None
+
+    def wait(self):
+        self.__process.wait()        
+
+    def execute(self):
+        self.__update_options()
+        print("Tunnel cmdline: %s" % ("ssh %s" % (self.__options)))
+        self.__process = Popen("ssh %s" % (self.__options), shell=True)
+    
 
 class VGLConnect(object):
     """Implements a remote connecting supporting VirtualGL"""
@@ -114,6 +158,7 @@ class VGLConnect(object):
         self.display = ""
         self.vglrun = True
         self.vgl_path = "/sw/pkg/rviz/vgl/bin/latest"
+        self.secure = False
 
         self._options = ""
         self._update_options()
@@ -125,6 +170,8 @@ class VGLConnect(object):
         self._options = ""
         if self.tty:
             self._options += " -t"
+        if self.secure:
+            self._options += " -s"
         if self.tunnelX11:
             self._options += " -X"
         if self.trustedX11:
@@ -435,3 +482,22 @@ class XFreeRDP(object):
 
     xfreerdp_path = property(get_xfreerdp_path, set_xfreerdp_path)
     xfreerdp_cmd = property(get_xfreerdp_cmd, set_xfreerdp_cmd)
+
+
+if __name__ == "__main__":
+
+    print("Finding a free port...")
+
+    port = find_available_port()
+
+    print("Found", port)
+
+    #ssh_tunnel = SSHForwardTunnel(8889,"au322",8888,"au322")
+    #ssh_tunnel.execute()
+
+    #while ssh_tunnel.is_active():
+    #    print("Tunnel is running...")
+    #    time.sleep(3)
+
+
+

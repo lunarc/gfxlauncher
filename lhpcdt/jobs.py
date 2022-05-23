@@ -215,8 +215,10 @@ unset __conda_setup
 class JupyterNotebookJob(Job):
     """Jupyter notebook job"""
 
-    def __init__(self, account="", partition="", time="00:30:00", notebook_module="Anaconda3"):
+    def __init__(self, account="", partition="", time="00:30:00", notebook_module="Anaconda3", use_localhost=False):
         Job.__init__(self, account, partition, time)
+
+        self.use_localhost = use_localhost
         self.notebook_url = ""
         self.process_output = True
         self.processing_description = "Waiting for notebook instance to start."
@@ -230,7 +232,12 @@ class JupyterNotebookJob(Job):
             self.add_module(self.notebook_module)
 
         self.add_custom_script("unset XDG_RUNTIME_DIR")
-        self.add_custom_script('jupyter-notebook --no-browser --ip=$HOSTNAME')
+
+        if self.use_localhost:
+            self.add_custom_script('jupyter-notebook --no-browser')
+        else:    
+            self.add_custom_script('jupyter-notebook --no-browser --ip=$HOSTNAME')
+
         self.add_custom_script("module list")
         self.add_custom_script("which python")
 
@@ -257,8 +264,9 @@ class JupyterNotebookJob(Job):
 class JupyterLabJob(Job):
     """Jupyter lab job"""
 
-    def __init__(self, account="", partition="", time="00:30:00", jupyterlab_module="Anaconda3"):
+    def __init__(self, account="", partition="", time="00:30:00", jupyterlab_module="Anaconda3", use_localhost=False):
         Job.__init__(self, account, partition, time)
+        self.use_localhost = use_localhost
         self.notebook_url = ""
         self.process_output = True
         self.processing_description = "Waiting for notebook instance to start."
@@ -283,7 +291,11 @@ class JupyterLabJob(Job):
             if self.conda_env!="":
                 self.add_custom_script("conda activate %s" % (self.conda_env))
 
-        self.add_custom_script('jupyter-lab --no-browser --ip=$HOSTNAME')
+        if self.use_localhost:
+            self.add_custom_script('jupyter-lab --no-browser')
+        else:
+            self.add_custom_script('jupyter-lab --no-browser --ip=$HOSTNAME')
+
         self.add_custom_script("module list")
         self.add_custom_script("which python")
 

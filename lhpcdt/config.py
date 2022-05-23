@@ -40,9 +40,9 @@ class GfxConfig(object):
         self._default_props()
 
         self.config_filename = ""
-        self.config_file_alt1 = "/etc/gfxlauncher.conf"
-        self.config_file_alt2 = "/sw/pkg/rviz/etc/gfxlauncher.conf"
-        self.config_file_alt3 = os.path.expanduser("~/etc/gfxlauncher.conf")
+        self.config_file_alt2 = "/etc/gfxlauncher.conf"
+        self.config_file_alt3 = "/sw/pkg/rviz/etc/gfxlauncher.conf"
+        self.config_file_alt1 = os.path.expanduser("~/etc/gfxlauncher.conf")
 
         if config_filename == "":
             if os.path.isfile(self.config_file_alt1):
@@ -113,6 +113,7 @@ class GfxConfig(object):
 
         self.notebook_module = "Anaconda3"
         self.jupyterlab_module = "Anaconda3"
+        self.jupyter_use_localhost = False
 
     def print_config(self):
         """Print configuration"""
@@ -270,6 +271,8 @@ class GfxConfig(object):
                 config, "jupyter", "notebook_module")
             self.jupyterlab_module = self._config_get(
                 config, "jupyter", "jupyterlab_module")
+
+            self.jupyter_use_localhost = self._config_getboolean(config, "jupyter", "jupyter_use_localhost", False)
 
         except configparser.Error as e:
             self.print_error(e)
