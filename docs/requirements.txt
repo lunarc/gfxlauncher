@@ -1,49 +1,6 @@
-alabaster @ file:///home/ktietz/src/ci/alabaster_1611921544520/work
-Babel @ file:///tmp/build/80754af9/babel_1620871417480/work
-beautifulsoup4==4.11.1
-brotlipy==0.7.0
-certifi==2022.5.18.1
-cffi @ file:///C:/ci_310/cffi_1642682485096/work
-charset-normalizer @ file:///tmp/build/80754af9/charset-normalizer_1630003229654/work
-colorama @ file:///tmp/build/80754af9/colorama_1607707115595/work
-cryptography @ file:///C:/ci/cryptography_1652083563162/work
-css-html-js-minify==2.5.5
-docutils @ file:///C:/ci/docutils_1620828264669/work
-idna @ file:///tmp/build/80754af9/idna_1637925883363/work
-imagesize @ file:///tmp/build/80754af9/imagesize_1637939814114/work
-importlib-metadata @ file:///C:/ci/importlib-metadata_1648562621412/work
-Jinja2 @ file:///opt/conda/conda-bld/jinja2_1647436528585/work
-lxml==4.8.0
-Markdown==3.3.7
-MarkupSafe @ file:///C:/ci/markupsafe_1621528502553/work
-packaging @ file:///tmp/build/80754af9/packaging_1637314298585/work
-pycparser @ file:///tmp/build/80754af9/pycparser_1636541352034/work
-Pygments @ file:///opt/conda/conda-bld/pygments_1644249106324/work
-pyOpenSSL @ file:///opt/conda/conda-bld/pyopenssl_1643788558760/work
-pyparsing @ file:///tmp/build/80754af9/pyparsing_1635766073266/work
-PyQt5==5.15.6
-PyQt5-Qt5==5.15.2
-PyQt5-sip==12.10.1
-PySocks @ file:///C:/ci/pysocks_1605307512533/work
-python-slugify==6.1.2
-pytz==2021.3
-requests @ file:///opt/conda/conda-bld/requests_1641824580448/work
-snowballstemmer @ file:///tmp/build/80754af9/snowballstemmer_1637937080595/work
-soupsieve==2.3.2.post1
-Sphinx @ file:///opt/conda/conda-bld/sphinx_1643644169832/work
-sphinx-copybutton==0.5.0
-sphinx-markdown-tables==0.0.15
-sphinx-material==0.0.35
-sphinx-rtd-theme==1.0.0
-sphinxcontrib-applehelp @ file:///home/ktietz/src/ci/sphinxcontrib-applehelp_1611920841464/work
-sphinxcontrib-devhelp @ file:///home/ktietz/src/ci/sphinxcontrib-devhelp_1611920923094/work
-sphinxcontrib-htmlhelp @ file:///tmp/build/80754af9/sphinxcontrib-htmlhelp_1623945626792/work
-sphinxcontrib-jsmath @ file:///home/ktietz/src/ci/sphinxcontrib-jsmath_1611920942228/work
-sphinxcontrib-qthelp @ file:///home/ktietz/src/ci/sphinxcontrib-qthelp_1611921055322/work
-sphinxcontrib-serializinghtml @ file:///tmp/build/80754af9/sphinxcontrib-serializinghtml_1624451540180/work
-text-unidecode==1.3
-Unidecode==1.3.4
-urllib3 @ file:///C:/ci/urllib3_1650639883891/work
-win-inet-pton @ file:///C:/ci/win_inet_pton_1605306162074/work
-wincertstore==0.2
-zipp @ file:///C:/ci/zipp_1652273994994/work
+PyQt5
+sphinx-copybutton
+sphinx-markdown-tables
+sphinx-material
+sphinx-rtd-theme
+
