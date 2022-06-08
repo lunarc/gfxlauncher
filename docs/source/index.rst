@@ -1,10 +1,13 @@
-.. GfxLauncher - A graphical application launcher for SLURM documentation master file, created by
-   sphinx-quickstart on Fri Jun 26 15:43:29 2020.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+GfxLauncher
+===========
 
-Welcome to GfxLauncher - A graphical application launcher for SLURM
-===================================================================
+The GfxLauncher toolkit provide the means for launching graphical applications through SLURM. The toolkit comes with a configurable launcher, graphical job monitor and tools for automatically generating menus and shortcuts for the launcher. 
+
+.. image:: images/gfxlauncher_logo.svg
+  :width: 100%
+  :align: center
+  :alt: Alternative text
+
 
 .. toctree::
    :maxdepth: 2
@@ -14,10 +17,10 @@ Welcome to GfxLauncher - A graphical application launcher for SLURM
    technical_description.rst
    installation.rst
    configuration.rst
-   configuration_slurmvm.rst
    pam_exec.rst
    gfxlaunch.rst
    gfxconvert.rst
+   configuration_slurmvm.rst
    code_documentation.rst   
 
 

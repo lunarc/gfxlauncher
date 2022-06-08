@@ -8,7 +8,7 @@ GfxLauncher is implemented as a command-line tool that takes care of launching g
     gfxlaunch --vgl --title "Paraview-5.4.1" --partition lvis --account lvis-test --exclusive --tasks-per-node=-1 --cmd /sw/pkg/rviz/sbin/run/run_paraview-5.4.1_rviz-server.sh --simplified
 
 Application launch methods
-==========================
+--------------------------
 
 The main idea with GfxLauncher is to be able to launch interactive applications, both graphical and web-based, through SLURM. 
 

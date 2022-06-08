@@ -1,5 +1,5 @@
-Configuring nodes for SSH execution (pam_exec)
-==============================================
+Configuring compute nodes
+=========================
 
 To be able launch application in the same context as the placeholder job running on the node, a special pam module and script must be used.
 

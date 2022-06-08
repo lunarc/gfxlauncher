@@ -1,5 +1,5 @@
-Configuration of launcher (gfxlaunch)
-=====================================
+Configuring the launcher
+========================
 
 GfxLauncher and the gfxconvert script is configured in the **/etc/gfxlauncher.conf** configuration file. This file controls all the default settings and slurm templates used.
 
@@ -7,75 +7,59 @@ An example configuration file is shown below:
 
 .. code-block:: ini
 
-    [general]
-    script_dir = /sw/pkg/rviz/sbin/run
-    client_script_dir = /sw/pkg/rviz/sbin/run/launcher
+[general]
+script_dir = /sw/pkg/rviz/sbin/run
+client_script_dir = /sw/pkg/rviz/sbin/run/launcher
+modules_json_file = /sw/pkg/rviz/share/modules.json
 
-    [slurm]
-    default_part = lvis
-    default_account = lvis-test
-    grantfile = /sw/pkg/slurm/local/grantfile.lvis
-    grantfile_base = /sw/pkg/slurm/local/grantfile.%s
+[slurm]
+default_part = lvis
+default_account = lvis-test
+grantfile = /sw/pkg/slurm/local/grantfile.lvis
+grantfile_base = /sw/pkg/slurm/local/grantfile.%s
 
-    simple_slurm_template = gfxlaunch --vgl --title "%s" --partition %s --account %s --exclusive --tasks-per-node=-1 --cmd %s --simplified
-    simple_launch_template = gfxlaunch --vgl --title "%s" --partition %s --account %s --exclusive --tasks-per-node=-1 --cmd %s --simplified
-    submit_only_slurm_template = gfxlaunch --vgl --title "%s" --partition %s --account %s --only-submit --job=%s --simplified
-    
-    feature_mem96gb = "96 GB Memory node"
-    feature_mem64gb = "64 GB Memory node"
-    feature_mem128gb = "128 GB Memory node"
-    feature_mem192gb = "192 GB Memory node"
-    feature_mem384gb = "384 GB Memory node"
-    feature_mem768gb = "768 GB Memory node"
-    feature_mem256gb = "256 GB Memory node"
-    feature_gpu3k20 = "3 x NVIDIA K20 GPU (128GB RAM)"
-    #feature_gpu2k20 = "2 x NVIDIA K20 GPU"
-    feature_gpu8k20 = "8 x NVIDIA K20 GPU (128GB RAM)"
-    #feature_gpu4k20 = "4 x NVIDIA K20 GPU"
-    feature_kepler = "2 x NVIDIA K80 GPU"
-    feature_ampere = "2 x NVIDIA A100 GPU"
-    feature_ignore = "rack-,rack_,bc,haswell,cascade,enc,jobtmp,skylake,ampere,kepler,sandy"
+simple_slurm_template = gfxlaunch --vgl --title "%s" --partition %s --account %s --exclusive --tasks-per-node=-1 --cmd %s --simplified
+simple_launch_template = gfxlaunch --vgl --title "%s" --partition %s --account %s --exclusive --tasks-per-node=-1 --cmd %s --simplified
 
-    part_lu = "Aurora CPU"
-    part_lu2 = "Aurora CPU (32c)"
-    part_gpu = "Aurora GPU (K80)"
-    part_gpu2 = "Aurora GPU (A100)"
-    part_gpuk20 = "Aurora GPU (K20)"
-    part_gpua100 = "Aurora GPU (A100)"
-    part_lvis = "On-demand"
-    part_lvis2 = "On-demand (A40)"
-    part_win = "Windows on-demand (V100)"
-    part_ignore = "lunarc,hep"
+adv_slurm_template = gfxlaunch --vgl --title "%s" --partition %s --account %s --exclusive --cmd %s
+adv_launch_template = gfxlaunch --vgl --title "%s" --partition %s --account %s --exclusive --cmd %s
 
-    group_ondemand = lvis,lvis2
-    group_cpu = lu,lu2
-    group_gpu = gpu,gpu2,gpuk20,gpua100
-    group_win = win
-    
-    [menus]
-    applications_dir = /sw/pkg/rviz/share/applications
-    directories_dir = /sw/pkg/rviz/share/desktop-directories
-    menu_dir = /sw/pkg/rviz/etc/xdg/menus/applications-merged
-    menu_filename = Lunarc-On-Demand.menu
+feature_gpu4k20 = "4 x NVIDIA K20 GPU"
+feature_gpu8k20 = "8 x NVIDIA K20 GPU"
+feature_mem96gb = "96 GB Memory node"
+feature_mem64gb = "64 GB Memory node"
+feature_gpu2k20 = "2 x NVIDIA K20 GPU"
 
-    [vgl]
-    vgl_path = /sw/pkg/rviz/vgl/bin/latest
-    vglconnect_template = %s/vglconnect %s %s/%s
+use_sacctmgr = yes
 
-    [xfreerdp]
-    xfreerdp_path = /sw/pkg/...
+[menus]
+applications_dir = /sw/pkg/rviz/share/applications
+directories_dir = /sw/pkg/rviz/share/desktop-directories
+menu_dir = /sw/pkg/rviz/etc/xdg/menus/applications-merged
+menu_filename = Lunarc-On-Demand.menu
 
-    [jupyter]
-    notebook_module = Anaconda3
-    jupyterlab_module = Anaconda3
+[vgl]
+vgl_bin = /sw/pkg/rviz/vgl/bin/latest
+vgl_path = /sw/pkg/rviz/vgl/bin/latest
+backend_node = gfx0
+vglconnect_template = %s/vglconnect %s %s/%s
 
-General configuration section - [general]
------------------------------------------
+[jupyter]
+notebook_module = Anaconda3
+jupyterlab_module = Anaconda3
+jupyter_use_localhost = yes
+
+[xfreerdp]
+xfreerdp_path = /sw/pkg/freerdp/2.0.0-rc4/bin
+xfreerdp_cmdline = '%s /v:%s /u:$USER /d:ad.lunarc /sec:tls /cert-ignore /audio-mode:1 /gfx +gfx-progressive -bitmap-cache -offscreen-cache -glyph-cache +clipboard -themes -wallpaper /size:1280x1024 /dynamic-resolution /t:"LUNARC HPC Desktop Windows 10 (NVIDA V100)"'
+
+General section - [general]
+---------------------------
 
 The general section mainly contains information on where the **gfxconvert** tool can find the server scripts used for starting the applications on the backend infrastructure, **script_dir**. The server scripts also contains meta data for menu generation. The **client_script_dir** tells **gfxconvert** where the launch-scripts should be generated. Created menu items will point to this location.
 
-SLURM configuration section - [slurm]
--------------------------------------
+SLURM section - [slurm]
+-----------------------
 
 This section contain settings related to SLURM.
 
@@ -89,6 +73,9 @@ This section contain settings related to SLURM.
 | grantfile       | This is the grantfile used to find user accounts.                                          |
 +-----------------+--------------------------------------------------------------------------------------------+
 | grantfile_base  | This is the grantfile template used for a specific partition.                              |
++-----------------+--------------------------------------------------------------------------------------------+
+| use_sacctmgr    | If set to yes gfxlaunch will use project information from the sacctmgr command instead     |
+|                 | of granfiles. This is the default.                                                         |
 +-----------------+--------------------------------------------------------------------------------------------+
 
 .. note:: grantfile and grantfile_base are specific to SNIC/LUNARC HPC resources and can be disabled.
@@ -152,8 +139,8 @@ Certain applications will require certain partitions when running. To limit the 
 The partition groups can be used the **gfxlaunch** switch --group to only display the partitions in the specified group.
 
 
-Menu configuration section - [menu]
------------------------------------
+Menu section - [menu]
+---------------------
 
 Directories and files for the **gfxconvert** menu generation is given in this section. The following variables are used by **gfxconvert**.
 
@@ -169,8 +156,8 @@ Directories and files for the **gfxconvert** menu generation is given in this se
 | menu_filename    | This is the name that will be used for the final .menu file.                |
 +------------------+-----------------------------------------------------------------------------+
 
-VirtualGL configuration - [vgl]
--------------------------------
+VirtualGL section - [vgl]
+-------------------------
 
 This section is used by **gfxlaunch** to configure where the binaries for VirtualGL can be found. The following variables can be configured:
 
@@ -182,8 +169,8 @@ This section is used by **gfxlaunch** to configure where the binaries for Virtua
 | vgl_connect_template | Command to execute vglconnect. Should be %s/vglconnect %s %s/%s by default. |
 +----------------------+-----------------------------------------------------------------------------+
 
-XFreeRDP configuration - [xfreerdp]
------------------------------------
+XFreeRDP section - [xfreerdp]
+-----------------------------
 
 This section is used by **gfxlaunch** to configure where the binaries for XFreeRDP can be found. The following variables can be configured:
 
@@ -193,14 +180,18 @@ This section is used by **gfxlaunch** to configure where the binaries for XFreeR
 | xfreerdp_path        | Path for XFreeRDP executables                                               |
 +----------------------+-----------------------------------------------------------------------------+
 
-Jupyter related settings - [jupyter]
-------------------------------------
+Jupyter related section - [jupyter]
+-----------------------------------
 
-+----------------------+-----------------------------------------------------------------------------+
-| Variable             | Description                                                                 |
-+----------------------+-----------------------------------------------------------------------------+
-| notebook_module      | Module loaded for Jupyter Notebook jobs                                     |
-+----------------------+-----------------------------------------------------------------------------+
-| jupyterlab_module    | Module loaded for Jupyter Lab jobs                                          |
-+----------------------+-----------------------------------------------------------------------------+
++-----------------------+-----------------------------------------------------------------------------+
+| Variable              | Description                                                                 |
++-----------------------+-----------------------------------------------------------------------------+
+| notebook_module       | Module loaded for Jupyter Notebook jobs                                     |
++-----------------------+-----------------------------------------------------------------------------+
+| jupyterlab_module     | Module loaded for Jupyter Lab jobs                                          |
++-----------------------+-----------------------------------------------------------------------------+
+| jupyter_use_localhost | If set to yes. gfxlaunch will start the notebook on localhost of the node   |
+|                       | and connect using a ssh tunnel to the notbook. If set to no gfxlaunch will  |
+|                       | connect directly to to the notebook running on the node.                    |
++-----------------------+-----------------------------------------------------------------------------+
 

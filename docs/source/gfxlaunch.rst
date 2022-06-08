@@ -1,5 +1,5 @@
-Launching applications with gfxlaunch
-=====================================
+Using the launcher
+==================
 
 Applications are started by using the command line tool **gfxlaunch**. The purpose of this command is to provide a customisable user interface for launching different kinds of interactive applications. It can be used standalone in your own workflows or in combination with the **gfxconvert** tool for generating menus and special client scripts that will be called from the menu items. This chapter describes the options and how this command can be used for different kind of applications.
 

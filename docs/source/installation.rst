@@ -11,8 +11,8 @@ Latest version of the software can be found at:
 https://github.com/lunarc/gfxlauncher/releases
 
 
-Installing
-----------
+Exracting source package
+------------------------
 
 Unpack the distribution in a suitable location.
 
@@ -22,18 +22,19 @@ Unpack the distribution in a suitable location.
 
 Make sure the search path is added to this location.
 
-Requirements
-------------
+Installing requirements
+-----------------------
 
 The requirements for GfxLauncher is a Python 3.x interpreter with the following additional packages:
 
  * PyQt 5.x
  * configparser
 
-In the **conda** directory there is an enviornment yml file for creating a conda environment for GfxLauncher.
+.. note::
+    In the **conda** directory there is an enviornment yml file for creating a conda environment for GfxLauncher.
 
-Createing a conda environment for GfxLauncher
----------------------------------------------
+Creating a conda environment
+----------------------------
 
 The easiest way of providing suitable environment for GfxLauncher is to create an Anaconda environment. This can be done by using the following commands:
 
@@ -46,8 +47,8 @@ The easiest way of providing suitable environment for GfxLauncher is to create a
     
 The **gfxconvert** command that generates menus and run-scripts should be able to be used by a system provided Python interpreter. The **configparser** package must then be installed as a system package.
     
-Setting runtime environment for all users
------------------------------------------
+Setting up a runtime environment
+--------------------------------
 
 For the command line tools in the distribution to work, the **LHPCDT_PYTHON_RUNTIME** variable must be set to the **bin** directory of the Python runtime used. As an example: **/.../envs/gfxlauncher/bin** (location of the python binary in the gfxlauncher conda environment).
 
