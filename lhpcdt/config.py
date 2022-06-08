@@ -8,7 +8,7 @@
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
+# This program is distributed in the  hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
@@ -29,35 +29,49 @@ import configparser
 from . singleton import *
 
 
-def print_error(msg):
-    """Print error message"""
-    print("Error: %s" % msg)
-
-
 @Singleton
 class GfxConfig(object):
     """Launcher configuration"""
 
     def __init__(self, config_filename=""):
 
+        self.__error_log = []
+
         self._default_props()
 
-        self.config_file_alt1 = "/etc/gfxlauncher.conf"
-        self.config_file_alt2 = "/sw/pkg/rviz/etc/gfxlauncher.conf"
+        self.config_filename = ""
+        self.config_file_alt2 = "/etc/gfxlauncher.conf"
+        self.config_file_alt3 = "/sw/pkg/rviz/etc/gfxlauncher.conf"
+        self.config_file_alt1 = os.path.expanduser("~/etc/gfxlauncher.conf")
 
         if config_filename == "":
             if os.path.isfile(self.config_file_alt1):
                 self.config_filename = self.config_file_alt1
             elif os.path.isfile(self.config_file_alt2):
                 self.config_filename = self.config_file_alt2
+            elif os.path.isfile(self.config_file_alt3):
+                self.config_filename = self.config_file_alt3
         else:
             self.config_filename = config_filename
 
         if not self.parse_config_file():
-            print_error("Couldn't parse configuration")
+            self.print_error("Couldn't parse configuration")
             self.is_ok = False
         else:
             self.is_ok = True
+
+    def print_error(self, msg):
+        """Print error message"""
+        error_msg = "Error: %s" % msg
+        print(error_msg)
+        self.__error_log.append(error_msg)
+    
+    def clear_error_log(self):
+        self.__error_log.clear()
+
+    @property
+    def errors(self):
+        return '\n'.join(self.__error_log)
 
     def _default_props(self):
         """Assign default properties"""
@@ -75,6 +89,8 @@ class GfxConfig(object):
         self.menu_dir = "/home/bmjl/test-menu/etc/xdg/menus/applications-merged"
         self.menu_filename = "Lunarc-On-Demand.menu"
         self.help_url = ""
+        self.browser_command = "firefox"
+
 
         self.vgl_path = "/sw/pkg/rviz/vgl/bin/latest"
         self.vgl_connect_template = '%s/vglconnect %s %s/%s'
@@ -88,7 +104,7 @@ class GfxConfig(object):
         self.only_submit = False
         self.feature_ignore = ""
         self.part_ignore = ""
-        self.use_sacctmgr = False
+        self.use_sacctmgr = True
 
         self.module_json_file = "/sw/pkg/rviz/share/modules.json"
 
@@ -97,6 +113,7 @@ class GfxConfig(object):
 
         self.notebook_module = "Anaconda3"
         self.jupyterlab_module = "Anaconda3"
+        self.jupyter_use_localhost = False
 
     def print_config(self):
         """Print configuration"""
@@ -161,6 +178,7 @@ class GfxConfig(object):
 
         print("notebook_module = %s" % self.notebook_module)
         print("jupyterlab_module = %s" % self.jupyterlab_module)
+        print("browser_command = %s" % self.browser_command)
 
     def _config_get(self, config, section, option, default_value=""):
         """Safe config retrieval"""
@@ -182,7 +200,7 @@ class GfxConfig(object):
         """Parse configuration file"""
 
         if not os.path.isfile(self.config_filename):
-            print_error("Configuration file %s not found" %
+            self.print_error("Configuration file %s not found" %
                         self.config_filename)
             return False
 
@@ -205,6 +223,8 @@ class GfxConfig(object):
                 config, "general", "modules_json_file")
             self.help_url = self._config_get(
                 config, "general", "help_url").replace('"', '')
+            self.browser_command = self._config_get(
+                config, "general", "browser_command")
 
             self.default_part = self._config_get(
                 config, "slurm", "default_part")
@@ -251,8 +271,11 @@ class GfxConfig(object):
                 config, "jupyter", "notebook_module")
             self.jupyterlab_module = self._config_get(
                 config, "jupyter", "jupyterlab_module")
+
+            self.jupyter_use_localhost = self._config_getboolean(config, "jupyter", "jupyter_use_localhost", False)
+
         except configparser.Error as e:
-            print_error(e)
+            self.print_error(e)
             return False
 
         # Check for feature descriptions
@@ -265,7 +288,7 @@ class GfxConfig(object):
                     feature = option.split("_")[1]
                     self.feature_descriptions[feature] = descr.strip('"')
         except configparser.Error as e:
-            print_error(e)
+            self.print_error(e)
             return False
 
         # Check for partition descriptions
@@ -278,7 +301,7 @@ class GfxConfig(object):
                     partition = option.split("_")[1]
                     self.partition_descriptions[partition] = descr.strip('"')
         except configparser.Error as e:
-            print_error(e)
+            self.print_error(e)
             return False
 
         # Check for partition groups
@@ -297,7 +320,7 @@ class GfxConfig(object):
                         self.part_groups[group].append(part.strip())
 
         except configparser.Error as e:
-            print_error(e)
+            self.print_error(e)
             return False
 
         return True

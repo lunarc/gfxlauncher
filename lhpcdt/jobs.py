@@ -1,7 +1,7 @@
 #!/bin/env python
 #
 # LUNARC HPC Desktop On-Demand graphical launch tool
-# Copyright (C) 2017-2021 LUNARC, Lund University
+# Copyright (C) 2017-2022 LUNARC, Lund University
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -215,17 +215,29 @@ unset __conda_setup
 class JupyterNotebookJob(Job):
     """Jupyter notebook job"""
 
-    def __init__(self, account="", partition="", time="00:30:00", notebook_module="Anaconda3"):
+    def __init__(self, account="", partition="", time="00:30:00", notebook_module="Anaconda3", use_localhost=False):
         Job.__init__(self, account, partition, time)
+
+        self.use_localhost = use_localhost
         self.notebook_url = ""
         self.process_output = True
         self.processing_description = "Waiting for notebook instance to start."
         self.notebook_module = notebook_module
 
-        self.add_module(self.notebook_module)
+        if ',' in self.notebook_module:
+            modules = self.notebook_module.split(",")
+            for module in modules:
+                self.add_module(module.strip())
+        else:
+            self.add_module(self.notebook_module)
 
         self.add_custom_script("unset XDG_RUNTIME_DIR")
-        self.add_custom_script('jupyter-notebook --no-browser --ip=$HOSTNAME')
+
+        if self.use_localhost:
+            self.add_custom_script('jupyter-notebook --no-browser')
+        else:    
+            self.add_custom_script('jupyter-notebook --no-browser --ip=$HOSTNAME')
+
         self.add_custom_script("module list")
         self.add_custom_script("which python")
 
@@ -242,17 +254,19 @@ class JupyterNotebookJob(Job):
             for line in output_lines:
                 if line.find("?token=") != -1:
                     if line.find("127.0.0.1") == -1:
-                        url = line[line.find("http:"):].strip()
-                        self.notebook_url = url
-                        self.process_output = False
-                        self.on_notebook_url_found(self.notebook_url)
+                        if self.process_output:
+                            url = line[line.find("http:"):].strip()
+                            self.notebook_url = url
+                            self.process_output = False
+                            self.on_notebook_url_found(self.notebook_url)
 
 
 class JupyterLabJob(Job):
     """Jupyter lab job"""
 
-    def __init__(self, account="", partition="", time="00:30:00", jupyterlab_module="Anaconda3"):
+    def __init__(self, account="", partition="", time="00:30:00", jupyterlab_module="Anaconda3", use_localhost=False):
         Job.__init__(self, account, partition, time)
+        self.use_localhost = use_localhost
         self.notebook_url = ""
         self.process_output = True
         self.processing_description = "Waiting for notebook instance to start."
@@ -262,7 +276,12 @@ class JupyterLabJob(Job):
         self.use_conda_env = False
         self.conda_env = ""
 
-        self.add_module(self.jupyterlab_module)
+        if ',' in self.jupyterlab_module:
+            modules = self.jupyterlab_module.split(",")
+            for module in modules:
+                self.add_module(module.strip())
+        else:
+            self.add_module(self.jupyterlab_module)
 
         self.add_custom_script("unset XDG_RUNTIME_DIR")
 
@@ -272,7 +291,11 @@ class JupyterLabJob(Job):
             if self.conda_env!="":
                 self.add_custom_script("conda activate %s" % (self.conda_env))
 
-        self.add_custom_script('jupyter-lab --no-browser --ip=$HOSTNAME')
+        if self.use_localhost:
+            self.add_custom_script('jupyter-lab --no-browser')
+        else:
+            self.add_custom_script('jupyter-lab --no-browser --ip=$HOSTNAME')
+
         self.add_custom_script("module list")
         self.add_custom_script("which python")
 
@@ -289,10 +312,11 @@ class JupyterLabJob(Job):
             for line in output_lines:
                 if line.find("?token=") != -1:
                     if line.find("127.0.0.1") == -1:
-                        url = line[line.find("http:"):].strip()
-                        self.notebook_url = url
-                        self.process_output = False
-                        self.on_notebook_url_found(self.notebook_url)
+                        if self.process_output:
+                            url = line[line.find("http:"):].strip()
+                            self.notebook_url = url
+                            self.process_output = False
+                            self.on_notebook_url_found(self.notebook_url)
 
 
 class VMJob(Job):

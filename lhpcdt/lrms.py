@@ -189,9 +189,11 @@ class Slurm(object):
 
     def __include_part(self, part, exclude_set):
         include = True
-        for exclude_pattern in exclude_set:
-            if exclude_pattern in part:
-                include = False
+
+        if len(exclude_set)>0:
+            for exclude_pattern in exclude_set:
+                if exclude_pattern in part:
+                    include = False
 
         return include
 
@@ -222,6 +224,7 @@ class Slurm(object):
                             node_list)
 
         self.partitions = list(set(self.partitions))
+
 
     """
     NodeName=eg24 Arch=x86_64 CoresPerSocket=8
@@ -300,7 +303,7 @@ class Slurm(object):
         """Query features of partition"""
 
         if self.verbose:
-            print("Please wait, querying nodes...")
+            print("Please wait, querying nodes for features %s ...")
 
         node_info = self.query_nodes()
 

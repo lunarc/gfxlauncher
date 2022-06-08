@@ -1,5 +1,5 @@
-Generating menus with gfxconvert
-================================
+Generating menus
+================
 
 **gfxconvert** is a special tool for automatically generating shell-scripts using the **gfxlaunch** tool. The basic idea is to create a script for running the specified application on a backend node. In this script it is possible to add special attributes for specifying job types, default partition and window titles. **gfxconvert** can be run as cron-job in the background to keep the menu system updated when scripts are added.
 

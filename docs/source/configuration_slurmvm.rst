@@ -1,7 +1,7 @@
-Configuration of Windows VM allocation
-======================================
+Configuring Windows backend
+===========================
 
-Allocation of Windows virtual machines is handled by a special prolog/epilog script for SLURM. This script will maintain a small database of allocated VMs. The prolog-script will also create a special file in the users home folder for any allocated vm:s during the life time of the job. After job termination the script will also remove this file.
+GfxLauncher can be used to launch RDP sessions to preconfigured Windows virtual machines. Access to these virtual machines are handled through a special prolog/epilog script for SLURM. This script will maintain a small database of which allocated VMs are in use by RDP-sessions. The prolog-script will also create a special file in the users home folder for any allocated vm:s during the life time of the job. After job termination the script will also remove this file.
 
 To make sure the configured virtual machines are not used by other users the prolog/epilog can also be configured to logoff all users after a completed job and also enable/disable user accounts on the configured VMs.
 
