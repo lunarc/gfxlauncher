@@ -478,6 +478,8 @@ class VMTracker(object):
 
         # --- Create or read state file
 
+        self.slurm_vm_config = SlurmVMConfig()
+
         self.create()
 
         # --- Read configuration here (overwritten by oicke otherwise)
