@@ -152,8 +152,6 @@ class SlurmVMConfig(object):
         for vm in self.config.sections():
             options = self.config.options(vm)
 
-            print(options)
-
             if "-default" in vm:
                 kind = vm.split("-")[0]
                 self.vm_actions[kind] = {}
