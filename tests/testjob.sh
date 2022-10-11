@@ -1,9 +1,12 @@
 #!/bin/bash
 
 #SBATCH -A lu-test
-#SBATCH -p lu32
-#SBATCH --time=00:30:00
+#SBATCH -p win
+#SBATCH --time=08:30:00
 #SBATCH -J lhpc
+#SBATCH --mem=100
+#SBATCH --gres=win10m
+#SBATCH --oversubscribe
 
 echo "Starting at `date`"
 echo "Running on hosts: $SLURM_NODELIST"
@@ -16,4 +19,4 @@ echo "Node has $SLURM_MEM_PER_CPU memory per cpu."
 echo "Current working directory is `pwd`"
 echo "Current path is $PATH"
 
-while true; do date; sleep 5; done
+while true; do sleep 5; done

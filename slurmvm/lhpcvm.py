@@ -152,8 +152,6 @@ class SlurmVMConfig(object):
         for vm in self.config.sections():
             options = self.config.options(vm)
 
-            print(options)
-
             if "-default" in vm:
                 kind = vm.split("-")[0]
                 self.vm_actions[kind] = {}
@@ -477,6 +475,8 @@ class VMTracker(object):
         self.lock = FileLock(self.state_lock_filename, timeout=1)
 
         # --- Create or read state file
+
+        self.slurm_vm_config = SlurmVMConfig()
 
         self.create()
 
