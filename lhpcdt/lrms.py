@@ -119,7 +119,7 @@ class Queue(object):
 
         # jobinfo squeue format  - %.7i %.9P %.25j %.8u %14a %.2t %.19S %.10L %.8Q %.4C %.16R %.12f %E
         #                             x    x     x    x         x     x                     x
-        self.squeueFormat = "%.7i;%.9P;%.20j;%.8u;%.8T;%.10M;%.9l;%.6D;%R;%L;%E;%14a;%4C;%.12f;%S"
+        self.squeueFormat = "%.7i;%.9P;%.20j;%.12u;%.8T;%.10M;%.9l;%.6D;%R;%L;%E;%14a;%4C;%.12f;%S"
         self.jobList = []
         self.jobs = {}
         self.userJobs = {}
