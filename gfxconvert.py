@@ -155,11 +155,12 @@ def parse_script_dir(dryrun=False):
 
     for script in os.listdir(script_dir):
         if script.endswith('.sh') and script.startswith('run_') and script.find('rviz-server') != -1:
+            print("Found:", script)
             filename = os.path.join(script_dir, script)
 
             metadata = parse_script_metadata(filename)
 
-            app_name = filename.split("_")[1]
+            app_name = filename.split("_")[-2]
 
             server_filename = os.path.basename(filename)
 
