@@ -33,6 +33,17 @@ The requirements for GfxLauncher is a Python 3.x interpreter with the following 
 .. note::
     In the **conda** directory there is an enviornment yml file for creating a conda environment for GfxLauncher.
 
+Disk layout
+-----------
+
+The installation of GfxLauncher requires directory locations to fully function:
+
+ * Main installation directory, where the Python-software is installed. (User readable - Admin writable)
+ * Configuration directory. (User readable - Admin writable)
+ * Directory where menus are to generated. (User readable - Admin writable)
+ * pr
+
+
 Creating a conda environment
 ----------------------------
 
@@ -46,6 +57,15 @@ The easiest way of providing suitable environment for GfxLauncher is to create a
     (gfxlauncher) $ conda install configparser
     
 The **gfxconvert** command that generates menus and run-scripts should be able to be used by a system provided Python interpreter. The **configparser** package must then be installed as a system package.
+
+Required directories for the Installation
+-----------------------------------------
+
++-----------------+--------------------------------------------------------------------------------------------+
+| Directory       | Description                                                                                |
++-----------------+--------------------------------------------------------------------------------------------+
+| default_part    | If no partition is given on the gfxlaunch command line this is the default partition used. |
++-----------------+--------------------------------------------------------------------------------------------+
     
 Setting up a runtime environment
 --------------------------------
