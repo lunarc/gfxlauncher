@@ -50,7 +50,7 @@ class SplashWindow(QtWidgets.QWidget):
 
         uic.loadUi(os.path.join(ui_path, "splash.ui"), self)
 
-        pixmap = QtGui.QPixmap(os.path.join(image_path, "lhpcdt_splash.png"))
+        pixmap = QtGui.QPixmap(os.path.join(image_path, "lhpcdt_splash3.png"))
         self.splashLabel.setPixmap(pixmap)
 
         #self.setWindowFlags(QtCore.Qt.SplashScreen)
