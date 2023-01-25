@@ -90,6 +90,7 @@ class SubmitThread(QtCore.QThread):
             self.vgl_path = vgl_path
 
         self.slurm = lrms.Slurm()
+        self.verbose = False
         self.error_status = SubmitThread.NO_ERROR
         self.active_connection = None
 
@@ -167,6 +168,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         # Initialise properties
 
         self.slurm = lrms.Slurm()
+        self.slurm.verbose = False
         self.args = settings.LaunchSettings.create().args
         self.tool_path = settings.LaunchSettings.create().tool_path
         self.copyright_info = settings.LaunchSettings.create().copyright_info
@@ -211,6 +213,9 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         else:
             self.part_exclude_set = set(self.part_ignore.split(","))     
 
+        print("Ignoring features   : "+','.join(list(self.feature_exclude_set)))
+        print("Ignoring partitions : "+','.join(list(self.part_exclude_set)))
+
         # Setup default launch properties
 
         self.init_defaults() 
@@ -223,10 +228,29 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         self.slurm.query_partitions(exclude_set=self.part_exclude_set)
 
+        available_parts = []
+
+        if (self.group != ""):
+            if (self.group in self.config.part_groups):
+                available_parts = self.config.part_groups[self.group]
+
+        if len(available_parts) == 0:
+            available_parts.append(self.part)
+
+        available_parts = list(set(available_parts))
+
+        print("Available parts     : "+','.join(available_parts))
+
+        if not self.part in available_parts:
+            self.part = available_parts[0]
+
         self.features = self.slurm.query_features(
             self.part, self.feature_exclude_set)
 
         self.selected_part = self.part
+
+        print("Selected part       : "+str(self.part))
+        print("With features       : "+','.join(self.features))
 
         # Check for available project
 
@@ -600,7 +624,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         selected_count = 0
 
         for part in self.filtered_parts:
-            if part == self.selected_part:
+            if (part == self.selected_part):
                 selected_index = selected_count
             selected_count += 1
 
