@@ -201,6 +201,11 @@ if __name__ == '__main__':
                         help="Run silently. No user interface controls. Application will start automatically",
                         action="store_true", default=False)
 
+    parser.add_argument("--splash",
+                        dest="splash",
+                        help="Show splash screen.",
+                        action="store_true", default=False)
+
     args = parser.parse_args()
 
     # Setup global settings singleton
@@ -241,7 +246,7 @@ if __name__ == '__main__':
 
     # Show splash
 
-    if not args.silent:
+    if (not args.silent) and (args.splash):
         splash_window = splash_win.SplashWindow(
             None, gfxlaunch_copyright % gfxlaunch_version)
         splash_window.show()
