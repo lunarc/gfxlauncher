@@ -55,7 +55,7 @@ if __name__ == '__main__':
 
     # Redirect standard output
 
-    redirect = True
+    redirect = False
 
     app = QtWidgets.QApplication(sys.argv)
     app.setStyle("GTK+")

@@ -32,7 +32,7 @@ from lhpcdt import config, desktop
 
 # --- Version information
 
-gfxconvert_version = "0.8.4"
+gfxconvert_version = "0.8.5"
 
 # --- Fix search path for tool
 
@@ -83,11 +83,24 @@ def create_slurm_script(server_fname, slurm_fname, descr, metadata={}, dryrun=Fa
 
         if "job" in metadata:
             job = metadata["job"]
-            client_file.write(submit_only_slurm_template %
+
+            if cfg.default_account!="":                
+                client_file.write(submit_only_slurm_template %
                             (descr, part, cfg.default_account, job))
+            else:
+                submit_only_slurm_template = submit_only_slurm_template.replace("--account %s ", "")
+                client_file.write(submit_only_slurm_template %
+                            (descr, part, job))
+
         else:
-            client_file.write(simple_launch_template % (
-                descr, part, cfg.default_account, server_script_filename))
+            if cfg.default_account!="":
+                client_file.write(simple_launch_template % (
+                    descr, part, cfg.default_account, server_script_filename))
+            else:
+                simple_launch_template = simple_launch_template.replace("--account %s ", "")
+                client_file.write(simple_launch_template % (
+                    descr, part, server_script_filename))
+
 
     except PermissionError:
         print("Couldn't write, %s, check permissions." % client_script_filename)
@@ -155,11 +168,12 @@ def parse_script_dir(dryrun=False):
 
     for script in os.listdir(script_dir):
         if script.endswith('.sh') and script.startswith('run_') and script.find('rviz-server') != -1:
+            print("Found:", script)
             filename = os.path.join(script_dir, script)
 
             metadata = parse_script_metadata(filename)
 
-            app_name = filename.split("_")[1]
+            app_name = filename.split("_")[-2]
 
             server_filename = os.path.basename(filename)
 

@@ -40,19 +40,20 @@ class GfxConfig(object):
         self._default_props()
 
         self.config_filename = ""
-        self.config_file_alt2 = "/etc/gfxlauncher.conf"
-        self.config_file_alt3 = "/sw/pkg/rviz/etc/gfxlauncher.conf"
-        self.config_file_alt1 = os.path.expanduser("~/etc/gfxlauncher.conf")
+
+        config_alt_loc = []
+        config_alt_loc.append("/etc/gfxlauncher.conf")
+        config_alt_loc.append("/pdc/software/tools/thinlinc/etc/gfxlauncher.conf")
+        config_alt_loc.append("/sw/pkg/rviz/etc/gfxlauncher.conf")
+        config_alt_loc.append("~/etc/gfxlauncher.conf")
 
         if config_filename == "":
-            if os.path.isfile(self.config_file_alt1):
-                self.config_filename = self.config_file_alt1
-            elif os.path.isfile(self.config_file_alt2):
-                self.config_filename = self.config_file_alt2
-            elif os.path.isfile(self.config_file_alt3):
-                self.config_filename = self.config_file_alt3
+            for config_loc in config_alt_loc:
+                if os.path.isfile(config_loc):
+                    self.config_filename = config_loc
+                    break
         else:
-            self.config_filename = config_filename
+            self.config_filename = config_filename    
 
         if not self.parse_config_file():
             self.print_error("Couldn't parse configuration")

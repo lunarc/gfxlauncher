@@ -1,7 +1,7 @@
 #!/bin/env python
 #
 # LUNARC HPC Desktop On-Demand graphical launch tool
-# Copyright (C) 2017-2022 LUNARC, Lund University
+# Copyright (C) 2017-2023 LUNARC, Lund University
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -234,15 +234,16 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
             if (self.group in self.config.part_groups):
                 available_parts = self.config.part_groups[self.group]
 
-        if len(available_parts) == 0:
+        if (len(available_parts) == 0) and (self.part!=None):
             available_parts.append(self.part)
 
         available_parts = list(set(available_parts))
 
         print("Available parts     : "+','.join(available_parts))
 
-        if not self.part in available_parts:
-            self.part = available_parts[0]
+        if len(available_parts)!=0:
+            if not self.part in available_parts:
+                self.part = available_parts[0]
 
         self.features = self.slurm.query_features(
             self.part, self.feature_exclude_set)
@@ -592,6 +593,10 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
             for part in self.slurm.partitions:
                 descr = part
+
+                print(part.lower())
+                print(self.config.partition_descriptions)
+
                 if part.lower() in self.config.partition_descriptions:
                     descr = self.config.partition_descriptions[part.lower()]
 

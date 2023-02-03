@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>599</width>
-    <height>478</height>
+    <width>500</width>
+    <height>289</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,8 +18,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>600</width>
-     <height>480</height>
+     <width>500</width>
+     <height>289</height>
     </rect>
    </property>
    <property name="frameShape">
@@ -38,9 +38,9 @@
   <widget class="QLabel" name="versionLabel">
    <property name="geometry">
     <rect>
-     <x>10</x>
-     <y>409</y>
-     <width>311</width>
+     <x>13</x>
+     <y>225</y>
+     <width>320</width>
      <height>61</height>
     </rect>
    </property>
@@ -102,8 +102,8 @@
   <widget class="QPushButton" name="closeButton">
    <property name="geometry">
     <rect>
-     <x>499</x>
-     <y>445</y>
+     <x>400</x>
+     <y>250</y>
      <width>90</width>
      <height>26</height>
     </rect>
