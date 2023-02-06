@@ -839,7 +839,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
             if self.ssh_tunnel is not None:
                 self.ssh_tunnel.terminate()
 
-            self.ssh_tunnel = remote.SSHForwardTunnel(dest_server="localhost", remote_port=8888, server_hostname=self.job.nodes)
+            self.ssh_tunnel = remote.SSHForwardTunnel(dest_server="localhost", remote_port=self.job.notebook_port, server_hostname=self.job.nodes)
             self.ssh_tunnel.execute()
 
             # Update the job url to use the localhost port.
@@ -1112,3 +1112,9 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
             self.error_log.append(text)
 
         self.statusText.moveCursor(QtGui.QTextCursor.StartOfLine)
+
+    @QtCore.pyqtSlot()
+    def on_show_job_settings_button_clicked(self):
+        """Open help page if set"""
+        print("show_job_settings")
+

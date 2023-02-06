@@ -1,7 +1,7 @@
 #!/bin/env python
 #
 # LUNARC HPC Desktop On-Demand graphical launch tool
-# Copyright (C) 2017-2022 LUNARC, Lund University
+# Copyright (C) 2017-2023 LUNARC, Lund University
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -115,6 +115,8 @@ class GfxConfig(object):
         self.notebook_module = "Anaconda3"
         self.jupyterlab_module = "Anaconda3"
         self.jupyter_use_localhost = False
+        self.conda_source_env = ""
+        self.conda_use_env = ""
 
     def print_config(self):
         """Print configuration"""
@@ -180,6 +182,9 @@ class GfxConfig(object):
         print("notebook_module = %s" % self.notebook_module)
         print("jupyterlab_module = %s" % self.jupyterlab_module)
         print("browser_command = %s" % self.browser_command)
+        print("jupyter_use_localhost = %s" % self.jupyter_use_localhost)
+        print("conda_source_env = %s" % self.conda_source_env)
+        print("conda_use_env = %s" % self.conda_use_env)
 
     def _config_get(self, config, section, option, default_value=""):
         """Safe config retrieval"""
@@ -272,6 +277,10 @@ class GfxConfig(object):
                 config, "jupyter", "notebook_module")
             self.jupyterlab_module = self._config_get(
                 config, "jupyter", "jupyterlab_module")
+            self.conda_source_env = self._config_get(
+                config, "jupyter", "conda_source_env")
+            self.conda_use_env = self._config_get(
+                config, "jupyter", "conda_use_env")
 
             self.jupyter_use_localhost = self._config_getboolean(config, "jupyter", "jupyter_use_localhost", False)
 

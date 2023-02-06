@@ -1,7 +1,7 @@
 #!/bin/env python
 #
 # LUNARC HPC Desktop On-Demand graphical launch tool
-# Copyright (C) 2017-2021 LUNARC, Lund University
+# Copyright (C) 2017-2023 LUNARC, Lund University
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,12 +27,13 @@ configured from the GfxLauncher configuration file.
 import os
 import sys
 import getpass
+import argparse
 
 from lhpcdt import config, desktop
 
 # --- Version information
 
-gfxconvert_version = "0.8.5"
+gfxconvert_version = "0.8.6"
 
 # --- Fix search path for tool
 
@@ -42,7 +43,7 @@ sys.path.append(tool_path)
 # --- Functions
 
 
-def create_slurm_script(server_fname, slurm_fname, descr, metadata={}, dryrun=False):
+def create_slurm_script(server_fname, slurm_fname, descr, metadata={}, dryrun=False, no_launcher=False):
     """Create script for running through SLURM"""
 
     cfg = config.GfxConfig.create()
@@ -56,9 +57,9 @@ def create_slurm_script(server_fname, slurm_fname, descr, metadata={}, dryrun=Fa
 
         if dryrun:
             client_file = sys.stdout
-            client_file.write("slurmscript = "+client_script_filename+"\n")
+            client_file.write("**** slurmscript = "+client_script_filename+" ****\n")
         else:
-            client_file = open(client_script_filename, "w")
+            client_file = open(client_script_filename, "w")            
 
         part = cfg.default_part
 
@@ -81,7 +82,10 @@ def create_slurm_script(server_fname, slurm_fname, descr, metadata={}, dryrun=Fa
             submit_only_slurm_template += " --group %s" % metadata["group"]
             simple_launch_template += " --group %s" % metadata["group"]
 
-        if "job" in metadata:
+                
+        if no_launcher:
+            client_file.write(server_script_filename+"\n")
+        elif "job" in metadata:
             job = metadata["job"]
 
             if cfg.default_account!="":                
@@ -91,7 +95,6 @@ def create_slurm_script(server_fname, slurm_fname, descr, metadata={}, dryrun=Fa
                 submit_only_slurm_template = submit_only_slurm_template.replace("--account %s ", "")
                 client_file.write(submit_only_slurm_template %
                             (descr, part, job))
-
         else:
             if cfg.default_account!="":
                 client_file.write(simple_launch_template % (
@@ -114,7 +117,7 @@ def create_slurm_script(server_fname, slurm_fname, descr, metadata={}, dryrun=Fa
 def create_desktop_entry(script, descr, metadata={}, dryrun=False):
     """Create desktop entry for script"""
 
-    print(("Creating desktop entry '%s'" % script))
+    print(("**** Creating desktop entry '%s' ****" % script))
     desktop_filename = os.path.join(cfg.applications_dir, "%s.desktop" % descr.replace("/","-"))
     script_filename = os.path.join(cfg.client_script_dir, script)
 
@@ -157,7 +160,7 @@ def parse_script_metadata(filename):
     return variables
 
 
-def parse_script_dir(dryrun=False):
+def parse_script_dir(dryrun=False, no_launcher=False):
     """Parse script directory for run-scripts"""
 
     cfg = config.GfxConfig.create()
@@ -185,7 +188,7 @@ def parse_script_dir(dryrun=False):
                 slurm_client_descr = app_name.title()
 
             create_slurm_script(
-                server_filename, slurm_client_filename, slurm_client_descr, metadata, dryrun)
+                server_filename, slurm_client_filename, slurm_client_descr, metadata, dryrun, no_launcher)
             slurm_entry = create_desktop_entry(
                 slurm_client_filename, slurm_client_descr, metadata, dryrun)
 
@@ -212,13 +215,21 @@ if __name__ == '__main__':
 
     print(("LUNARC HPC Desktop - Wrapper script  - Version %s" % gfxconvert_version))
     print("Written by Jonas Lindemann (jonas.lindemann@lunarc.lu.se)")
-    print("Copyright (C) 2018-2021 LUNARC, Lund University")
+    print("Copyright (C) 2018-2023 LUNARC, Lund University")
 
     cfg = config.GfxConfig.create()
-    cfg.print_config()
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dryrun", help="Run without creating any files.", action="store_true")
+    parser.add_argument("--no-launcher", help="Generate menus and scripts with direct launch.", action="store_true")
+    parser.add_argument("--config", help="Show configuration", action="store_true")
+    args = parser.parse_args()
+
+    print(args)
+
+    if args.config:
+        cfg.print_config()
+        sys.exit(0)
+    
     if cfg.is_ok:
-        if len(sys.argv) > 1:
-            parse_script_dir(dryrun=True)
-        else:
-            parse_script_dir(dryrun=False)
+        parse_script_dir(dryrun=args.dryrun, no_launcher=args.no_launcher)
