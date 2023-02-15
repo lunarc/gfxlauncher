@@ -42,18 +42,18 @@ class GfxConfig(object):
         self.config_filename = ""
 
         config_alt_loc = []
+        config_alt_loc.append("~/etc/gfxlauncher.conf")
         config_alt_loc.append("/etc/gfxlauncher.conf")
         config_alt_loc.append("/pdc/software/tools/thinlinc/etc/gfxlauncher.conf")
         config_alt_loc.append("/sw/pkg/rviz/etc/gfxlauncher.conf")
-        config_alt_loc.append("~/etc/gfxlauncher.conf")
 
         if config_filename == "":
             for config_loc in config_alt_loc:
-                if os.path.isfile(config_loc):
-                    self.config_filename = config_loc
+                if os.path.isfile(os.path.expanduser(config_loc)):
+                    self.config_filename = os.path.expanduser(config_loc)
                     break
         else:
-            self.config_filename = config_filename    
+            self.config_filename = config_filename
 
         if not self.parse_config_file():
             self.print_error("Couldn't parse configuration")
@@ -85,10 +85,17 @@ class GfxConfig(object):
         self.grantfile_dir = ""
         self.grantfile_suffix = ""
         self.client_script_dir = "/home/bmjl/Development/gfxlauncher/scripts/client"
+
         self.applications_dir = "/home/bmjl/test-menu/share/applications"
         self.directories_dir = "/home/bmjl/test-menu/share/desktop-directories"
         self.menu_dir = "/home/bmjl/test-menu/etc/xdg/menus/applications-merged"
         self.menu_filename = "Lunarc-On-Demand.menu"
+        
+        self.applications_direct_dir = "/home/bmjl/test-menu/share/applications"
+        self.directories_direct_dir = "/home/bmjl/test-menu/share/desktop-directories"
+        self.menu_direct_dir = "/home/bmjl/test-menu/etc/xdg/menus/applications-merged"
+        self.menu_direct_filename = "Lunarc-On-Demand-Direct.menu"
+        
         self.help_url = ""
         self.browser_command = "firefox"
 
@@ -160,6 +167,11 @@ class GfxConfig(object):
         print("directories_dir = %s" % self.directories_dir)
         print("menu_dir = %s" % self.menu_dir)
         print("menu_filename = %s" % self.menu_filename)
+
+        print("application_direct_dir = %s" % self.applications_dir)
+        print("directories_direct_dir = %s" % self.directories_dir)
+        print("menu_direct_dir = %s" % self.menu_dir)
+        print("menu_direct_filename = %s" % self.menu_filename)
 
         print("")
         print("VGL settings")
@@ -264,6 +276,16 @@ class GfxConfig(object):
                 config, "menus", "menu_filename")
             self.direct_scripts = self._config_getboolean(
                 config, "menus", "direct_scripts")
+
+            self.applications_direct_dir = self._config_get(
+                config, "menus-direct", "applications_dir")
+            self.directories_direct_dir = self._config_get(
+                config, "menus-direct", "directories_dir")
+            self.menu_direct_dir = self._config_get(config, "menus-direct", "menu_dir")
+            self.menu_direct_filename = self._config_get(
+                config, "menus-direct", "menu_filename")
+            self.direct_scripts = self._config_getboolean(
+                config, "menus-direct", "direct_scripts")
 
             self.vgl_path = self._config_get(config, "vgl", "vgl_path")
             self.backend_node = self._config_get(config, "vgl", "backend_node")

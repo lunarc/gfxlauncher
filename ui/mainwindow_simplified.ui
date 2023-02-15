@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>366</width>
+    <width>364</width>
     <height>543</height>
    </rect>
   </property>
@@ -367,22 +367,19 @@
      </widget>
     </item>
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_6">
+     <layout class="QHBoxLayout" name="job_settings_layout">
       <item>
-       <widget class="QLabel" name="label_7">
-        <property name="minimumSize">
+       <spacer name="show_job_settings_spacer">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
          <size>
-          <width>100</width>
-          <height>0</height>
+          <width>40</width>
+          <height>20</height>
          </size>
         </property>
-        <property name="toolTip">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Selects which project to charge the CPU time to. &lt;/p&gt;&lt;p&gt;If uncertain use the default value.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-        </property>
-        <property name="text">
-         <string>Job settings</string>
-        </property>
-       </widget>
+       </spacer>
       </item>
       <item>
        <widget class="QToolButton" name="show_job_settings_button">
@@ -393,10 +390,13 @@
          </size>
         </property>
         <property name="text">
-         <string/>
+         <string>Job settings...</string>
         </property>
         <property name="icon">
-         <iconset theme="system-run"/>
+         <iconset theme="gnome-settings"/>
+        </property>
+        <property name="toolButtonStyle">
+         <enum>Qt::ToolButtonTextBesideIcon</enum>
         </property>
        </widget>
       </item>

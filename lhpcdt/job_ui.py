@@ -35,13 +35,13 @@ from . import settings
 from . import config
 from . import launcher
 
-class JupyterNotebookJobPropWindow(QtWidgets.QWidget):
+class JupyterNotebookJobPropWindow(QtWidgets.QDialog):
     """Resource specification window"""
 
     def __init__(self, parent=None):
         """Resource window constructor"""
 
-        super(JupyterNotebookJobUI, self).__init__(parent, QtCore.Qt.Window)
+        super(QtWidgets.QDialog, self).__init__(parent, QtCore.Qt.Window)
 
         self.tool_path = settings.LaunchSettings.create().tool_path
         ui_path = os.path.join(self.tool_path, "ui")
@@ -49,75 +49,67 @@ class JupyterNotebookJobPropWindow(QtWidgets.QWidget):
         uic.loadUi(os.path.join(ui_path, "notebook_job_prop_win.ui"), self)
 
         self.parent = parent
+        self.__python_module = "Anaconda3"
+        self.__use_custom_anaconda_env = False
+        self.__custom_anaconda_env = ""
+        self.__custom_anaconda_env_list = []
 
         self.set_data()
 
-    def set_data(self, check_boxes=True):
+    def set_data(self):
         """Assign values to controls"""
-        pass
+        self.conda_module_text.setText(self.__python_module)
+        self.use_custom_env_check.setChecked(self.__use_custom_anaconda_env)
+
+        self.conda_env_list.clear()
+
+        for e in self.__custom_anaconda_env_list:
+            self.conda_env_list.addItem(e)
 
 
     def get_data(self):
         """Get values from controls"""
+        print("get_data()")
+        self.__custom_anaconda_env = self.conda_env_list.currentText()
+        self.__python_module = self.conda_module_text.text()
+        self.__use_custom_anaconda_env = self.use_custom_env_check.isChecked()
 
-        try:
-            pass
-        except ValueError:
-            pass
+    @property
+    def python_module(self):
+        return self.__python_module
 
-    @QtCore.pyqtSlot()
-    def on_exclusiveCheck_clicked(self):
-        if self.exclusiveCheck.isChecked():
-            self.old_tasks_per_node = self.parent.tasks_per_node
-            self.parent.tasks_per_node = -1
-            self.parent.exclusive = True
-        else:
-            self.parent.tasks_per_node = self.old_tasks_per_node
-            self.parent.exclusive = False
-
+    @python_module.setter
+    def python_module(self, value):
+        self.__python_module = value
         self.set_data()
 
+    @property
+    def use_custom_anaconda_env(self):
+        return self.__use_custom_anaconda_env
 
-    @QtCore.pyqtSlot()
-    def on_specifyMemoryCheck_clicked(self):
-        if self.specifyMemoryCheck.isChecked():
-            self.memoryPerCpuEdit.setEnabled(True)
-            self.memoryPerCpuEdit.setVisible(True)
-            self.memoryPerCpuEdit.setText(str(self.default_job.memory))
-        else:
-            self.memoryPerCpuEdit.setEnabled(False)
-            self.memoryPerCpuEdit.setVisible(False)
-            self.memoryPerCpuEdit.setText("-1")
+    @use_custom_anaconda_env.setter
+    def use_custom_anaconda_env(self, value):
+        self.__use_custom_anaconda_env = value
+        self.set_data()
 
-    @QtCore.pyqtSlot()
-    def on_specifyTasksPerNodeCheck_clicked(self):
-        if self.specifyTasksPerNodeCheck.isChecked():
-            self.tasksPerNodeSpin.setEnabled(True)
-            self.tasksPerNodeSpin.setVisible(True)
-            self.tasksPerNodeSpin.setValue(self.default_job.tasksPerNode)
-        else:
-            self.tasksPerNodeSpin.setEnabled(False)
-            self.tasksPerNodeSpin.setVisible(False)
-            self.tasksPerNodeSpin.setValue(-1)
+    @property
+    def custom_anaconda_env_list(self):
+        return self.__custom_anaconda_env_list
 
-    """     @QtCore.pyqtSlot()
-        def on_specifyNumberOfNodesCheck_clicked(self):
-            if self.specifyNumberOfNodesCheck.isChecked():
-                self.numberOfNodesSpin.setEnabled(True)
-                self.numberOfNodesSpin.setValue(self.default_job.nodeCount)
-            else:
-                self.numberOfNodesSpin.setEnabled(False)
-                self.numberOfNodesSpin.setValue(-1)
-    """
-    """     @QtCore.pyqtSlot()
-        def on_specifyCPUsPerTaskCheck_clicked(self):
-            if self.specifyCPUsPerTaskCheck.isChecked():
-                self.cpuPerTaskSpin.setEnabled(True)
-                self.cpuPerTaskSpin.setValue(self.default_job.cpusPerNode)
-            else:
-                self.cpuPerTaskSpin.setEnabled(False)
-                self.cpuPerTaskSpin.setValue(-1)
-    """
+    @custom_anaconda_env_list.setter
+    def custom_anaconda_env_list(self, value):
+        self.__custom_anaconda_env_list = value
+        self.set_data()
+
+    @property
+    def custom_anaconda_env(self):
+        return self.__custom_anaconda_env
+
+    @custom_anaconda_env.setter
+    def custom_anaconda_env(self, value):
+        self.__custom_anaconda_env = value
+        self.set_data()
+
 
     @QtCore.pyqtSlot()
     def on_ok_button_clicked(self):

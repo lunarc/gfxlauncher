@@ -30,11 +30,13 @@ from datetime import datetime
 from PyQt5 import Qt, QtCore, QtGui, QtWidgets, uic
 
 from . import jobs
+from . import job_ui
 from . import lrms
 from . import remote
 from . import settings
 from . import config
 from . import resource_win
+from . import conda_utils as cu
 
 from subprocess import Popen, PIPE, STDOUT
 
@@ -478,9 +480,13 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.cpus_per_task = 1
         self.no_requeue = False
         self.user = ""
+        
         self.notebook_module = self.config.notebook_module
         self.jupyterlab_module = self.config.jupyterlab_module
         self.jupyter_use_localhost = self.config.jupyter_use_localhost
+        self.use_conda_env = False
+        self.conda_env = ""
+
         self.ssh_tunnel = None
         self.autostart = False
         self.locked = False
@@ -578,6 +584,9 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         if self.job_type == "":
             self.launcherTabs.removeTab(2)
+
+        if self.job_type != "notebook" and self.job_type!="jupyterlab":
+            self.show_job_settings_button.setVisible(False)
 
         self.slurm.query_partitions(exclude_set=self.part_exclude_set)
 
@@ -987,12 +996,20 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
                 # Create a Jupyter notbook job
 
                 job = jobs.JupyterNotebookJob(notebook_module = self.notebook_module, use_localhost=self.jupyter_use_localhost)
+                if self.use_conda_env:
+                    job.conda_use_env = self.conda_env
+                else:
+                    job.conda_use_env = ""
 
             elif self.job_type == "jupyterlab":
 
                 # Create a Jupyter notbook job
 
                 job = jobs.JupyterLabJob(jupyterlab_module = self.jupyterlab_module, use_localhost=self.jupyter_use_localhost)
+                if self.use_conda_env:
+                    job.conda_use_env = self.conda_env
+                else:
+                    job.conda_use_env = ""
 
             elif self.job_type == "vm":
 
@@ -1116,5 +1133,31 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
     @QtCore.pyqtSlot()
     def on_show_job_settings_button_clicked(self):
         """Open help page if set"""
-        print("show_job_settings")
+
+        conda_env_list = cu.find_conda_envs()
+
+        self.job_ui_window = job_ui.JupyterNotebookJobPropWindow(self)
+        self.job_ui_window.custom_anaconda_env_list = conda_env_list
+        self.job_ui_window.python_module = self.jupyterlab_module
+        self.job_ui_window.use_custom_anaconda_env = self.use_conda_env
+        self.job_ui_window.custom_anaconda_env = self.conda_env
+
+        self.job_ui_window.setGeometry(self.x(
+        )+self.width(), self.y(), self.job_ui_window.width(), self.job_ui_window.height())
+
+        print("before show")
+        self.job_ui_window.exec()
+        print("after show")
+
+        self.jupyterlab_module = self.job_ui_window.python_module
+        self.notebook_module = self.job_ui_window.python_module
+        self.use_conda_env = self.job_ui_window.use_custom_anaconda_env
+        self.conda_env = self.job_ui_window.custom_anaconda_env
+
+        print(self.jupyterlab_module)
+        print(self.notebook_module)
+        print(self.use_conda_env)
+        print(self.conda_env)
+
+        
 

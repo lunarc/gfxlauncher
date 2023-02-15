@@ -23,15 +23,16 @@ def find_conda_envs():
 
     env_list = []
 
-    lines = str(result.stdout).split("\\n")
-    for e in lines:
-        if not '#' in e:
-            items = e.split()
-            if len(items)>1:
-                env_list.append(items[0])
+    if result.returncode == 0:
+
+        lines = str(result.stdout).split("\\n")
+        for e in lines:
+            if not '#' in e:
+                items = e.split()
+                if len(items)>1:
+                    env_list.append(items[0])
 
     return env_list
-
 
 if __name__ == "__main__":
 

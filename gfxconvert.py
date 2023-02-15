@@ -33,7 +33,7 @@ from lhpcdt import config, desktop
 
 # --- Version information
 
-gfxconvert_version = "0.8.6"
+gfxconvert_version = "0.9.0"
 
 # --- Fix search path for tool
 
@@ -114,11 +114,15 @@ def create_slurm_script(server_fname, slurm_fname, descr, metadata={}, dryrun=Fa
                 os.chmod(client_script_filename, 0o755)
 
 
-def create_desktop_entry(script, descr, metadata={}, dryrun=False):
+def create_desktop_entry(script, descr, metadata={}, dryrun=False, no_launcher=False):
     """Create desktop entry for script"""
 
     print(("**** Creating desktop entry '%s' ****" % script))
-    desktop_filename = os.path.join(cfg.applications_dir, "%s.desktop" % descr.replace("/","-"))
+    if no_launcher:
+        desktop_filename = os.path.join(cfg.applications_direct_dir, "%s.desktop" % descr.replace("/","-"))
+    else:
+        desktop_filename = os.path.join(cfg.applications_dir, "%s.desktop" % descr.replace("/","-"))
+    
     script_filename = os.path.join(cfg.client_script_dir, script)
 
     entry = desktop.DesktopEntry(dryrun)
@@ -180,7 +184,10 @@ def parse_script_dir(dryrun=False, no_launcher=False):
 
             server_filename = os.path.basename(filename)
 
-            slurm_client_filename = 'run_%s_rviz-slurm.sh' % app_name
+            if no_launcher:
+                slurm_client_filename = 'run_%s_rviz-direct.sh' % app_name
+            else:
+                slurm_client_filename = 'run_%s_rviz-slurm.sh' % app_name
 
             if "title" in metadata:
                 slurm_client_descr = metadata["title"].title()
@@ -190,7 +197,7 @@ def parse_script_dir(dryrun=False, no_launcher=False):
             create_slurm_script(
                 server_filename, slurm_client_filename, slurm_client_descr, metadata, dryrun, no_launcher)
             slurm_entry = create_desktop_entry(
-                slurm_client_filename, slurm_client_descr, metadata, dryrun)
+                slurm_client_filename, slurm_client_descr, metadata, dryrun, no_launcher)
 
             if "category" in metadata:
 
@@ -205,7 +212,11 @@ def parse_script_dir(dryrun=False, no_launcher=False):
             else:
                 menu.items.append(os.path.basename(slurm_entry.filename))
 
-    menu.dest_filename = os.path.join(cfg.menu_dir, cfg.menu_filename)
+    if no_launcher:
+        menu.dest_filename = os.path.join(cfg.menu_direct_dir, cfg.menu_direct_filename)
+    else:
+        menu.dest_filename = os.path.join(cfg.menu_dir, cfg.menu_filename)
+
     menu.write()
 
 
