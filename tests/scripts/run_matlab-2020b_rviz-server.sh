@@ -7,7 +7,7 @@ vgl_P=/opt/VirtualGL/bin
 app_P=
 
 
-module load matlab/2020b
+module load matlab
 
 
 $vgl_P/vglrun matlab -desktop -nosoftwareopengl
