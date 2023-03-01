@@ -124,11 +124,15 @@ class SubmitThread(QtCore.QThread):
 
                 self.vgl.execute(self.job.nodes, self.cmd)
                 self.active_connection = self.vgl
+
+                print("Command completed...")
             else:
                 print("Executing command on node...")
 
                 self.ssh.execute(self.job.nodes, self.cmd)
                 self.active_connection = self.ssh
+                
+                print("Command completed...")
 
 class TunnelThread(QtCore.QThread):
     """Job submission thread"""
@@ -178,6 +182,10 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.version_info = settings.LaunchSettings.create().version_info
         self.rdp = None
         self.job = None
+
+        # SSH/VGL handling
+
+        self.connection_after_thread = True
 
 
         self.reconnect_nb_button = None
@@ -800,10 +808,16 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         # Create a job submission thread
 
-        self.submit_thread = SubmitThread(
-            self.job, self.cmd, self.vgl, self.vglrun, self.only_submit, self.vgl_path)
-        self.submit_thread.finished.connect(self.on_submit_finished)
-        self.submit_thread.start()
+        if self.connection_after_thread:
+            self.submit_thread = SubmitThread(
+                self.job, self.cmd, self.vgl, self.vglrun, False, self.vgl_path)
+            self.submit_thread.finished.connect(self.on_submit_finished)
+            self.submit_thread.start()
+        else:
+            self.submit_thread = SubmitThread(
+                self.job, self.cmd, self.vgl, self.vglrun, self.only_submit, self.vgl_path)
+            self.submit_thread.finished.connect(self.on_submit_finished)
+            self.submit_thread.start()
 
         # Make sure we only manage a single job ;)
 
@@ -835,6 +849,30 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
             self.status_timer.stop()
             self.update_controls()
             self.active_connection = None
+            return
+
+        if self.connection_after_thread:
+
+            print("**** Starting graphical application on node.")
+
+
+            if False:
+                print("Executing command on node (OpenGL)...")
+
+                self.vgl.execute(self.job.nodes, self.cmd)
+                self.active_connection = self.vgl
+
+                print("Command completed...")
+            else:
+                print("Executing command on node...")
+
+                if self.active_connection is not None:
+                    self.active_connection.terminate()
+                self.active_connection = remote.SSH()
+                self.active_connection.execute(self.job.nodes, self.cmd)
+                
+                print("Command completed...")
+
 
     def on_notebook_url_found(self, url):
         """Callback when notebook url has been found."""
