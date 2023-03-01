@@ -45,7 +45,7 @@ class SSH(object):
         self.trustedX11 = True
         self.compression = True
         self.process = None
-        self.strictHostKeyCheck = False
+        self.strictHostKeyCheck = True
         self.output = ""
         self.error = ""
         self._options = ""
@@ -84,6 +84,7 @@ class SSH(object):
         """Execute command on a node/host"""
         self._update_options()
         if not self.local_exec:
+            print("ssh %s %s '%s'" % (self._options, node, command))
             self.process = Popen("ssh %s %s '%s'" %
                                  (self._options, node, command), shell=self.shell)
         else:

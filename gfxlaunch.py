@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/usr/bin/env python
 #
 # LUNARC HPC Desktop On-Demand graphical launch tool
 # Copyright (C) 2017-2022 LUNARC, Lund University
@@ -223,7 +223,7 @@ if __name__ == '__main__':
 
     # Redirect standard output
 
-    redirect = True
+    redirect = False
 
     # Create Queue and redirect sys.stdout to this queue
 

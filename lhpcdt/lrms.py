@@ -377,6 +377,8 @@ class Slurm(object):
                   stdout=PIPE, stderr=PIPE, shell=True, universal_newlines=True)
         squeue_output = p.communicate()[0].strip().split(";")
 
+        print(squeue_output)
+
         if len(squeue_output) > 1:
             job.status = squeue_output[0]
             job.nodes = squeue_output[1]
@@ -427,8 +429,8 @@ class Slurm(object):
         self.job_status(job)
 
         while job.status != "R":
-            time.sleep(1)
             self.job_status(job)
+            time.sleep(1)
 
     def is_running(self, job):
         self.job_status(job)
