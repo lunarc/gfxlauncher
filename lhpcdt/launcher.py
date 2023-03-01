@@ -122,14 +122,14 @@ class SubmitThread(QtCore.QThread):
             if self.opengl:
                 print("Executing command on node (OpenGL)...")
 
-                self.vgl.execute(self.job.nodes, self.cmd)
+                #self.vgl.execute(self.job.nodes, self.cmd)
                 self.active_connection = self.vgl
 
                 print("Command completed...")
             else:
                 print("Executing command on node...")
 
-                self.ssh.execute(self.job.nodes, self.cmd)
+                #self.ssh.execute(self.job.nodes, self.cmd)
                 self.active_connection = self.ssh
                 
                 print("Command completed...")
