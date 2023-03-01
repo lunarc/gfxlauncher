@@ -1,0 +1,1 @@
+gfxlaunch --vgl --title "Fiji 1.53C" --partition lvis --account lvis-test --exclusive --tasks-per-node=-1 --cmd /home/bmjl/Development/gfxlauncher/tests/scripts/run_fiji-1.53c_rviz-server.sh --simplified --group ondemand

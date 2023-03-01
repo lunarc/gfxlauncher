@@ -1,0 +1,5 @@
+[Desktop Entry]
+Name=Comsol Multiphysics 5.3
+Type=Application
+Terminal=false
+Exec=/home/bmjl/Development/gfxlauncher/tests/scripts/generated/run_comsolmultiphysics-5.2_rviz-slurm.sh

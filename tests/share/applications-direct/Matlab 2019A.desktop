@@ -1,0 +1,5 @@
+[Desktop Entry]
+Name=Matlab 2019a
+Type=Application
+Terminal=false
+Exec=/home/bmjl/Development/gfxlauncher/tests/scripts/generated/run_matlab-2019a_rviz-direct.sh

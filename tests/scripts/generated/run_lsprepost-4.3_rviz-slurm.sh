@@ -1,0 +1,1 @@
+gfxlaunch --vgl --title "Ls Prepost 4.3" --partition lvis --account lvis-test --exclusive --tasks-per-node=-1 --cmd /home/bmjl/Development/gfxlauncher/tests/scripts/run_lsprepost-4.3_rviz-server.sh --simplified --group ondemand

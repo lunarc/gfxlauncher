@@ -1,0 +1,5 @@
+[Desktop Entry]
+Name=Rstudio 1.2.5019
+Type=Application
+Terminal=false
+Exec=/home/bmjl/Development/gfxlauncher/tests/scripts/generated/run_rstudio-1.2.5019_rviz-slurm.sh

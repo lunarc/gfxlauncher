@@ -1,0 +1,1 @@
+gfxlaunch --vgl --title "Qt Creator 4.12.3" --partition lvis --account lvis-test --exclusive --tasks-per-node=-1 --cmd /home/bmjl/Development/gfxlauncher/tests/scripts/run_qtcreator-4.12.3_rviz-server.sh --simplified --group ondemand

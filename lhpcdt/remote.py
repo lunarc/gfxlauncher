@@ -39,7 +39,7 @@ class SSH(object):
     """Implements a SSH connection"""
 
     def __init__(self, local_exec=False):
-        self.tty = True
+        self.tty = False
         self.tunnelX11 = True
         self.shell = True
         self.trustedX11 = True

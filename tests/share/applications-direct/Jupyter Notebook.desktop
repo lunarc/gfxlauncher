@@ -1,0 +1,5 @@
+[Desktop Entry]
+Name=Jupyter Notebook
+Type=Application
+Terminal=false
+Exec=/home/bmjl/Development/gfxlauncher/tests/scripts/generated/run_jupyter-notebook_rviz-direct.sh

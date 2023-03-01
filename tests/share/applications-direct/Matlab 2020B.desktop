@@ -1,0 +1,5 @@
+[Desktop Entry]
+Name=Matlab 2020b
+Type=Application
+Terminal=false
+Exec=/home/bmjl/Development/gfxlauncher/tests/scripts/generated/run_matlab-2020b_rviz-direct.sh

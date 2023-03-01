@@ -1,0 +1,5 @@
+[Desktop Entry]
+Name=FreeSurfer 5.3.0
+Type=Application
+Terminal=false
+Exec=/home/bmjl/Development/gfxlauncher/tests/scripts/generated/run_freesurfer-5.3.0_rviz-direct.sh

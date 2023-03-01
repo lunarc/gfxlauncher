@@ -1,0 +1,1 @@
+gfxlaunch --vgl --title "Slicer3D 4.5.0" --partition lvis --account lvis-test --exclusive --tasks-per-node=-1 --cmd /home/bmjl/Development/gfxlauncher/tests/scripts/run_slicer3D-4.5.0+_rviz-server.sh --simplified --group ondemand

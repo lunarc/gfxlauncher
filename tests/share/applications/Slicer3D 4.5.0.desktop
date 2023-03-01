@@ -1,0 +1,5 @@
+[Desktop Entry]
+Name=Slicer3D 4.5.0
+Type=Application
+Terminal=false
+Exec=/home/bmjl/Development/gfxlauncher/tests/scripts/generated/run_slicer3D-4.5.0+_rviz-slurm.sh

@@ -1,0 +1,1 @@
+gfxlaunch --vgl --title "Jupyter Lab (Gpu)" --partition gpu --account lvis-test --only-submit --job=jupyterlab --simplified --group gpu

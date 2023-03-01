@@ -1,0 +1,5 @@
+[Desktop Entry]
+Name=Tomviz 1.5
+Type=Application
+Terminal=false
+Exec=/home/bmjl/Development/gfxlauncher/tests/scripts/generated/run_tomviz-1.5_rviz-slurm.sh

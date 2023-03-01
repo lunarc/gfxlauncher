@@ -1,0 +1,1 @@
+gfxlaunch  --title "Rstudio 2021.09.1 (Cpu)" --partition lu --account lvis-test --exclusive --tasks-per-node=-1 --cmd /home/bmjl/Development/gfxlauncher/tests/scripts/run_rstudio-2021.09.1-cpu_rviz-server.sh --simplified --group cpu

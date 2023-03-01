@@ -1,0 +1,5 @@
+[Desktop Entry]
+Name=VolView 3.4
+Type=Application
+Terminal=false
+Exec=/home/bmjl/Development/gfxlauncher/tests/scripts/generated/run_volview-3.4_rviz-direct.sh

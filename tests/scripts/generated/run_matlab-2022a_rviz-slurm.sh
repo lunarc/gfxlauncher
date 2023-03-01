@@ -1,0 +1,1 @@
+gfxlaunch --vgl --title "Matlab 2022A" --partition lvis --account lvis-test --exclusive --tasks-per-node=-1 --cmd /home/bmjl/Development/gfxlauncher/tests/scripts/run_matlab-2022a_rviz-server.sh --simplified --group ondemand

@@ -1,0 +1,1 @@
+gfxlaunch --vgl --title "Volview 3.4" --partition lvis --account lvis-test --exclusive --tasks-per-node=-1 --cmd /home/bmjl/Development/gfxlauncher/tests/scripts/run_volview-3.4_rviz-server.sh --simplified --group ondemand

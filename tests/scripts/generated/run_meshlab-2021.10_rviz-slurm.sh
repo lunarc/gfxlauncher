@@ -1,0 +1,1 @@
+gfxlaunch --vgl --title "Meshlab 2021.10" --partition lvis --account lvis-test --exclusive --tasks-per-node=-1 --cmd /home/bmjl/Development/gfxlauncher/tests/scripts/run_meshlab-2021.10_rviz-server.sh --simplified --group ondemand

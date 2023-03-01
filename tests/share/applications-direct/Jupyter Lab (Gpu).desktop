@@ -1,0 +1,5 @@
+[Desktop Entry]
+Name=Jupyter Lab (GPU)
+Type=Application
+Terminal=false
+Exec=/home/bmjl/Development/gfxlauncher/tests/scripts/generated/run_jupyter-lab-gpu_rviz-direct.sh

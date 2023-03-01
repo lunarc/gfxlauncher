@@ -1,0 +1,1 @@
+gfxlaunch --vgl --title "Hypergraph 2017.2" --partition lvis --account lvis-test --exclusive --tasks-per-node=-1 --cmd /home/bmjl/Development/gfxlauncher/tests/scripts/run_hypergraph_2017.2_rviz-server.sh --simplified --group ondemand
