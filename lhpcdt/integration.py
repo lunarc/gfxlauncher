@@ -2,266 +2,52 @@
 
 import os, sys
 
-class Menu:
-    """XDG Menu class"""
-
-    def __init__(self, dryrun = False):
-        """Constructor"""
-        self.name = "Lunarc Applications On-Demand"
-        self.dir_file = "Lunarc-On-Demand.directory"
-        self.items = []
-        self.sub_menus = {}
-        self.dest_filename = ""
-        self.directory_dir = ""
+class XmlBase:
+    def __init__(self):
         self.__indent_level = 0
         self.__tab = "    "
-        self.dryrun = dryrun
-        self.entry_prefix = "lhpcdt_"
 
-    def __write_header(self, f):
+    def write_header(self, f):
         """Writes menu header"""
         f.write('<!DOCTYPE Menu PUBLIC "-//freedesktop//DTD Menu 1.0//EN"\n')
         f.write('  "http://www.freedesktop.org/standards/menu-spec/menu-1.0.dtd">\n')
 
-    def __indent(self):
+    def indent(self):
         """Increase indentation level"""
         self.__indent_level += 1
 
-    def __dedent(self):
+    def dedent(self):
         """Decrease indentation level"""
         if self.__indent_level > 0:
             self.__indent_level -= 1
 
-    def __tag_value(self, f, name, value, attr="", attr_value=""):
+    def tag_value(self, f, name, value, attr="", attr_value=""):
         """Write a single line tag value"""
         if attr=="":
             f.write(self.__tab * self.__indent_level + "<%s>%s</%s>\n" % (name, value, name))
         else:
             f.write(self.__tab * self.__indent_level + '<%s %s="%s">%s</%s>\n' % (name, attr, attr_value, value, name))
 
-    def __tag(self, f, name, attr="", attr_value=""):
+    def tag(self, f, name, attr="", attr_value=""):
         """Begin a tag"""
         if attr == "":
             f.write(self.__tab * self.__indent_level + "<%s>\n" % (name))
         else:
             f.write(self.__tab * self.__indent_level + '<%s %s="%s">\n' % (name, attr, attr_value))
 
-    def __close_tag(self, f, name):
+    def close_tag(self, f, name):
         """End a tag"""
         f.write(self.__tab * self.__indent_level + "</%s>\n" % (name))
 
-    def __begin_tag(self, f, name, attr="", attr_value=""):
+    def begin_tag(self, f, name, attr="", attr_value=""):
         """Begin a tag and increas indent"""
-        self.__tag(f, name, attr, attr_value)
-        self.__indent()
+        self.tag(f, name, attr, attr_value)
+        self.indent()
 
-    def __end_tag(self, f, name):
+    def end_tag(self, f, name):
         """End a tag and decreas indentation"""
-        self.__dedent()
-        self.__close_tag(f, name)
-
-    def write(self):
-        """Write menu XML"""
-        if self.dest_filename == "":
-            return
-
-        try:
-
-            f = None
-            dir_entries = None
-
-            if self.dryrun:
-                f = sys.stdout
-            else:
-                f = open(self.dest_filename, "w")
-
-            self.__write_header(f)
-
-            self.__begin_tag(f, "Menu")
-            self.__tag_value(f, "Name", "Applications")
-            self.__tag_value(f, "MergeFile", value="/etc/xdg/menus/applications.menu", attr="type", attr_value="parent")
-            self.__begin_tag(f, "Menu")
-            self.__tag_value(f, "Name", self.name)
-            self.__tag_value(f, "Directory", self.dir_file)
-            self.__begin_tag(f, "Include")
-
-            for item in self.items:
-                self.__tag_value(f, "Filename", self.entry_prefix + item.filename)
-
-            self.__end_tag(f, "Include")
-
-            dir_entries = []
-
-            for key in list(self.sub_menus.keys()):
-                self.__begin_tag(f, "Menu")
-                self.__tag_value(f, "Name", key)
-                self.__tag_value(f, "Directory", key.replace(" ", "_")+".directory")
-                dir_entries.append([key, key.replace(" ", "_")+".directory"])
-                self.__begin_tag(f, "Include")
-                for item in self.sub_menus[key]:
-                    self.__tag_value(f, "Filename", item)
-                self.__end_tag(f, "Include")
-                self.__end_tag(f, "Menu")
-
-            self.__end_tag(f, "Menu")
-            self.__end_tag(f, "Menu")
-
-        except PermissionError:
-            print("Menu: Couldn't write, %s, check permissions" % self.dest_filename)
-            return
-        finally:
-            if not self.dryrun:
-                if f!=None:
-                    f.close()
-
-        #for dir_entry in dir_entries:
-        #    filename = os.path.join(self.directory_dir, dir_entry[1])
-        #    self.__write_dir_entry(filename, dir_entry[0])
-
-
-class DesktopMenu:
-    def __init__(self):
-
-        self.__name = "My Menu"
-        self.__menu_location = "~/.config/menus/applications-merged"
-        self.__app_location = "~/.local/share/applications"
-        self.__dir_location = "~/.local/share/desktop-directories"
-        self.__resolve_locations()
-        self.__check_directories()
-
-        self.__entries = []
-        self.__dir_entry = DirectoryEntry()
-
-        self.__prefix = "lhpcdt_"
-
-        self.__menu_filename = ""
-        self.__dir_filename = ""
-
-        self.__menu = Menu()
-        self.__menu.name = self.__name
-
-        self.__update_filenames()
-
-    def __resolve_locations(self):
-        self.__abs_app_location = os.path.abspath(os.path.expanduser(self.__app_location))
-        self.__abs_dir_location = os.path.abspath(os.path.expanduser(self.__dir_location))
-        self.__abs_menu_location = os.path.abspath(os.path.expanduser(self.__menu_location))
-
-    def __check_directories(self):
-        if not os.path.exists(self.abs_app_location):
-            os.makedirs(self.abs_app_location)
-        if not os.path.exists(self.abs_dir_location):
-            os.makedirs(self.abs_dir_location)
-        if not os.path.exists(self.abs_menu_location):
-            os.makedirs(self.abs_menu_location)
-
-    def __update_filenames(self):
-        self.__menu_filename = self.__name.lower().replace(" ", "_") + ".menu"
-        self.__dir_filename = self.__name.lower().replace(" ", "_") + ".directory"
-        self.__menu.dest_filename = os.path.join(self.__abs_menu_location, "applications.menu")
-
-    def __update(self):
-        self.__resolve_locations()
-        self.__check_directories()
-        self.__update_filenames()
-        self.__dir_entry.name = self.name
-
-
-    def add_entry(self, entry):
-        self.__entries.append(entry)
-
-    def add_dir(self, dir_entry):
-        self.__dirs.append(dir_entry)
-
-    def print_menus(self):
-        for entry in self.__entries:
-            print(self.__prefix + entry.filename)
-            print(entry)
-
-    def generate(self):
-        self.__update()
-
-        # Write desktop entries
-
-        for entry in self.__entries:
-            entry_filename = self.__prefix + entry.filename
-            abs_entry_filename = os.path.join(self.abs_app_location, entry_filename)
-            with open(abs_entry_filename, "w") as f:
-                f.write(str(entry))
-
-        # Write menu file
-
-        self.__menu.items = self.__entries
-        self.__menu.name = self.__name
-        self.__menu.dir_file = self.__dir_filename
-        self.__menu.entry_prefix = self.__prefix
-        self.__menu.write()
-
-        # Write directory file
-
-        abs_dir_filename = os.path.join(self.abs_dir_location, self.__dir_filename) 
-
-        with open(abs_dir_filename, "w") as f:
-            f.write(str(self.__dir_entry))
-
-
-        
-
-    @property
-    def name(self):
-        return self.__name
-
-    @name.setter
-    def name(self, value):
-        self.__name = value
-        self.__update_filenames()
-
-    @property
-    def app_location(self):
-        return self.__app_location
-
-    @app_location.setter
-    def location(self, value):
-        self.__app_location = value
-        self.__resolve_location()
-
-    @property
-    def dir_location(self):
-        return self.__dir_location
-
-    @dir_location.setter
-    def dir_location(self, value):
-        self.__dir_location = value
-        self.__resolve_locations()
-
-    @property
-    def abs_app_location(self):
-        self.__resolve_locations()
-        return self.__abs_app_location
-
-    @property
-    def app_location(self):
-        return self.__app_location
-
-    @property
-    def abs_dir_location(self):
-        self.__resolve_locations()
-        return self.__abs_dir_location
-
-    @property
-    def abs_menu_location(self):
-        self.__resolve_locations()
-        return self.__abs_menu_location
-
-    @dir_location.setter
-    def dir_location(self, value):
-        self.__dir_location = value
-        self.__resolve_locations()
-
-    
-
-
-    
+        self.dedent()
+        self.close_tag(f, name)
 
 class DesktopEntry:
     def __init__(self):
@@ -309,7 +95,7 @@ class DesktopEntry:
 
     @property
     def filename(self):
-        return self.__name.lower().replace(" ", "_") + self.__extension
+        return self.__name.lower().replace("/", "_").replace(" ", "_") + self.__extension
 
     @property
     def extension(self):
@@ -394,6 +180,277 @@ class DirectoryEntry(DesktopEntry):
         self.type = "Directory"
         self.comment = "My directory"
         self.name = "My directory"
+
+
+
+class UserMenus(XmlBase):
+    def __init__(self, dryrun=False):
+        super().__init__()
+        self.__menus = []
+        self.__menu_location = "~/.config/menus/applications-merged"
+        self.__app_location = "~/.local/share/applications"
+        self.__dir_location = "~/.local/share/desktop-directories"
+        self.__menu_filename = ""
+
+        self.__name = "On-Demand applications"
+
+        self.__resolve_locations()
+        self.__check_directories()
+
+        self.__dryrun = dryrun
+        self.__use_top_level_menu = False
+
+        self.__menu_name_prefix = "On-Demand "
+
+    def __resolve_locations(self):
+        self.__abs_app_location = os.path.abspath(os.path.expanduser(self.__app_location))
+        self.__abs_dir_location = os.path.abspath(os.path.expanduser(self.__dir_location))
+        self.__abs_menu_location = os.path.abspath(os.path.expanduser(self.__menu_location))
+
+    def __check_directories(self):
+        if not os.path.exists(self.abs_app_location):
+            os.makedirs(self.abs_app_location)
+        if not os.path.exists(self.abs_dir_location):
+            os.makedirs(self.abs_dir_location)
+        if not os.path.exists(self.abs_menu_location):
+            os.makedirs(self.abs_menu_location)
+                        
+    def __update_filenames(self):
+        self.__menu_filename = os.path.join(self.__abs_menu_location, "applications.menu")
+
+    def __update(self):
+        self.__resolve_locations()
+        self.__check_directories()
+        self.__update_filenames()
+
+    def add_menu(self, menu):
+        self.__menus.append(menu)
+
+    def add_scripts(self, script_db):
+        self.__script_db = script_db
+
+        for category, scripts in script_db.items():
+
+            menu = Menu(self)
+            menu.name = category
+         
+            for script in scripts:
+                desktop_entry = DesktopEntry()
+                desktop_entry.name = script.variables["title"]
+                desktop_entry.exec = script.filename
+                menu.add_entry(desktop_entry)
+
+            self.add_menu(menu)
+
+    def generate(self):
+
+        self.__update()
+
+        if self.__menu_filename == "":
+            print("menu filename empty")
+            return
+
+        #try:
+
+        f = None
+        dir_entries = None
+
+        if self.__dryrun:
+            f = sys.stdout
+        else:
+            f = open(self.__menu_filename, "w")
+
+        self.write_header(f)
+
+        self.begin_tag(f, "Menu")
+        self.tag_value(f, "Name", "Applications")
+        self.tag_value(f, "MergeFile", value="/etc/xdg/menus/applications.menu", attr="type", attr_value="parent")
+
+
+        dirs = []
+
+        if self.__use_top_level_menu:
+
+            root_dir_filename = self.__name.replace(" ", "_").lower()+".directory"
+            abs_root_dir_filename = os.path.join(self.__abs_dir_location, root_dir_filename)
+
+            root_dir_entry = DirectoryEntry()
+            root_dir_entry.name = self.__name
+
+            dirs.append((root_dir_entry, abs_root_dir_filename))
+
+            self.begin_tag(f, "Menu")
+            self.tag_value(f, "Name", self.__name)
+            self.tag_value(f, "Directory", root_dir_filename)
+
+        for menu in self.__menus:
+
+            print("Generating:", menu.name)                
+            menu.generate()
+
+            dir_filename = menu.name.replace(" ", "_").lower()+".directory"
+            abs_dir_filename = os.path.join(self.__abs_dir_location, dir_filename)
+
+            dir_entry = DirectoryEntry()
+            dir_entry.name = self.__menu_name_prefix + menu.name
+
+            dirs.append((dir_entry, abs_dir_filename))
+
+            self.begin_tag(f, "Menu")
+            self.tag_value(f, "Name", self.__menu_name_prefix + menu.name)
+            self.tag_value(f, "Directory", dir_filename)
+            self.begin_tag(f, "Include")
+
+            for item in menu.entries:
+                self.tag_value(f, "Filename", menu.prefix + item.filename)
+
+            self.end_tag(f, "Include")
+            self.end_tag(f, "Menu")
+
+        dir_entries = []
+
+        # for key in list(self.sub_menus.keys()):
+        #     self.begin_tag(f, "Menu")
+        #     self.tag_value(f, "Name", key)
+        #     self.tag_value(f, "Directory", key.replace(" ", "_")+".directory")
+        #     dir_entries.append([key, key.replace(" ", "_")+".directory"])
+        #     self.begin_tag(f, "Include")
+        #     for item in self.sub_menus[key]:
+        #         self.tag_value(f, "Filename", item)
+        #     self.end_tag(f, "Include")
+        #     self.end_tag(f, "Menu")
+
+        self.end_tag(f, "Menu")
+
+        if self.__use_top_level_menu:
+            self.end_tag(f, "Menu")
+
+        for dir_entry, abs_filename in dirs:
+            with open(abs_filename, "w") as fde:
+                fde.write(str(dir_entry))
+
+        #except PermissionError:
+        #print("Menu: Couldn't write, %s, check permissions" % self.__menu_filename)
+        #return
+        #finally:
+        if not self.__dryrun:
+            if f!=None:
+                f.close()
+
+    @property
+    def app_location(self):
+        return self.__app_location
+
+    @app_location.setter
+    def location(self, value):
+        self.__app_location = value
+        self.__resolve_location()
+
+    @property
+    def dir_location(self):
+        return self.__dir_location
+
+    @dir_location.setter
+    def dir_location(self, value):
+        self.__dir_location = value
+        self.__resolve_locations()
+
+    @property
+    def abs_app_location(self):
+        self.__resolve_locations()
+        return self.__abs_app_location
+
+    @property
+    def app_location(self):
+        return self.__app_location
+
+    @property
+    def abs_dir_location(self):
+        self.__resolve_locations()
+        return self.__abs_dir_location
+
+    @property
+    def abs_menu_location(self):
+        self.__resolve_locations()
+        return self.__abs_menu_location
+
+    @dir_location.setter
+    def dir_location(self, value):
+        self.__dir_location = value
+        self.__resolve_locations()
+
+    @property
+    def menu_name_prefix(self):
+        return self.__menu_name_prefix
+    
+    @menu_name_prefix.setter
+    def menu_name_prefix(self, value):
+        self.__menu_name_prefix = value
+        
+class Menu:
+    def __init__(self, parent):
+
+        self.__parent = parent
+        self.__name = "My Menu"
+        self.__entries = []
+        self.__prefix = "lhpcdt_"
+        self.__filename = ""
+        self.__abs_filename = ""
+
+    def __update_filenames(self):
+        self.__filename = self.prefix + self.__name.lower().replace(" ", "_") + ".directory"
+        self.__abs_filename = os.path.join(self.__parent.abs_dir_location, self.__filename)
+
+    def add_entry(self, entry):
+        self.__entries.append(entry)
+
+    def add_dir(self, dir_entry):
+        self.__dirs.append(dir_entry)
+
+    def print_menus(self):
+        for entry in self.__entries:
+            print(self.__prefix + entry.filename)
+            print(entry)
+
+    def __update(self):
+        self.__update_filenames()
+
+
+    def generate(self):
+
+        self.__update()
+
+        # Write desktop entries
+
+        for entry in self.__entries:
+
+            entry_filename = self.__prefix + entry.filename
+            abs_entry_filename = os.path.join(self.__parent.abs_app_location, entry_filename)
+
+            with open(abs_entry_filename, "w") as f:
+                f.write(str(entry))
+        
+
+    @property
+    def name(self):
+        return self.__name
+
+    @name.setter
+    def name(self, value):
+        self.__name = value
+        self.__update_filenames()
+
+    @property
+    def entries(self):
+        return self.__entries
+    
+    @property
+    def prefix(self):
+        return self.__prefix
+    
+
+    
+
         
 
 if __name__ == "__main__":
@@ -403,12 +460,20 @@ if __name__ == "__main__":
     desktop_entry.exec = "code"
     desktop_entry.categories.append("Accessories")
 
-    desktop_menu = DesktopMenu()
-    desktop_menu.name = "LUNARC Applications"
-    desktop_menu.add_entry(desktop_entry)
-    desktop_menu.generate()
-    
-    desktop_menu = DesktopMenu()
-    desktop_menu.name = "LUNARC On-Demand Applications"
-    desktop_menu.add_entry(desktop_entry)
-    desktop_menu.generate()
+    user_menu = UserMenus()
+
+    menu = Menu(user_menu)
+    menu.name = "On-demand applications"
+    menu.add_entry(desktop_entry)
+
+    user_menu.add_menu(menu)
+
+    menu = Menu(user_menu)
+    menu.name = "On-demand applications 2"
+    menu.add_entry(desktop_entry)
+
+    user_menu.add_menu(menu)
+
+    user_menu.generate()
+
+

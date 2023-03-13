@@ -30,14 +30,20 @@ import getpass
 import argparse
 
 from lhpcdt import integration as it
+from lhpcdt import scripts as scr
 
 if __name__ == "__main__":
 
-    desktop_entry = it.DesktopEntry()
-    desktop_entry.name = "VS Code 2"
-    desktop_entry.exec = "code"
-    desktop_entry.categories.append("Accessories")
+    run_scripts = scr.RunScripts("/home/lindemann/Development/gfxlauncher/tests/scripts")
+    run_scripts.parse()
 
-    desktop_menu = it.DesktopMenu()
-    desktop_menu.add_entry(desktop_entry)
-    desktop_menu.generate()
+    script_db = run_scripts.database
+
+    for category, scripts in script_db.items():
+        for script in scripts:
+            print(category, ":", script.variables["title"], script.filename)
+
+    user_menu = it.UserMenus()
+    user_menu.menu_name_prefix = "LUNARC - "
+    user_menu.add_scripts(script_db)
+    user_menu.generate()
