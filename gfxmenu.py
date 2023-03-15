@@ -31,19 +31,58 @@ import argparse
 
 from lhpcdt import integration as it
 from lhpcdt import scripts as scr
+from lhpcdt import config
+
+gfxmenu_copyright = """LUNARC HPC Desktop On-Demand - Version %s
+Copyright (C) 2017-2023 LUNARC, Lund University
+This program comes with ABSOLUTELY NO WARRANTY; for details see LICENSE.
+This is free software, and you are welcome to redistribute it
+under certain conditions; see LICENSE for details.
+"""
+gfxmenu_copyright_short = """LUNARC HPC Desktop On-Demand - %s"""
+gfxmenu_version = "0.9.3-b1"
 
 if __name__ == "__main__":
 
-    run_scripts = scr.RunScripts("/home/lindemann/Development/gfxlauncher/tests/scripts")
+    # ----- Parse command line arguments
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dryrun", help="Run without creating any files.", action="store_true")
+    parser.add_argument("--no-launcher", help="Generate menus and scripts with direct launch.", action="store_true")
+    parser.add_argument("--config", help="Show configuration", action="store_true")
+    parser.add_argument("--silent", help="Run without output", action="store_true")
+    args = parser.parse_args()
+
+    # ----- Show version information
+
+    if not args.silent:
+        print(("LUNARC HPC Desktop - User menu tool - Version %s" % gfxmenu_version))
+        print("Written by Jonas Lindemann (jonas.lindemann@lunarc.lu.se)")
+        print("Copyright (C) 2018-2023 LUNARC, Lund University")
+
+    # ----- Read configuration
+
+    cfg = config.GfxConfig.create()
+
+    if args.config:
+        cfg.print_config()
+        sys.exit(0)    
+
+    if not cfg.is_ok:
+        print("Somehting is wrong with the configuration.")
+
+    # ----- Parse script directory
+
+    run_scripts = scr.RunScripts(cfg.script_dir)
+    run_scripts.launcher = os.path.join(cfg.install_dir, 'gfxlaunch')
     run_scripts.parse()
 
     script_db = run_scripts.database
 
-    for category, scripts in script_db.items():
-        for script in scripts:
-            print(category, ":", script.variables["title"], script.filename)
+    # ----- Create user menu
 
     user_menu = it.UserMenus()
-    user_menu.menu_name_prefix = "LUNARC - "
+    user_menu.menu_name_prefix = cfg.menu_prefix
+    user_menu.desktop_entry_prefix = cfg.desktop_entry_prefix
     user_menu.add_scripts(script_db)
     user_menu.generate()

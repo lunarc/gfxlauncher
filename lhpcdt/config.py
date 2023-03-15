@@ -44,6 +44,7 @@ class GfxConfig(object):
         config_alt_loc = []
         config_alt_loc.append("~/etc/gfxlauncher.conf")
         config_alt_loc.append("/etc/gfxlauncher.conf")
+        config_alt_loc.append("/sw/pkg/ondemand-dt/etc/gfxlauncher.conf")
         config_alt_loc.append("/pdc/software/tools/thinlinc/etc/gfxlauncher.conf")
         config_alt_loc.append("/sw/pkg/rviz/etc/gfxlauncher.conf")
 
@@ -95,6 +96,9 @@ class GfxConfig(object):
         self.directories_direct_dir = "/home/bmjl/test-menu/share/desktop-directories"
         self.menu_direct_dir = "/home/bmjl/test-menu/etc/xdg/menus/applications-merged"
         self.menu_direct_filename = "Lunarc-On-Demand-Direct.menu"
+        
+        self.menu_prefix = "LUNARC - "
+        self.desktop_entry_prefix = "gfx-"
         
         self.help_url = ""
         self.browser_command = "firefox"
@@ -173,6 +177,9 @@ class GfxConfig(object):
         print("menu_direct_dir = %s" % self.menu_dir)
         print("menu_direct_filename = %s" % self.menu_filename)
 
+        print("menu_prefix = '%s'" % self.menu_prefix)
+        print("desktop_entry_prefix = %s" % self.desktop_entry_prefix)
+
         print("")
         print("VGL settings")
         print("")
@@ -231,6 +238,8 @@ class GfxConfig(object):
 
         try:
             self.script_dir = self._config_get(config, "general", "script_dir")
+            self.install_dir = self._config_get(config, "general", "install_dir")
+
             self.client_script_dir = self._config_get(
                 config, "general", "client_script_dir")
             self.debug_mode = self._config_getboolean(
@@ -276,6 +285,8 @@ class GfxConfig(object):
                 config, "menus", "menu_filename")
             self.direct_scripts = self._config_getboolean(
                 config, "menus", "direct_scripts")
+            self.menu_prefix = self._config_get(config, "menus", "menu_prefix").replace('"', '')
+            self.desktop_entry_prefix = self._config_get(config, "menus", "desktop_entry_prefix").replace('"', '')
 
             self.applications_direct_dir = self._config_get(
                 config, "menus-direct", "applications_dir")

@@ -7,6 +7,9 @@ from . import integration
 class RunScript:
     def __init__(self, filename=""):
         self.__filename = filename
+        self.__launch_cmd = ""
+        self.__no_launcher = False
+        self.__launcher = "gfxlaunch"
         self.__parse_metadata()
 
     def __parse_metadata(self):
@@ -30,6 +33,33 @@ class RunScript:
                 variable_value = commands.split("=")[1].strip().strip('"')
                 self.__variables[variable_name] = variable_value
 
+        vgl = "no"
+
+        cmd_options = ""
+
+        if "vgl" in self.__variables:
+            vgl = self.__variables["vgl"]
+
+        if vgl == "yes":
+            cmd_options += " --vgl"
+
+        if "part" in self.__variables:
+            cmd_options += "--partition %s" % self.__variables["part"]
+
+        if "group" in self.__variables:
+            cmd_options += " --group %s" % self.__variables["group"]
+
+        if "title" in self.__variables:
+            cmd_options += ' --title "%s"' % self.__variables["title"]
+
+        cmd_options += " --cmd %s" % self.filename
+
+        if self.__no_launcher:
+            self.__launch_cmd = self.filename
+        else:
+            self.__launch_cmd = self.__launcher + " " + cmd_options.strip()
+
+
     @property
     def variables(self):
         return self.__variables
@@ -37,10 +67,25 @@ class RunScript:
     @property
     def filename(self):
         return self.__filename
+    
+    @property
+    def launch_cmd(self):
+        self.__parse_metadata()
+        return self.__launch_cmd
+    
+    @property
+    def launcher(self):
+        return self.__launcher
+    
+    @launcher.setter
+    def launcher(self, value):
+        self.__launcher = value
+        self.__parse_metadata()
 
 class RunScripts:
     def __init__(self, script_dir=""):
         self.__script_dir = script_dir
+        self.__launcher = "gfxlaunch"
         self.__script_dict = {}
 
 
@@ -55,15 +100,16 @@ class RunScripts:
         self.__script_dict = {}
 
         for script in os.listdir(script_dir):
-            if script.endswith('.sh') and script.startswith('run_') and script.find('rviz-server') != -1:
-                print("Found:", script)
+            if script.endswith('.sh') != -1:
+                #print("Found:", script)
                 filename = os.path.join(script_dir, script)
 
                 run_script = RunScript(filename)
+                run_script.launcher = self.__launcher
 
                 metadata = run_script.variables
 
-                app_name = filename.split("_")[-2]
+                app_name = filename.split(".sh")[0]
 
                 server_filename = os.path.basename(filename)
 
@@ -87,10 +133,24 @@ class RunScripts:
 
                 self.__script_dict[category].append(run_script)
 
+    def __update(self):
+
+        for category, scripts in self.__script_dict.items():
+            for script in scripts:
+                script.launcher = self.__launcher
 
     @property
     def database(self):
         return self.__script_dict
+    
+    @property
+    def launcher(self):
+        return self.__launcher
+    
+    @launcher.setter
+    def launcher(self, value):
+        self.__launcher = value
+        self.__update()
 
 
 

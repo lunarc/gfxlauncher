@@ -194,13 +194,19 @@ class UserMenus(XmlBase):
 
         self.__name = "On-Demand applications"
 
-        self.__resolve_locations()
-        self.__check_directories()
+        self.__desktop_prefixes = ['gnome', 'mate', 'kde']
 
         self.__dryrun = dryrun
         self.__use_top_level_menu = False
 
         self.__menu_name_prefix = "On-Demand "
+        self.__desktop_entry_prefix = "gfx-"
+
+        self.__resolve_locations()
+        self.__check_directories()
+        self.__create_links()
+
+
 
     def __resolve_locations(self):
         self.__abs_app_location = os.path.abspath(os.path.expanduser(self.__app_location))
@@ -214,6 +220,12 @@ class UserMenus(XmlBase):
             os.makedirs(self.abs_dir_location)
         if not os.path.exists(self.abs_menu_location):
             os.makedirs(self.abs_menu_location)
+
+    def __create_links(self):
+        for prefix in self.__desktop_prefixes:
+            link_path = self.abs_menu_location.replace("applications-merged", prefix+"-applications-merged")
+            if not os.path.exists(link_path):
+                os.symlink(self.abs_menu_location, link_path)
                         
     def __update_filenames(self):
         self.__menu_filename = os.path.join(self.__abs_menu_location, "applications.menu")
@@ -237,7 +249,7 @@ class UserMenus(XmlBase):
             for script in scripts:
                 desktop_entry = DesktopEntry()
                 desktop_entry.name = script.variables["title"]
-                desktop_entry.exec = script.filename
+                desktop_entry.exec = script.launch_cmd
                 menu.add_entry(desktop_entry)
 
             self.add_menu(menu)
@@ -285,7 +297,7 @@ class UserMenus(XmlBase):
 
         for menu in self.__menus:
 
-            print("Generating:", menu.name)                
+            menu.prefix = self.__desktop_entry_prefix
             menu.generate()
 
             dir_filename = menu.name.replace(" ", "_").lower()+".directory"
@@ -386,6 +398,14 @@ class UserMenus(XmlBase):
     @menu_name_prefix.setter
     def menu_name_prefix(self, value):
         self.__menu_name_prefix = value
+
+    @property
+    def desktop_entry_prefix(self):
+        return self.__desktop_entry_prefix
+    
+    @desktop_entry_prefix.setter
+    def desktop_entry_prefix(self, value):
+        self.__desktop_entry_prefix = value
         
 class Menu:
     def __init__(self, parent):
@@ -447,6 +467,10 @@ class Menu:
     @property
     def prefix(self):
         return self.__prefix
+    
+    @prefix.setter
+    def prefix(self, value):
+        self.__prefix = value
     
 
     
