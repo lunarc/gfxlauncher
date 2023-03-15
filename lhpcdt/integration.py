@@ -203,6 +203,7 @@ class UserMenus(XmlBase):
         self.__menu_name_prefix = "On-Demand "
         self.__desktop_entry_prefix = "gfx-"
 
+
         self.__resolve_locations()
         self.__check_directories()
         self.__create_links()
@@ -217,6 +218,8 @@ class UserMenus(XmlBase):
                     value = 0.0
 
                 self.__last_run = value
+        else:
+            self.__last_run = 0.0
 
 
     def __resolve_locations(self):

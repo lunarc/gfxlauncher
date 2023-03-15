@@ -41,7 +41,7 @@ This is free software, and you are welcome to redistribute it
 under certain conditions; see LICENSE for details.
 """
 gfxmenu_copyright_short = """LUNARC HPC Desktop On-Demand - %s"""
-gfxmenu_version = "0.9.3-b1"
+gfxmenu_version = "0.1"
 
 if __name__ == "__main__":
 
