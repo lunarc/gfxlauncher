@@ -115,6 +115,8 @@ if __name__ == '__main__':
 
     # Show version information
 
+    print(sys.argv[0])
+
     print((gfxlaunch_copyright % gfxlaunch_version))
     print("")
 

@@ -23,7 +23,7 @@ This reads the configuration file and maintains a configuration singleton
 for other parts of the application to access configuration options.
 """
 
-import os
+import os, sys
 import configparser
 
 from . singleton import *
@@ -41,8 +41,12 @@ class GfxConfig(object):
 
         self.config_filename = ""
 
+        # Find where our application dir is located
+        app_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+
         config_alt_loc = []
-        config_alt_loc.append("~/etc/gfxlauncher.conf")
+        config_alt_loc.append(os.path.join(app_dir, "../etc/gfxlauncher.conf"))
+        config_alt_loc.append(os.path.join(app_dir,"etc/gfxlauncher.conf"))
         config_alt_loc.append("/etc/gfxlauncher.conf")
         config_alt_loc.append("/sw/pkg/ondemand-dt/etc/gfxlauncher.conf")
         config_alt_loc.append("/pdc/software/tools/thinlinc/etc/gfxlauncher.conf")
@@ -51,7 +55,7 @@ class GfxConfig(object):
         if config_filename == "":
             for config_loc in config_alt_loc:
                 if os.path.isfile(os.path.expanduser(config_loc)):
-                    self.config_filename = os.path.expanduser(config_loc)
+                    self.config_filename = os.path.abspath(os.path.expanduser(config_loc))
                     break
         else:
             self.config_filename = config_filename
