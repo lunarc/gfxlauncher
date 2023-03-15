@@ -56,6 +56,9 @@ class RunScript:
         if "title" in self.__variables:
             cmd_options += ' --title "%s"' % self.__variables["title"]
 
+        if "job" in self.__variables:
+            cmd_options += ' --job %s' % self.__variables["job"]
+
         cmd_options += " --cmd %s" % self.filename
 
         if self.__no_launcher:
