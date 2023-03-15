@@ -1,5 +1,0 @@
-[Desktop Entry]
-Name=Anaconda3 Spyder (CPU)
-Type=Application
-Terminal=false
-Exec=/home/bmjl/Development/gfxlauncher/tests/scripts/generated/run_spyder-anaconda3-cpu_rviz-direct.sh

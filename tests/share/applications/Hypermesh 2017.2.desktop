@@ -1,5 +1,0 @@
-[Desktop Entry]
-Name=HyperMesh 2017.2
-Type=Application
-Terminal=false
-Exec=/home/bmjl/Development/gfxlauncher/tests/scripts/generated/run_2017.2_rviz-slurm.sh

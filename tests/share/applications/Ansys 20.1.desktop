@@ -1,5 +1,0 @@
-[Desktop Entry]
-Name=Ansys 20.1
-Type=Application
-Terminal=false
-Exec=/home/bmjl/Development/gfxlauncher/tests/scripts/generated/run_ansys-20.1_rviz-slurm.sh

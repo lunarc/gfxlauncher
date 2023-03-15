@@ -28,6 +28,7 @@ import os
 import sys
 import getpass
 import argparse
+import time
 
 from lhpcdt import integration as it
 from lhpcdt import scripts as scr
@@ -47,7 +48,6 @@ if __name__ == "__main__":
     # ----- Parse command line arguments
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dryrun", help="Run without creating any files.", action="store_true")
     parser.add_argument("--no-launcher", help="Generate menus and scripts with direct launch.", action="store_true")
     parser.add_argument("--config", help="Show configuration", action="store_true")
     parser.add_argument("--silent", help="Run without output", action="store_true")

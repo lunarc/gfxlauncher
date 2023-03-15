@@ -1,5 +1,0 @@
-[Desktop Entry]
-Name=Abaqus/CAE V6R2019
-Type=Application
-Terminal=false
-Exec=/home/bmjl/Development/gfxlauncher/tests/scripts/generated/run_abaqus-V6R2019x_rviz-slurm.sh

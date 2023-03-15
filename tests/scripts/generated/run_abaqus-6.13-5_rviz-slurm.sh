@@ -1,1 +1,0 @@
-gfxlaunch --vgl --title "Abaqus/Cae 6.13-5" --partition lvis --account lvis-test --exclusive --tasks-per-node=-1 --cmd /home/bmjl/Development/gfxlauncher/tests/scripts/run_abaqus-6.13-5_rviz-server.sh --simplified --group ondemand

@@ -1,5 +1,0 @@
-[Desktop Entry]
-Name=VivoQuant 3.5
-Type=Application
-Terminal=false
-Exec=/home/bmjl/Development/gfxlauncher/tests/scripts/generated/run_vivoquant-3.5_rviz-slurm.sh

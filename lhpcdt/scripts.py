@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
-import os, sys
+import os, sys, datetime
 
 from . import integration
+
 
 class RunScript:
     def __init__(self, filename=""):
@@ -10,6 +11,7 @@ class RunScript:
         self.__launch_cmd = ""
         self.__no_launcher = False
         self.__launcher = "gfxlaunch"
+        self.__changed = None
         self.__parse_metadata()
 
     def __parse_metadata(self):
@@ -25,6 +27,8 @@ class RunScript:
 
         with open(self.__filename, "r") as script_file:
             lines = script_file.readlines()
+
+        self.__changed = os.stat(self.__filename).st_mtime
 
         for line in lines:
             if line.find("##LDT") != -1:
@@ -81,6 +85,10 @@ class RunScript:
     def launcher(self, value):
         self.__launcher = value
         self.__parse_metadata()
+
+    @property
+    def changed(self):
+        return self.__changed
 
 class RunScripts:
     def __init__(self, script_dir=""):

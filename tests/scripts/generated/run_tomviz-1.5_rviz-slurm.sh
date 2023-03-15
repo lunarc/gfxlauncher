@@ -1,1 +1,0 @@
-gfxlaunch --vgl --title "Tomviz 1.5" --partition lvis --account lvis-test --exclusive --tasks-per-node=-1 --cmd /home/bmjl/Development/gfxlauncher/tests/scripts/run_tomviz-1.5_rviz-server.sh --simplified --group ondemand

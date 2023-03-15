@@ -1,5 +1,0 @@
-[Desktop Entry]
-Name=Rstudio 2021.09.1
-Type=Application
-Terminal=false
-Exec=/home/bmjl/Development/gfxlauncher/tests/scripts/generated/run_rstudio-2021.09.1_rviz-slurm.sh

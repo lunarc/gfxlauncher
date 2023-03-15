@@ -1,1 +1,0 @@
-gfxlaunch --vgl --title "Amira 6.5.0" --partition lvis --account lvis-test --exclusive --tasks-per-node=-1 --cmd /home/bmjl/Development/gfxlauncher/tests/scripts/run_amira-6.5_rviz-server.sh --simplified --group ondemand

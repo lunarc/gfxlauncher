@@ -1,1 +1,0 @@
-gfxlaunch --vgl --title "Ovito 3.4.1" --partition lvis --account lvis-test --exclusive --tasks-per-node=-1 --cmd /home/bmjl/Development/gfxlauncher/tests/scripts/run_ovito-3.4.1_rviz-server.sh --simplified --group ondemand

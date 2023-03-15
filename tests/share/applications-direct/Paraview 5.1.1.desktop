@@ -1,5 +1,0 @@
-[Desktop Entry]
-Name=ParaView 5.1.1
-Type=Application
-Terminal=false
-Exec=/home/bmjl/Development/gfxlauncher/tests/scripts/generated/run_paraview-5.1.0_rviz-direct.sh

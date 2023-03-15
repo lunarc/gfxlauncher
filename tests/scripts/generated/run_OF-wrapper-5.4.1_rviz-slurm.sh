@@ -1,1 +1,0 @@
-gfxlaunch --vgl --title "Paraview 5.1.0 - Openfoam[32;101;31M" --partition lvis --account lvis-test --exclusive --tasks-per-node=-1 --cmd /home/bmjl/Development/gfxlauncher/tests/scripts/run_paraview_OF-wrapper-5.4.1_rviz-server.sh --simplified --group ondemand

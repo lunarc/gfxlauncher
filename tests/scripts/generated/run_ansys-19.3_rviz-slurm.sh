@@ -1,1 +1,0 @@
-gfxlaunch --vgl --title "Ansys 19.3" --partition lvis --account lvis-test --exclusive --tasks-per-node=-1 --cmd /home/bmjl/Development/gfxlauncher/tests/scripts/run_ansys-19.3_rviz-server.sh --simplified --group ondemand

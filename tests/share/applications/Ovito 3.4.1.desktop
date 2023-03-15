@@ -1,5 +1,0 @@
-[Desktop Entry]
-Name=Ovito 3.4.1
-Type=Application
-Terminal=false
-Exec=/home/bmjl/Development/gfxlauncher/tests/scripts/generated/run_ovito-3.4.1_rviz-slurm.sh

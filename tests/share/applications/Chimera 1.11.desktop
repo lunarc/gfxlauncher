@@ -1,5 +1,0 @@
-[Desktop Entry]
-Name=Chimera 1.11
-Type=Application
-Terminal=false
-Exec=/home/bmjl/Development/gfxlauncher/tests/scripts/generated/run_chimera-1.11_rviz-slurm.sh

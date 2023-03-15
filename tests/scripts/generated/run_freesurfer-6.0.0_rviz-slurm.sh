@@ -1,1 +1,0 @@
-gfxlaunch --vgl --title "Freesurfer 6.0.0" --partition lvis --account lvis-test --exclusive --tasks-per-node=-1 --cmd /home/bmjl/Development/gfxlauncher/tests/scripts/run_freesurfer-6.0.0_rviz-server.sh --simplified --group ondemand

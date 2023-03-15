@@ -1,5 +1,0 @@
-[Desktop Entry]
-Name=Meshlab 2021.10
-Type=Application
-Terminal=false
-Exec=/home/bmjl/Development/gfxlauncher/tests/scripts/generated/run_meshlab-2021.10_rviz-slurm.sh

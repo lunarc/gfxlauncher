@@ -1,5 +1,0 @@
-[Desktop Entry]
-Name=Blender 3.1.0 (Terminal)
-Type=Application
-Terminal=false
-Exec=/home/bmjl/Development/gfxlauncher/tests/scripts/generated/run_blender-terminal-3.1.0_rviz-direct.sh

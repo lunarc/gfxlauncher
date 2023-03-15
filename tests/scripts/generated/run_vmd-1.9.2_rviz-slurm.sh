@@ -1,1 +1,0 @@
-gfxlaunch --vgl --title "Vmd 1.9.2" --partition lvis --account lvis-test --exclusive --tasks-per-node=-1 --cmd /home/bmjl/Development/gfxlauncher/tests/scripts/run_vmd-1.9.2_rviz-server.sh --simplified --group ondemand

@@ -1,4 +1,0 @@
-#!/bin/sh 
-PATH=$LHPCDT_PYTHON_RUNTIME:$PATH
-GFXLAUNCH_DIR="$( cd "$(dirname "$0")" ; pwd -P )"
-python3 $GFXLAUNCH_DIR/gfxmodule.py "$@"

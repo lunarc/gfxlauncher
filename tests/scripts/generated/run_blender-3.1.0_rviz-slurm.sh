@@ -1,1 +1,0 @@
-gfxlaunch --vgl --title "Blender 3.1.0" --partition lvis --account lvis-test --exclusive --tasks-per-node=-1 --cmd /home/bmjl/Development/gfxlauncher/tests/scripts/run_blender-3.1.0_rviz-server.sh --simplified --group ondemand

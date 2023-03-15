@@ -1,1 +1,0 @@
-gfxlaunch --vgl --title "Metashape 1.8.4" --partition lvis --account lvis-test --exclusive --tasks-per-node=-1 --cmd /home/bmjl/Development/gfxlauncher/tests/scripts/run_metashape-1.8.4_rviz-server.sh --simplified --group metashape184

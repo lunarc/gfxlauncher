@@ -1,1 +1,0 @@
-gfxlaunch --vgl --title "Matlab 8.7" --partition lvis --account lvis-test --exclusive --tasks-per-node=-1 --cmd /home/bmjl/Development/gfxlauncher/tests/scripts/run_matlab-8.7_rviz-server.sh --simplified --group ondemand

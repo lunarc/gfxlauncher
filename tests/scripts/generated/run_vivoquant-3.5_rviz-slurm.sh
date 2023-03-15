@@ -1,1 +1,0 @@
-gfxlaunch --vgl --title "Vivoquant 3.5" --partition lvis --account lvis-test --exclusive --tasks-per-node=-1 --cmd /home/bmjl/Development/gfxlauncher/tests/scripts/run_vivoquant-3.5_rviz-server.sh --simplified --group ondemand

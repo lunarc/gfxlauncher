@@ -1,1 +1,0 @@
-gfxlaunch --vgl --title "Matlab 2018B" --partition lvis --account lvis-test --exclusive --tasks-per-node=-1 --cmd /home/bmjl/Development/gfxlauncher/tests/scripts/run_matlab-2018b_rviz-server.sh --simplified --group ondemand

@@ -1,1 +1,0 @@
-gfxlaunch --vgl --title "Jupyter Lab (Cpu)" --partition lu --account lvis-test --only-submit --job=jupyterlab --simplified --group cpu

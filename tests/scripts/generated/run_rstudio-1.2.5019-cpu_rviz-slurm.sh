@@ -1,1 +1,0 @@
-gfxlaunch  --title "Rstudio 1.2.5019 (Cpu)" --partition lu --account lvis-test --exclusive --tasks-per-node=-1 --cmd /home/bmjl/Development/gfxlauncher/tests/scripts/run_rstudio-1.2.5019-cpu_rviz-server.sh --simplified --group cpu
