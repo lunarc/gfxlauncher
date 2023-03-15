@@ -461,11 +461,9 @@ class Menu:
 
             # Only create a new desktop entry if the script has changed.
 
-            if entry.changed > self.last_run:
+            if not os.path.exists(abs_entry_filename) or (entry.changed > self.last_run):
                 with open(abs_entry_filename, "w") as f:
                     f.write(str(entry))
-
-        
 
     @property
     def name(self):
