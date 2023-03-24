@@ -115,6 +115,8 @@ if __name__ == '__main__':
 
     # Show version information
 
+    print(sys.argv[0])
+
     print((gfxlaunch_copyright % gfxlaunch_version))
     print("")
 
@@ -228,7 +230,7 @@ if __name__ == '__main__':
 
     # Redirect standard output
 
-    redirect = False
+    redirect = True
 
     # Create Queue and redirect sys.stdout to this queue
 
