@@ -56,13 +56,10 @@ class RunScript:
         if "title" in self.__variables:
             cmd_options += ' --title "%s"' % self.__variables["title"]
 
-<<<<<<< HEAD
         if "restrict" in self.__variables:
             cmd_options += ' --restrict "%s"' % self.__variables["restrict"]
-=======
         if "job" in self.__variables:
             cmd_options += ' --job %s' % self.__variables["job"]
->>>>>>> 306a5855bb27c8c5c417d76e330b2e995a5866b7
 
         cmd_options += " --cmd %s" % self.filename
 
