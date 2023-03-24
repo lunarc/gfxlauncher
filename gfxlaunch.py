@@ -205,6 +205,11 @@ if __name__ == '__main__':
                         dest="splash",
                         help="Show splash screen.",
                         action="store_true", default=False)
+    
+    parser.add_argument("--restrict",
+                        dest="restrict",
+                        help="Restrict usage to unix-group.",
+                        default="")
 
     args = parser.parse_args()
 

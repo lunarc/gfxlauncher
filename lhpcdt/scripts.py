@@ -56,6 +56,9 @@ class RunScript:
         if "title" in self.__variables:
             cmd_options += ' --title "%s"' % self.__variables["title"]
 
+        if "restrict" in self.__variables:
+            cmd_options += ' --restrict "%s"' % self.__variables["restrict"]
+
         cmd_options += " --cmd %s" % self.filename
 
         if self.__no_launcher:

@@ -23,7 +23,7 @@ This module implements the main user interface of the application
 launcher.
 """
 
-import os, sys, time, glob, getpass, shutil
+import os, sys, time, glob, getpass, shutil, grp
 
 from datetime import datetime
 
@@ -249,6 +249,18 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
             QtWidgets.QMessageBox.information(
                 self, self.title, "No project allocation found. Please apply for a project in SUPR.")
 
+        # Check if the restrict is set and check for correct user group.
+
+        restricted_group = self.args.restrict.strip('"')
+
+        if restricted_group != "":
+            groups = [grp.getgrgid(g).gr_name for g in os.getgroups()]
+
+            if not restricted_group in groups:
+                QtWidgets.QMessageBox.information(
+                    self, self.title, "This application is licensed. Please contact support to get access.")
+                
+                sys.exit(1)
 
         if self.silent:
             self.enable_silent_ui()
