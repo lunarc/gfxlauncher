@@ -20,13 +20,13 @@ sys.path.insert(0, os.path.abspath('../..'))
 # -- Project information -----------------------------------------------------
 
 project = 'GfxLauncher - A graphical application launcher for SLURM'
-copyright = '2017-2022, Jonas Lindemann'
+copyright = '2017-2023, Jonas Lindemann'
 author = 'Jonas Lindemann'
 
 # The short X.Y version
-version = '0.9'
+version = '0.9.3'
 # The full version, including alpha/beta/rc tags
-release = '0.9'
+release = '0.9.3'
 
 
 # -- General configuration ---------------------------------------------------

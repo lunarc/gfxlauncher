@@ -19,7 +19,7 @@ The GfxLauncher toolkit provide the means for launching graphical applications t
    configuration.rst
    pam_exec.rst
    gfxlaunch.rst
-   gfxconvert.rst
+   gfxmenu.rst
    configuration_slurmvm.rst
    code_documentation.rst   
 

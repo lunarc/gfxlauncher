@@ -18,7 +18,7 @@ Unpack the distribution in a suitable location.
 
 .. code-block:: bash
 
-    $ tar xvzf v0.8.5.tar.gz
+    $ tar xvzf v0.9.3.tar.gz
 
 Make sure the search path is added to this location.
 
@@ -30,54 +30,41 @@ The requirements for GfxLauncher is a Python 3.x interpreter with the following 
  * PyQt 5.x
  * configparser
 
-.. note::
-    In the **conda** directory there is an enviornment yml file for creating a conda environment for GfxLauncher.
-
 Disk layout
 -----------
 
 The installation of GfxLauncher requires directory locations to fully function:
 
  * Main installation directory, where the Python-software is installed. (User readable - Admin writable)
- * Configuration directory. (User readable - Admin writable)
- * Directory where menus are to generated. (User readable - Admin writable)
- * pr
-
-
-Creating a conda environment
-----------------------------
-
-The easiest way of providing suitable environment for GfxLauncher is to create an Anaconda environment. This can be done by using the following commands:
-
-.. code-block:: bash
-
-    (base) $ conda create -n gfxlauncher
-    (base) $ conda activate gfxlauncher
-    (gfxlauncher) $ conda install pyqt
-    (gfxlauncher) $ conda install configparser
-    
-The **gfxconvert** command that generates menus and run-scripts should be able to be used by a system provided Python interpreter. The **configparser** package must then be installed as a system package.
+ * Script directory - (User readable - Admin writable)
+ 
 
 Required directories for the Installation
 -----------------------------------------
 
-+-----------------+--------------------------------------------------------------------------------------------+
-| Directory       | Description                                                                                |
-+-----------------+--------------------------------------------------------------------------------------------+
-| default_part    | If no partition is given on the gfxlaunch command line this is the default partition used. |
-+-----------------+--------------------------------------------------------------------------------------------+
+The recommended way of installing GfxLauncher is to create a main directory, **ondemand-dt**, in which we place the launcher scripts as well as the configuration and run-scripts.
+
++-------------------------------+--------------------------------------------------------------------------------------------+
+| Directory                     | Description                                                                                |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| .../ondemand-dt/gfxlauncher | Main installation directory of GfxLauncher                                                 |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| .../ondemand-dt/etc         | Launcher configuration files.                                                              |
++-------------------------------+--------------------------------------------------------------------------------------------+
+| .../ondemand-dt/run         | Launcher run-scripts with launcher tags.                                                   |
++-------------------------------+--------------------------------------------------------------------------------------------+
     
 Setting up a runtime environment
 --------------------------------
 
-For the command line tools in the distribution to work, the **LHPCDT_PYTHON_RUNTIME** variable must be set to the **bin** directory of the Python runtime used. As an example: **/.../envs/gfxlauncher/bin** (location of the python binary in the gfxlauncher conda environment).
+For the command line tools in the distribution to work the **.../ondemand-dt/gfxlauncher** directory must be added to the search path for all users. This can best be achieved by adding a profile.d script:
 
-Adding this variable for all users is best accomplished by adding a **/etc/profile.d** script. Below is an example of a profile.d script for setting this variable:
-
-/etc/profile.d/lunarc_99-activate-LUNARC-dt.sh:
+/etc/profile.d/ondemand-dt-00.sh:
 
 .. code-block:: bash
 
-    export LHPCDT_PYTHON_RUNTIME=/sw/pkg/lunarc/envs/gfxlauncher/bin
+    #/bin/bash
 
-The search path should point to the Python distribution used.
+    export ONDEMAND_DT_DIR=/sw/pkg/gfxlauncher
+    export PATH=${ONDEMAND_DT_DIR}:$PATH
+
