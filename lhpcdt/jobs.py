@@ -27,7 +27,18 @@ import os
 import sys
 import subprocess
 import time
+import urllib.parse as up
+
 from subprocess import Popen, PIPE, STDOUT
+
+def find_remote_port(url):
+    """Extract port information from a url."""
+
+    url_parts = up.urlparse(url)
+    if url_parts.netloc.find(":")!=-1:
+        return int(url_parts.netloc.split(":")[1])
+    else:
+        return -1
 
 
 class Job(object):
@@ -223,6 +234,9 @@ class JupyterNotebookJob(Job):
         self.process_output = True
         self.processing_description = "Waiting for notebook instance to start."
         self.notebook_module = notebook_module
+ 
+        self.conda_source_env = ""
+        self.conda_use_env = ""
 
         if ',' in self.notebook_module:
             modules = self.notebook_module.split(",")
@@ -232,6 +246,12 @@ class JupyterNotebookJob(Job):
             self.add_module(self.notebook_module)
 
         self.add_custom_script("unset XDG_RUNTIME_DIR")
+
+        if self.conda_source_env != "":
+            self.add_custom_script("source %s" % self.conda_source_env)
+
+        if self.conda_use_env != "":
+            self.add_custom_script("conda activate %s" % self.conda_use_env)
 
         if self.use_localhost:
             self.add_custom_script('jupyter-notebook --no-browser')
@@ -256,6 +276,11 @@ class JupyterNotebookJob(Job):
                     if line.find("127.0.0.1") == -1:
                         if self.process_output:
                             url = line[line.find("http:"):].strip()
+                            port = find_remote_port(url)
+                            if port!=-1:
+                                self.notebook_port = port
+                            else:
+                                self.notebook_port = 8888
                             self.notebook_url = url
                             self.process_output = False
                             self.on_notebook_url_found(self.notebook_url)
@@ -314,6 +339,11 @@ class JupyterLabJob(Job):
                     if line.find("127.0.0.1") == -1:
                         if self.process_output:
                             url = line[line.find("http:"):].strip()
+                            port = find_remote_port(url)
+                            if port!=-1:
+                                self.notebook_port = port
+                            else:
+                                self.notebook_port = 8888
                             self.notebook_url = url
                             self.process_output = False
                             self.on_notebook_url_found(self.notebook_url)

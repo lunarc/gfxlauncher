@@ -1,7 +1,7 @@
 #!/bin/env python
 #
 # LUNARC HPC Desktop On-Demand graphical launch tool
-# Copyright (C) 2017-2022 LUNARC, Lund University
+# Copyright (C) 2017-2023 LUNARC, Lund University
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@ This reads the configuration file and maintains a configuration singleton
 for other parts of the application to access configuration options.
 """
 
-import os
+import os, sys
 import configparser
 
 from . singleton import *
@@ -41,19 +41,24 @@ class GfxConfig(object):
 
         self.config_filename = ""
 
+        # Find where our application dir is located
+        app_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+
         config_alt_loc = []
+        config_alt_loc.append(os.path.join(app_dir, "../etc/gfxlauncher.conf"))
+        config_alt_loc.append(os.path.join(app_dir,"etc/gfxlauncher.conf"))
         config_alt_loc.append("/etc/gfxlauncher.conf")
+        config_alt_loc.append("/sw/pkg/ondemand-dt/etc/gfxlauncher.conf")
         config_alt_loc.append("/pdc/software/tools/thinlinc/etc/gfxlauncher.conf")
         config_alt_loc.append("/sw/pkg/rviz/etc/gfxlauncher.conf")
-        config_alt_loc.append("~/etc/gfxlauncher.conf")
 
         if config_filename == "":
             for config_loc in config_alt_loc:
-                if os.path.isfile(config_loc):
-                    self.config_filename = config_loc
+                if os.path.isfile(os.path.expanduser(config_loc)):
+                    self.config_filename = os.path.abspath(os.path.expanduser(config_loc))
                     break
         else:
-            self.config_filename = config_filename    
+            self.config_filename = config_filename
 
         if not self.parse_config_file():
             self.print_error("Couldn't parse configuration")
@@ -85,10 +90,20 @@ class GfxConfig(object):
         self.grantfile_dir = ""
         self.grantfile_suffix = ""
         self.client_script_dir = "/home/bmjl/Development/gfxlauncher/scripts/client"
+
         self.applications_dir = "/home/bmjl/test-menu/share/applications"
         self.directories_dir = "/home/bmjl/test-menu/share/desktop-directories"
         self.menu_dir = "/home/bmjl/test-menu/etc/xdg/menus/applications-merged"
         self.menu_filename = "Lunarc-On-Demand.menu"
+        
+        self.applications_direct_dir = "/home/bmjl/test-menu/share/applications"
+        self.directories_direct_dir = "/home/bmjl/test-menu/share/desktop-directories"
+        self.menu_direct_dir = "/home/bmjl/test-menu/etc/xdg/menus/applications-merged"
+        self.menu_direct_filename = "Lunarc-On-Demand-Direct.menu"
+        
+        self.menu_prefix = "LUNARC - "
+        self.desktop_entry_prefix = "gfx-"
+        
         self.help_url = ""
         self.browser_command = "firefox"
 
@@ -115,6 +130,8 @@ class GfxConfig(object):
         self.notebook_module = "Anaconda3"
         self.jupyterlab_module = "Anaconda3"
         self.jupyter_use_localhost = False
+        self.conda_source_env = ""
+        self.conda_use_env = ""
 
     def print_config(self):
         """Print configuration"""
@@ -159,6 +176,14 @@ class GfxConfig(object):
         print("menu_dir = %s" % self.menu_dir)
         print("menu_filename = %s" % self.menu_filename)
 
+        print("application_direct_dir = %s" % self.applications_dir)
+        print("directories_direct_dir = %s" % self.directories_dir)
+        print("menu_direct_dir = %s" % self.menu_dir)
+        print("menu_direct_filename = %s" % self.menu_filename)
+
+        print("menu_prefix = '%s'" % self.menu_prefix)
+        print("desktop_entry_prefix = %s" % self.desktop_entry_prefix)
+
         print("")
         print("VGL settings")
         print("")
@@ -180,6 +205,9 @@ class GfxConfig(object):
         print("notebook_module = %s" % self.notebook_module)
         print("jupyterlab_module = %s" % self.jupyterlab_module)
         print("browser_command = %s" % self.browser_command)
+        print("jupyter_use_localhost = %s" % self.jupyter_use_localhost)
+        print("conda_source_env = %s" % self.conda_source_env)
+        print("conda_use_env = %s" % self.conda_use_env)
 
     def _config_get(self, config, section, option, default_value=""):
         """Safe config retrieval"""
@@ -214,6 +242,8 @@ class GfxConfig(object):
 
         try:
             self.script_dir = self._config_get(config, "general", "script_dir")
+            self.install_dir = self._config_get(config, "general", "install_dir")
+
             self.client_script_dir = self._config_get(
                 config, "general", "client_script_dir")
             self.debug_mode = self._config_getboolean(
@@ -259,6 +289,18 @@ class GfxConfig(object):
                 config, "menus", "menu_filename")
             self.direct_scripts = self._config_getboolean(
                 config, "menus", "direct_scripts")
+            self.menu_prefix = self._config_get(config, "menus", "menu_prefix").replace('"', '')
+            self.desktop_entry_prefix = self._config_get(config, "menus", "desktop_entry_prefix").replace('"', '')
+
+            self.applications_direct_dir = self._config_get(
+                config, "menus-direct", "applications_dir")
+            self.directories_direct_dir = self._config_get(
+                config, "menus-direct", "directories_dir")
+            self.menu_direct_dir = self._config_get(config, "menus-direct", "menu_dir")
+            self.menu_direct_filename = self._config_get(
+                config, "menus-direct", "menu_filename")
+            self.direct_scripts = self._config_getboolean(
+                config, "menus-direct", "direct_scripts")
 
             self.vgl_path = self._config_get(config, "vgl", "vgl_path")
             self.backend_node = self._config_get(config, "vgl", "backend_node")
@@ -272,6 +314,10 @@ class GfxConfig(object):
                 config, "jupyter", "notebook_module")
             self.jupyterlab_module = self._config_get(
                 config, "jupyter", "jupyterlab_module")
+            self.conda_source_env = self._config_get(
+                config, "jupyter", "conda_source_env")
+            self.conda_use_env = self._config_get(
+                config, "jupyter", "conda_use_env")
 
             self.jupyter_use_localhost = self._config_getboolean(config, "jupyter", "jupyter_use_localhost", False)
 

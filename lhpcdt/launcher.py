@@ -25,16 +25,23 @@ launcher.
 
 import os, sys, time, glob, getpass, shutil
 
+try:
+    import grp
+except:
+    pass
+
 from datetime import datetime
 
 from PyQt5 import Qt, QtCore, QtGui, QtWidgets, uic
 
 from . import jobs
+from . import job_ui
 from . import lrms
 from . import remote
 from . import settings
 from . import config
 from . import resource_win
+from . import conda_utils as cu
 
 from subprocess import Popen, PIPE, STDOUT
 
@@ -73,13 +80,12 @@ class SubmitThread(QtCore.QThread):
     NO_ERROR = 0
     SUBMIT_FAILED = 1
 
-    def __init__(self, job, cmd="xterm", opengl=False, vglrun=True, only_submit=False, vgl_path=""):
+    def __init__(self, job, cmd="xterm", opengl=False, vglrun=True, vgl_path=""):
         QtCore.QThread.__init__(self)
 
         self.job = job
         self.cmd = cmd
         self.opengl = opengl
-        self.only_submit = only_submit
 
         self.ssh = remote.SSH()
 
@@ -113,20 +119,6 @@ class SubmitThread(QtCore.QThread):
 
         print("Session has started on node %s." % self.job.nodes)
 
-        if not self.only_submit:
-
-            print("Starting graphical application on node.")
-
-            if self.opengl:
-                print("Executing command on node (OpenGL)...")
-
-                self.vgl.execute(self.job.nodes, self.cmd)
-                self.active_connection = self.vgl
-            else:
-                print("Executing command on node...")
-
-                self.ssh.execute(self.job.nodes, self.cmd)
-                self.active_connection = self.ssh
 
 class TunnelThread(QtCore.QThread):
     """Job submission thread"""
@@ -177,6 +169,9 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.rdp = None
         self.job = None
 
+        # SSH/VGL handling
+
+        self.connection_after_thread = True
 
         self.reconnect_nb_button = None
         self.reconnect_vm_button = None
@@ -259,6 +254,18 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
             QtWidgets.QMessageBox.information(
                 self, self.title, "No project allocation found. Please apply for a project in SUPR.")
 
+        # Check if the restrict is set and check for correct user group.
+
+        restricted_group = self.args.restrict.strip('"')
+
+        if restricted_group != "":
+            groups = [grp.getgrgid(g).gr_name for g in os.getgroups()]
+
+            if not restricted_group in groups:
+                QtWidgets.QMessageBox.information(
+                    self, self.title, "This application is licensed. Please contact support to get access.")
+                
+                sys.exit(1)
 
         if self.silent:
             self.enable_silent_ui()
@@ -478,9 +485,13 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.cpus_per_task = 1
         self.no_requeue = False
         self.user = ""
+        
         self.notebook_module = self.config.notebook_module
         self.jupyterlab_module = self.config.jupyterlab_module
         self.jupyter_use_localhost = self.config.jupyter_use_localhost
+        self.use_conda_env = False
+        self.conda_env = ""
+
         self.ssh_tunnel = None
         self.autostart = False
         self.locked = False
@@ -579,6 +590,9 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         if self.job_type == "":
             self.launcherTabs.removeTab(2)
 
+        if self.job_type != "notebook" and self.job_type!="jupyterlab":
+            self.show_job_settings_button.setVisible(False)
+
         self.slurm.query_partitions(exclude_set=self.part_exclude_set)
 
         self.update_feature_combo()
@@ -594,8 +608,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
             for part in self.slurm.partitions:
                 descr = part
 
-                print(part.lower())
-                print(self.config.partition_descriptions)
+                #print(part.lower())
+                #print(self.config.partition_descriptions)
 
                 if part.lower() in self.config.partition_descriptions:
                     descr = self.config.partition_descriptions[part.lower()]
@@ -709,9 +723,13 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
             self.job = jobs.PlaceHolderJob()
 
+            self.only_submit = False
+
         elif self.job_type == "notebook":
 
             # Create a Jupyter notbook job
+
+            self.only_submit = True
 
             self.job = jobs.JupyterNotebookJob(
                 notebook_module=self.notebook_module, use_localhost=self.jupyter_use_localhost)
@@ -733,6 +751,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
             # Create a Jupyter lab job
 
+            self.only_submit = True
+
             self.job = jobs.JupyterLabJob(
                 jupyterlab_module=self.jupyterlab_module, use_localhost=self.jupyter_use_localhost)
             self.job.on_notebook_url_found = self.on_notebook_url_found
@@ -752,6 +772,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         elif self.job_type == "vm":
 
             # Create a VM job
+
+            self.only_submit = True
 
             self.job = jobs.VMJob()
             self.job.on_vm_available = self.on_vm_available
@@ -792,7 +814,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         # Create a job submission thread
 
         self.submit_thread = SubmitThread(
-            self.job, self.cmd, self.vgl, self.vglrun, self.only_submit, self.vgl_path)
+            self.job, self.cmd, self.vgl, self.vglrun, self.vgl_path)
         self.submit_thread.finished.connect(self.on_submit_finished)
         self.submit_thread.start()
 
@@ -819,6 +841,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.update_controls()
         self.active_connection = self.submit_thread.active_connection
 
+        # Handle submibssion failure
+
         if self.submit_thread.error_status == SubmitThread.SUBMIT_FAILED:
             QtWidgets.QMessageBox.about(
                 self, self.title, "Session start failed.")
@@ -826,6 +850,35 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
             self.status_timer.stop()
             self.update_controls()
             self.active_connection = None
+            return
+
+        if not self.only_submit:
+
+            print("Starting graphical application on node.")
+
+            self.retry_connection = True
+
+            if self.vgl:
+                print("Executing command on node (OpenGL)...")
+
+                if self.active_connection is not None:
+                    self.active_connection.terminate()
+                self.active_connection = remote.VGLConnect()
+                print("Command line:", self.cmd)
+                self.active_connection.execute(self.job.nodes, self.cmd)
+
+                print("Command completed...")
+            else:
+                print("Executing command on node...")
+
+                if self.active_connection is not None:
+                    self.active_connection.terminate()
+                self.active_connection = remote.SSH()
+                print("Command line:", self.cmd)
+                self.active_connection.execute(self.job.nodes, self.cmd)
+                
+                print("Command completed...")
+
 
     def on_notebook_url_found(self, url):
         """Callback when notebook url has been found."""
@@ -839,7 +892,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
             if self.ssh_tunnel is not None:
                 self.ssh_tunnel.terminate()
 
-            self.ssh_tunnel = remote.SSHForwardTunnel(dest_server="localhost", remote_port=8888, server_hostname=self.job.nodes)
+            self.ssh_tunnel = remote.SSHForwardTunnel(dest_server="localhost", remote_port=self.job.notebook_port, server_hostname=self.job.nodes)
             self.ssh_tunnel.execute()
 
             # Update the job url to use the localhost port.
@@ -915,13 +968,30 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
                     # Check for non-active sessions
 
                     if not self.active_connection.is_active():
-                        print("Active connection closed. Terminating session.")
+                        print("No active connection.")
+
                         self.running = False
                         self.status_timer.stop()
+
+                        if self.retry_connection:
+                            if (self.active_connection.re_execute_count<3):
+                                print("Reconnecting. Attempt %d of 3..." % (self.active_connection.re_execute_count+1))
+                                self.active_connection.execute_again()
+                                self.running = True
+                                self.status_timer.start()
+                                return
+                            else:
+                                print("Giving up reconnection.")
+
+                        print("Terminating job...")
+
                         self.usageBar.setValue(0)
                         self.update_controls()
                         if self.job is not None:
                             self.slurm.cancel_job(self.job)
+                    else:
+                        self.retry_connection = False
+                        print("Connection is active.")
 
             else:
 
@@ -987,12 +1057,20 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
                 # Create a Jupyter notbook job
 
                 job = jobs.JupyterNotebookJob(notebook_module = self.notebook_module, use_localhost=self.jupyter_use_localhost)
+                if self.use_conda_env:
+                    job.conda_use_env = self.conda_env
+                else:
+                    job.conda_use_env = ""
 
             elif self.job_type == "jupyterlab":
 
                 # Create a Jupyter notbook job
 
                 job = jobs.JupyterLabJob(jupyterlab_module = self.jupyterlab_module, use_localhost=self.jupyter_use_localhost)
+                if self.use_conda_env:
+                    job.conda_use_env = self.conda_env
+                else:
+                    job.conda_use_env = ""
 
             elif self.job_type == "vm":
 
@@ -1112,3 +1190,33 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
             self.error_log.append(text)
 
         self.statusText.moveCursor(QtGui.QTextCursor.StartOfLine)
+
+    @QtCore.pyqtSlot()
+    def on_show_job_settings_button_clicked(self):
+        """Open help page if set"""
+
+        conda_env_list = cu.find_conda_envs()
+
+        self.job_ui_window = job_ui.JupyterNotebookJobPropWindow(self)
+        self.job_ui_window.custom_anaconda_env_list = conda_env_list
+        self.job_ui_window.python_module = self.jupyterlab_module
+        self.job_ui_window.use_custom_anaconda_env = self.use_conda_env
+        self.job_ui_window.custom_anaconda_env = self.conda_env
+
+        self.job_ui_window.setGeometry(self.x(
+        )+self.width(), self.y(), self.job_ui_window.width(), self.job_ui_window.height())
+
+        self.job_ui_window.exec()
+
+        self.jupyterlab_module = self.job_ui_window.python_module
+        self.notebook_module = self.job_ui_window.python_module
+        self.use_conda_env = self.job_ui_window.use_custom_anaconda_env
+        self.conda_env = self.job_ui_window.custom_anaconda_env
+
+        print(self.jupyterlab_module)
+        print(self.notebook_module)
+        print(self.use_conda_env)
+        print(self.conda_env)
+
+        
+

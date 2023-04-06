@@ -1,7 +1,7 @@
 #!/bin/env python
 #
 # LUNARC HPC Desktop On-Demand graphical launch tool
-# Copyright (C) 2017-2021 LUNARC, Lund University
+# Copyright (C) 2017-2023 LUNARC, Lund University
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -39,18 +39,22 @@ class SSH(object):
     """Implements a SSH connection"""
 
     def __init__(self, local_exec=False):
-        self.tty = True
+        self.tty = False
         self.tunnelX11 = True
         self.shell = True
         self.trustedX11 = True
         self.compression = True
         self.process = None
-        self.strictHostKeyCheck = False
+        self.strictHostKeyCheck = True
         self.output = ""
         self.error = ""
         self._options = ""
         self._update_options()
         self.local_exec = local_exec
+
+        self.cmd = ""
+        self.node = ""
+        self.re_execute_count = 0
 
     def _update_options(self):
         """Update SSH options"""
@@ -78,19 +82,41 @@ class SSH(object):
         return self.process.returncode == None
 
     def wait(self):
+        """Blocking wait for process to finish."""
         self.process.wait()        
 
-    def execute(self, node, command):
+    def execute(self, node, command, re_count=0):
         """Execute command on a node/host"""
+
+        self.re_execute_count = re_count
+
         self._update_options()
+
+        self.node = node
+        self.cmd = command
+
         if not self.local_exec:
+            print("ssh %s %s '%s'" % (self._options, node, command))
             self.process = Popen("ssh %s %s '%s'" %
                                  (self._options, node, command), shell=self.shell)
         else:
             self.process = Popen("%s" %
                                  (command), shell=self.shell)
 
-    def execute_with_output(self, node, command):
+    def execute_again(self):
+        """Execute again with the same command and node"""
+
+        if self.process!=None:
+            self.terminate()
+
+        self.re_execute_count += 1
+            
+        self.execute(self.node, self.cmd, re_count=self.re_execute_count)
+
+    def execute_with_output(self, node, command, re_count=0):
+        """Execute command node, capturing output."""
+
+        self.re_execute_count = re_count
         self._update_options()
 
         if not self.local_exec:
@@ -102,6 +128,8 @@ class SSH(object):
 
 
         output, error = self.process.communicate()
+        self.std_output = output
+        self.std_error = error
 
         return output
 
@@ -165,6 +193,10 @@ class VGLConnect(object):
 
         self.vgl_cmd = ""
 
+        self.cmd = ""
+        self.node = ""
+        self.re_execute_count = 0
+
     def _update_options(self):
         """Update command line options"""
         self._options = ""
@@ -183,19 +215,38 @@ class VGLConnect(object):
 
     def terminate(self):
         """Terminate connection process"""
+
         if self.process != None:
             self.process.terminate()
 
     def is_active(self):
         """Return status of VGL connection"""
+
         self.process.poll()
         return self.process.returncode == None
 
     def wait(self):
+        """Wait for process to finish."""
+
         self.process.wait()
 
-    def execute(self, node, command):
+    def execute_again(self):
+        """Execute command again with same parameters."""
+
+        self.re_execute_count += 1
+
+        if self.process!=None:
+            self.terminate()
+
+        self.execute(self.node, self.cmd, re_count=self.re_execute_count)
+
+    def execute(self, node, command, re_count=0):
         """Execute a command on a host"""
+
+        self.node = node
+        self.cmd = command
+        self.re_execute_count = re_count
+
         self._update_options()
 
         if self.vgl_path != "":
@@ -222,6 +273,7 @@ class StatusProbe(SSH):
 
     def print_summary(self):
         """Print probe summary"""
+
         print("Total memory  : "+str(self.total_mem)+self.memory_unit)
         print("Used memory   : "+str(self.used_mem)+self.memory_unit)
         print("CPU usage     : "+str(self.cpu_usage)+self.cpu_unit)

@@ -8,35 +8,40 @@ An example configuration file is shown below:
 .. code-block:: ini
 
     [general]
-    script_dir = /sw/pkg/rviz/sbin/run
-    client_script_dir = /sw/pkg/rviz/sbin/run/launcher
-    modules_json_file = /sw/pkg/rviz/share/modules.json
+    script_dir = /sw/pkg/ondemand-dt/run
+    install_dir = /sw/pkg/ondemand-dt/gfxlauncher
+    help_url = "https://lunarc-documentation.readthedocs.io/en/latest/gfxlauncher/"
+    browser_command = firefox
 
     [slurm]
     default_part = lvis
     default_account = lvis-test
-    grantfile = /sw/pkg/slurm/local/grantfile.lvis
-    grantfile_base = /sw/pkg/slurm/local/grantfile.%s
 
-    simple_slurm_template = gfxlaunch --vgl --title "%s" --partition %s --account %s --exclusive --tasks-per-node=-1 --cmd %s --simplified
-    simple_launch_template = gfxlaunch --vgl --title "%s" --partition %s --account %s --exclusive --tasks-per-node=-1 --cmd %s --simplified
-
-    adv_slurm_template = gfxlaunch --vgl --title "%s" --partition %s --account %s --exclusive --cmd %s
-    adv_launch_template = gfxlaunch --vgl --title "%s" --partition %s --account %s --exclusive --cmd %s
-
-    feature_gpu4k20 = "4 x NVIDIA K20 GPU"
-    feature_gpu8k20 = "8 x NVIDIA K20 GPU"
     feature_mem96gb = "96 GB Memory node"
     feature_mem64gb = "64 GB Memory node"
-    feature_gpu2k20 = "2 x NVIDIA K20 GPU"
+    feature_ignore = "rack-,rack_,bc,haswell,cascade,enc,jobtmp,skylake,ampere,kepler,sandy"
+
+    part_lu = "Aurora CPU"
+    part_lu32 = "Aurora CPU (32c)"
+    part_gpua40 = "Aurora GPU (A40)"
+    part_gpua100 = "Aurora GPU (A100)"
+    part_lvis = "On-demand (K20)"
+    part_lvis2 = "On-demand (A40)"
+    part_win = "Windows on-demand (V100)"
+    part_ignore = "lunarc,hep"
+
+    group_ondemand = lvis,lvis2
+    group_metashape184 = lvis2
+    group_cpu = lu,lu32
+    group_gpu = gpuk20,gpua100
+    group_win = win
+    group_all = lvis,lvis2,lu,lu32,gpua40,gpua100
 
     use_sacctmgr = yes
 
     [menus]
-    applications_dir = /sw/pkg/rviz/share/applications
-    directories_dir = /sw/pkg/rviz/share/desktop-directories
-    menu_dir = /sw/pkg/rviz/etc/xdg/menus/applications-merged
-    menu_filename = Lunarc-On-Demand.menu
+    menu_prefix = "On-Demand - "
+    desktop_entry_prefix = "gfx-"
 
     [vgl]
     vgl_bin = /sw/pkg/rviz/vgl/bin/latest
@@ -47,16 +52,15 @@ An example configuration file is shown below:
     [jupyter]
     notebook_module = Anaconda3
     jupyterlab_module = Anaconda3
-    jupyter_use_localhost = yes
 
     [xfreerdp]
     xfreerdp_path = /sw/pkg/freerdp/2.0.0-rc4/bin
-    xfreerdp_cmdline = '%s /v:%s /u:$USER /d:ad.lunarc /sec:tls /cert-ignore /audio-mode:1 /gfx +gfx-progressive -bitmap-cache -offscreen-cache -glyph-cache +clipboard -themes -wallpaper /size:1280x1024 /dynamic-resolution /t:"LUNARC HPC Desktop Windows 10 (NVIDA V100)"'
+    xfreerdp_cmdline = %s /v:%s /u:$USER /d:ad.lunarc /sec:tls /cert-ignore /audio-mode:1 /gfx +gfx-progressive -bitmap-cache -offscreen-cache -glyph-cache +clipboard /size:1280x1024 /dynamic-resolution /t:"LUNARC HPC Desktop Windows 10 (NVIDA V100)"
 
 General section - [general]
 ---------------------------
 
-The general section mainly contains information on where the **gfxconvert** tool can find the server scripts used for starting the applications on the backend infrastructure, **script_dir**. The server scripts also contains meta data for menu generation. The **client_script_dir** tells **gfxconvert** where the launch-scripts should be generated. Created menu items will point to this location.
+The general section mainly contains information on where the **gfxconvert** tool can find the server scripts used for starting the applications on the backend infrastructure, **install_dir**. The server scripts also contains meta data for menu generation. The **script_dir** tells **gfxconvert** where the run-scripts should be generated.
 
 SLURM section - [slurm]
 -----------------------
@@ -70,23 +74,11 @@ This section contain settings related to SLURM.
 +-----------------+--------------------------------------------------------------------------------------------+
 | default_account | If no account information is given this is the default account used.                       |
 +-----------------+--------------------------------------------------------------------------------------------+
-| grantfile       | This is the grantfile used to find user accounts.                                          |
-+-----------------+--------------------------------------------------------------------------------------------+
-| grantfile_base  | This is the grantfile template used for a specific partition.                              |
-+-----------------+--------------------------------------------------------------------------------------------+
-| use_sacctmgr    | If set to yes gfxlaunch will use project information from the sacctmgr command instead     |
-|                 | of granfiles. This is the default.                                                         |
+| use_sacctmgr    | If set to yes (default) gfxlaunch will use project information from the sacctmgr command   |
+|                 | instead of grantfiles. This is the default.                                                        |
 +-----------------+--------------------------------------------------------------------------------------------+
 
 .. note:: grantfile and grantfile_base are specific to SNIC/LUNARC HPC resources and can be disabled.
-
-The template command line for calling the **gfxlaunch**-command is given by the **simple_slurm_template** variable. An example of this variable is shown below:
-
-.. code-block:: bash
-
-    simple_slurm_template = gfxlaunch --vgl --title "%s" --partition %s --account %s --exclusive --tasks-per-node=-1 --cmd %s --simplified
-
-The usage of **gfxlaunch** is described in a separate section.
 
 Feature descriptions
 ~~~~~~~~~~~~~~~~~~~~
@@ -116,7 +108,7 @@ To make the resource selection more intuitive it is also possible to give the SL
     part_gpua100 = "Aurora GPU (A100)"
 
 Ignoring partitions
-~~~~~~~~~~~~~~~~~~~ 
+~~~~~~~~~~~~~~~~~~~
 
 Just as with features, not all partitions should be automatically be exposed to the users. To hide these the **part_ignore** configuration variable can be used to list features that shoudln't be considered in the user interface. The following example shows this variable used:
 
@@ -133,7 +125,7 @@ Certain applications will require certain partitions when running. To limit the 
 
     group_ondemand = lvis,lvis2
     group_cpu = lu,lu2
-    group_gpu = gpu,gpu2,gpuk20,gpua100
+    group_gpu = gpuk20,gpua100
     group_win = win
     
 The partition groups can be used the **gfxlaunch** switch --group to only display the partitions in the specified group.
@@ -144,17 +136,13 @@ Menu section - [menu]
 
 Directories and files for the **gfxconvert** menu generation is given in this section. The following variables are used by **gfxconvert**.
 
-+------------------+-----------------------------------------------------------------------------+
-| Variable         | Description                                                                 |
-+------------------+-----------------------------------------------------------------------------+
-| applications_dir | gfxconvert will create the .desktop entries for the client scripts here.    |
-+------------------+-----------------------------------------------------------------------------+
-| directories_dir  | gfxconvert will create .directory entries here for the sub categories here. |
-+------------------+-----------------------------------------------------------------------------+
-| menu_dir         | gfxconvert will create the final .menu file here.                           |
-+------------------+-----------------------------------------------------------------------------+
-| menu_filename    | This is the name that will be used for the final .menu file.                |
-+------------------+-----------------------------------------------------------------------------+
++----------------------------+-----------------------------------------------------------------------------+
+| Variable                   | Description                                                                 |
++----------------------------+-----------------------------------------------------------------------------+
+| menu_prefix                | Prefix added to the menu descriptio to identify menus generated by gfxmenu  |
++----------------------------+-----------------------------------------------------------------------------+
+| directdesktop_entry_prefix | Prefix added to desktop-shortcuts generated by gfxmenu                      |
++----------------------------+-----------------------------------------------------------------------------+
 
 VirtualGL section - [vgl]
 -------------------------

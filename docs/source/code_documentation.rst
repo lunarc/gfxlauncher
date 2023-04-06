@@ -9,6 +9,22 @@ This module implements classes for the different SLURM job types used in GfxLaun
 .. automodule:: lhpcdt.jobs
     :members:
 
+conda_utils module
+------------------
+
+Module implementing conda integration.
+
+.. automodule:: lhpcdt.conda_utils
+    :members:
+
+job_ui module
+-------------
+
+This module provide job user interface functionality.
+
+.. automodule:: lhpcdt.job_ui
+    :members:
+
 launcher module (Main user interface)
 -------------------------------------
 
@@ -23,6 +39,15 @@ desktop module - Menu generation classes
 Module for generating menu items and menus in Linux.
 
 .. automodule:: lhpcdt.desktop
+    :members:    
+
+.. automodule:: lhpcdt.integration
+    :members:    
+
+scripts module - Run script generation
+--------------------------------------
+
+.. automodule:: lhpcdt.scripts
     :members:    
 
 config module - Configuration management classes

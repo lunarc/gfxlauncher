@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/usr/bin/env python
 #
 # LUNARC HPC Desktop On-Demand graphical launch tool
 # Copyright (C) 2017-2022 LUNARC, Lund University
@@ -33,7 +33,7 @@ This is free software, and you are welcome to redistribute it
 under certain conditions; see LICENSE for details.
 """
 gfxlaunch_copyright_short = """LUNARC HPC Desktop On-Demand - %s"""
-gfxlaunch_version = "0.9.3-b1"
+gfxlaunch_version = "0.9.4"
 
 # --- Fix search path for tool
 
@@ -114,6 +114,8 @@ def create_light_palette():
 if __name__ == '__main__':
 
     # Show version information
+
+    print(sys.argv[0])
 
     print((gfxlaunch_copyright % gfxlaunch_version))
     print("")
@@ -205,6 +207,11 @@ if __name__ == '__main__':
                         dest="splash",
                         help="Show splash screen.",
                         action="store_true", default=False)
+    
+    parser.add_argument("--restrict",
+                        dest="restrict",
+                        help="Restrict usage to unix-group.",
+                        default="")
 
     args = parser.parse_args()
 
