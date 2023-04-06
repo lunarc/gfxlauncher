@@ -45,16 +45,17 @@ class GfxConfig(object):
         app_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
 
         config_alt_loc = []
-        config_alt_loc.append(os.path.join(app_dir, "../etc/gfxlauncher.conf"))
-        config_alt_loc.append(os.path.join(app_dir,"etc/gfxlauncher.conf"))
         config_alt_loc.append("/etc/gfxlauncher.conf")
+        config_alt_loc.append(os.path.join(app_dir, "../etc/gfxlauncher.conf"))
+        config_alt_loc.append(os.path.join(app_dir, "../ondemand-dt/etc/gfxlauncher.conf"))
+        config_alt_loc.append(os.path.join(app_dir, "etc/gfxlauncher.conf"))
         config_alt_loc.append("/sw/pkg/ondemand-dt/etc/gfxlauncher.conf")
         config_alt_loc.append("/pdc/software/tools/thinlinc/etc/gfxlauncher.conf")
         config_alt_loc.append("/sw/pkg/rviz/etc/gfxlauncher.conf")
 
         if config_filename == "":
             for config_loc in config_alt_loc:
-                if os.path.isfile(os.path.expanduser(config_loc)):
+                if os.path.isfile(os.path.expanduser(os.path.realpath(config_loc))):
                     self.config_filename = os.path.abspath(os.path.expanduser(config_loc))
                     break
         else:
