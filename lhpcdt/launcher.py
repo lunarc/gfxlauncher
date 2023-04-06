@@ -23,7 +23,12 @@ This module implements the main user interface of the application
 launcher.
 """
 
-import os, sys, time, glob, getpass, shutil, grp
+import os, sys, time, glob, getpass, shutil
+
+try:
+    import grp
+except:
+    pass
 
 from datetime import datetime
 

@@ -67,65 +67,52 @@ The **gfxmenu** uses the directories in the /etc/gfxlauncher.conf configuration 
 .. code-block:: bash
 
     $ gfxmenu
-    LUNARC HPC Desktop - Wrapper script  - Version 0.8.1
+    LUNARC HPC Desktop - User menu tool - Version 0.1
     Written by Jonas Lindemann (jonas.lindemann@lunarc.lu.se)
-    Copyright (C) 2018-2020 LUNARC, Lund University
-    Using configuration file : /sw/pkg/rviz/etc/gfxlauncher.conf
-    ...
-    Creating desktop entry 'run_hypermesh_rviz-slurm.sh'
-    Creating desktop entry 'run_cellprofiler-3.0.0-rviz-server.sh_rviz-slurm.sh'
-    Creating desktop entry 'run_vmd-1.9.2_rviz-slurm.sh'
-    Creating desktop entry 'run_matlab-2018b_rviz-slurm.sh'
-    Creating desktop entry 'run_freesurfer-6.0.0_rviz-slurm.sh'
-    Creating desktop entry 'run_hypergraph_rviz-slurm.sh'
-
+    Copyright (C) 2018-2023 LUNARC, Lund University
+    Using configuration file : /sw/pkg/ondemand-dt/etc/gfxlauncher.conf
 
 Adding menus to shared desktop setup
 ------------------------------------
 
 The generated menus can be added by using the following profile.d script. This script activates the menu if the user is found in the specified grantfile.
 
-/etc/profile.d/lunarc_99-activate-LUNARC-dt.sh:
+/etc/profile.d/ondemand-dt-00.sh:
 
 .. code-block:: bash
 
-    #!/bin/sh
+    #/bin/bash
 
-    LVIS_GRANTFILE=/sw/pkg/slurm/local/grantfile.lvis
+    export ONDEMAND_DT_DIR=/sw/pkg/gfxlauncher
+    export PATH=${ONDEMAND_DT_DIR}:$PATH
 
-    if grep -qw $USER $LVIS_GRANTFILE
-    then
-        # Append the LUNARC LVIS menu path.
-        export XDG_CONFIG_DIRS=/sw/pkg/rviz/etc/xdg:${XDG_CONFIG_DIRS:-/etc/xdg}
-        export XDG_DATA_DIRS=/sw/pkg/rviz/share:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}
+    # Generate user menu
 
-        # Add the default menu merging directive to the menu file.
-        if ! grep -qs '<DefaultMergeDirs/>' ~/.config/menus/applications.menu
-        then
-            sed -i '/<DefaultDirectoryDirs\/>/a <DefaultMergeDirs/>' \
-                ~/.config/menus/applications.menu
-            # Make Mate reload the menu file.
-            ln -sf applications.menu ~/.config/menus/mate-applications.menu
-        fi
-        export LVIS_USER=$USER
-    fi
+    gfxmenu --silent &>/dev/null
 
-If the menus should be availble for all users the outer if-statement cab be removed.
+This script will generate a user menu structure in the users home directory. With the following layout:
+
+In the **[User home directory]/.local/share/applications** folder will contain the generated desktop shortcuts (.desktop) with the prefix set by the configuration variable, **desktop_entry_prefix**. A sample directory is shown below:
+
+.. code-block:: bash
+    
+    $ ls
+    gfx-abaqus_cae_6.13-5.desktop           gfx-comsol_multiphysics_5.3.desktop   
+    gfx-abaqus_cae_v6r2017.desktop          gfx-fiji_1.53c.desktop
+    gfx-abaqus_cae_v6r2019.desktop          gfx-fiji_2.5.0.desktop
+    gfx-amira_6.5.0.desktop                 gfx-freesurfer_5.3.0.desktop
+    ...
+
+The **[User home directory]/.local/share/desktop-directories** folder will contain the menu directory files (.directory) for each of the categories defined in the run scripts.
 
 .. code-block:: bash
 
-    #!/bin/sh
+    $ ls -1
+    3d_modeling.directory
+    3d_visualisation.directory
+    cae.directory
+    chemistry.directory
 
-    # Append the LUNARC LVIS menu path.
-    export XDG_CONFIG_DIRS=/sw/pkg/rviz/etc/xdg:${XDG_CONFIG_DIRS:-/etc/xdg}
-    export XDG_DATA_DIRS=/sw/pkg/rviz/share:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}
+The generated menu itself is located in **[User home directory]/.config/menus/applications-merged/applications.menu**. This file is overwritten each time the **gfxmenu** command is executed. In the menus folder, **gfxmenu** will also create symlinks to **gnome-applications-merged**, **kde-applications-merged** and **mate-applications-merged**. 
 
-    # Add the default menu merging directive to the menu file.
-    if ! grep -qs '<DefaultMergeDirs/>' ~/.config/menus/applications.menu
-    then
-        sed -i '/<DefaultDirectoryDirs\/>/a <DefaultMergeDirs/>' \
-            ~/.config/menus/applications.menu
-        # Make Mate reload the menu file.
-        ln -sf applications.menu ~/.config/menus/mate-applications.menu
-    fi
-    export LVIS_USER=$USER
+The menu should update automatically by the desktop environment when the files in these directories are modified or updated.
