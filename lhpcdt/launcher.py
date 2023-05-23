@@ -864,6 +864,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
                 if self.active_connection is not None:
                     self.active_connection.terminate()
                 self.active_connection = remote.VGLConnect()
+                self.active_connection.vgl_path = self.config.vgl_path
                 print("Command line:", self.cmd)
                 self.active_connection.execute(self.job.nodes, self.cmd)
 

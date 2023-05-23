@@ -244,12 +244,12 @@ if __name__ == '__main__':
 
     app = QtWidgets.QApplication(sys.argv)
 
-    if dark_mode:
-        palette = create_dark_palette()
-    else:
-        palette = create_light_palette()
+    #if dark_mode:
+    #    palette = create_dark_palette()
+    #else:
+    #    palette = create_light_palette()
 
-    app.setPalette(palette)
+    #app.setPalette(palette)
 
     # Show splash
 
