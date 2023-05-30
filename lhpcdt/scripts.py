@@ -17,11 +17,12 @@ class RunScript:
     def __parse_metadata(self):
         """Parse run-script for metadata"""
 
-        # LDT category = "Post Processing"
-        # LDT title = "ParaView 5.4.1"
-        # LDT part = "snic"
-        # LDT job = "notebook"
-        # LDT group = "ondemand"
+        ##LDT category = "Post Processing"
+        ##LDT title = "ParaView 5.4.1"
+        ##LDT part = "snic"
+        ##LDT job = "notebook"
+        ##LDT group = "ondemand"
+        ##LDT vgl = "yes"
 
         self.__variables = {}
 
@@ -117,6 +118,9 @@ class RunScripts:
                 #print("Found:", script)
                 filename = os.path.join(script_dir, script)
 
+                if os.path.isdir(filename):
+                    continue
+                
                 run_script = RunScript(filename)
                 run_script.launcher = self.__launcher
 

@@ -270,6 +270,15 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         if self.silent:
             self.enable_silent_ui()
 
+        if self.group in self.config.part_groups_defaults:
+            if "tasks" in self.config.part_groups_defaults[self.group]:
+                self.tasks_per_node = self.config.part_groups_defaults[self.group]["tasks"]
+            if "memory" in self.config.part_groups_defaults[self.group]:
+                if self.config.part_groups_defaults[self.group]["memory"]>0:
+                    self.memory = self.config.part_groups_defaults[self.group]["memory"]
+            if "exclusive" in self.config.part_groups_defaults[self.group]:
+                self.exclusive = self.config.part_groups_defaults[self.group]["exclusive"]
+
         # Update controls to reflect parameters
 
         self.update_controls()
@@ -864,6 +873,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
                 if self.active_connection is not None:
                     self.active_connection.terminate()
                 self.active_connection = remote.VGLConnect()
+                self.active_connection.vgl_path = self.config.vgl_path
                 print("Command line:", self.cmd)
                 self.active_connection.execute(self.job.nodes, self.cmd)
 

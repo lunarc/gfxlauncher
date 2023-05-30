@@ -33,7 +33,7 @@ This is free software, and you are welcome to redistribute it
 under certain conditions; see LICENSE for details.
 """
 gfxlaunch_copyright_short = """LUNARC HPC Desktop On-Demand - %s"""
-gfxlaunch_version = "0.9.4"
+gfxlaunch_version = "0.9.5"
 
 # --- Fix search path for tool
 
@@ -230,7 +230,7 @@ if __name__ == '__main__':
 
     # Redirect standard output
 
-    redirect = True
+    redirect = False
 
     # Create Queue and redirect sys.stdout to this queue
 
@@ -244,12 +244,12 @@ if __name__ == '__main__':
 
     app = QtWidgets.QApplication(sys.argv)
 
-    if dark_mode:
-        palette = create_dark_palette()
-    else:
-        palette = create_light_palette()
+    #if dark_mode:
+    #    palette = create_dark_palette()
+    #else:
+    #    palette = create_light_palette()
 
-    app.setPalette(palette)
+    #app.setPalette(palette)
 
     # Show splash
 
