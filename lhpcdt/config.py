@@ -134,6 +134,10 @@ class GfxConfig(object):
         self.conda_source_env = ""
         self.conda_use_env = ""
 
+        self.part_groups = {}
+        self.part_groups_defaults = {}
+
+
     def print_config(self):
         """Print configuration"""
 
@@ -355,18 +359,41 @@ class GfxConfig(object):
         # Check for partition groups
 
         self.part_groups = {}
+        self.part_groups_defaults = {}
 
         try:
             slurm_options = config.options("slurm")
             for option in slurm_options:
                 if option.find("group_") != -1:
                     parts = self._config_get(config, "slurm", option)
-                    group = option.split("_")[1].strip()
-                    partitions = parts.split(",")
-                    self.part_groups[group] = []
-                    for part in partitions:
-                        self.part_groups[group].append(part.strip())
+                    if len(option.split("_"))==2:
+                        group = option.split("_")[1].strip()
+                        partitions = parts.split(",")
+                        self.part_groups[group] = []
+                        for part in partitions:
+                            self.part_groups[group].append(part.strip())
+                    elif len(option.split("_"))==3:
+                        group = option.split("_")[1].strip()
+                        directive = option.split("_")[2].split(" ")[0].strip()
+                        
+                        tasks = 1
+                        memory = -1
+                        exclusive = False
 
+                        if not group in self.part_groups_defaults:
+                            self.part_groups_defaults[group] = {}
+
+                        if directive == "tasks":
+                            self.part_groups_defaults[group]["tasks"] = int(parts)
+                        if directive == "memory":
+                            self.part_groups_defaults[group]["memory"] = int(parts)
+                        if directive == "exclusive":
+                            if parts.strip() == "yes":
+                                exclusive = True
+                            else:
+                                exclusive = False
+                            self.part_groups_defaults[group]["exclusive"] = exclusive
+                  
         except configparser.Error as e:
             self.print_error(e)
             return False
