@@ -683,6 +683,12 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.wallTimeEdit.setEditText(str(self.time))
         # self.projectEdit.setText(str(self.account))
 
+        if self.args.part_disable:
+            self.partCombo.setEnabled(False)
+
+        if self.args.feature_disable:
+            self.featureCombo.setEnabled(False)
+
         if self.args.title != "":
             self.setWindowTitle(self.args.title)
 

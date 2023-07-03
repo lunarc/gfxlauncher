@@ -33,7 +33,7 @@ This is free software, and you are welcome to redistribute it
 under certain conditions; see LICENSE for details.
 """
 gfxlaunch_copyright_short = """LUNARC HPC Desktop On-Demand - %s"""
-gfxlaunch_version = "0.9.6"
+gfxlaunch_version = "0.9.7"
 
 # --- Fix search path for tool
 
@@ -142,6 +142,18 @@ if __name__ == '__main__':
                         dest="restrict",
                         help="Restrict usage to unix-group.",
                         default="")
+    
+    parser.add_argument("--part-disable",
+                        dest="part_disable",
+                        help="Disable partition selection.",
+                        action="store_true",
+                        default=False)
+
+    parser.add_argument("--feature-disable",
+                        dest="feature_disable",
+                        help="Disable feature selection.",
+                        action="store_true",
+                        default=False)
 
     args = parser.parse_args()
 

@@ -23,6 +23,8 @@ class RunScript:
         ##LDT job = "notebook"
         ##LDT group = "ondemand"
         ##LDT vgl = "yes"
+        ##LDT part_disable = "yes"
+        ##LDT feature_disable = "yes"
 
         self.__variables = {}
 
@@ -59,8 +61,18 @@ class RunScript:
 
         if "restrict" in self.__variables:
             cmd_options += ' --restrict "%s"' % self.__variables["restrict"]
+
         if "job" in self.__variables:
             cmd_options += ' --job %s' % self.__variables["job"]
+
+        if "part_disable" in self.__variables:
+            if self.__variables["part_disable"] == "yes":
+                cmd_options += ' --part-disable'
+
+        if "feature_disable" in self.__variables:
+            if self.__variables["feature_disable"] == "yes":
+                cmd_options += ' --feature-disable'
+
 
         cmd_options += " --cmd %s" % self.filename
 
