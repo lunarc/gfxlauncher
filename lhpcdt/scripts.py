@@ -13,6 +13,7 @@ class RunScript:
         self.__launcher = "gfxlaunch"
         self.__changed = None
         self.__parse_metadata()
+        self.__parse_failed = False
 
     def __parse_metadata(self):
         """Parse run-script for metadata"""
@@ -28,8 +29,12 @@ class RunScript:
 
         self.__variables = {}
 
-        with open(self.__filename, "r") as script_file:
-            lines = script_file.readlines()
+        try:
+            with open(self.__filename, "r") as script_file:
+                lines = script_file.readlines()
+        except PermissionError:
+            self.__parse_failed = True
+            return
 
         self.__changed = os.stat(self.__filename).st_mtime
 
@@ -89,16 +94,16 @@ class RunScript:
     @property
     def filename(self):
         return self.__filename
-    
+
     @property
     def launch_cmd(self):
         self.__parse_metadata()
         return self.__launch_cmd
-    
+
     @property
     def launcher(self):
         return self.__launcher
-    
+
     @launcher.setter
     def launcher(self, value):
         self.__launcher = value
@@ -107,6 +112,10 @@ class RunScript:
     @property
     def changed(self):
         return self.__changed
+
+    @property
+    def parse_failed(self):
+        return self.__parse_failed
 
 class RunScripts:
     def __init__(self, script_dir=""):
@@ -132,9 +141,12 @@ class RunScripts:
 
                 if os.path.isdir(filename):
                     continue
-                
+
                 run_script = RunScript(filename)
                 run_script.launcher = self.__launcher
+
+                if run_script.parse_failed:
+                    continue
 
                 metadata = run_script.variables
 
@@ -171,11 +183,11 @@ class RunScripts:
     @property
     def database(self):
         return self.__script_dict
-    
+
     @property
     def launcher(self):
         return self.__launcher
-    
+
     @launcher.setter
     def launcher(self, value):
         self.__launcher = value
@@ -192,4 +204,4 @@ if __name__ == "__main__":
     script_db = run_scripts.database
 
 
-    
+
