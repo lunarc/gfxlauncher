@@ -66,6 +66,13 @@ class ResourceSpecWindow(QtWidgets.QWidget):
         self.jobNameEdit.setText(self.parent.job_name)
         self.exclusiveCheck.setChecked(self.parent.exclusive)
 
+        if self.parent.exclusive:
+            self.specifyTasksPerNodeCheck.setVisible(False)
+            self.specifyMemoryCheck.setVisible(False)
+        else:
+            self.specifyTasksPerNodeCheck.setVisible(True)
+            self.specifyMemoryCheck.setVisible(True)
+
         if int(self.parent.memory)>=0:
             self.memoryPerCpuEdit.setText(str(self.parent.memory))
             self.memoryPerCpuEdit.setVisible(True)
@@ -87,6 +94,7 @@ class ResourceSpecWindow(QtWidgets.QWidget):
             self.tasksPerNodeSpin.setVisible(False)
             self.tasksPerNodeSpin.setEnabled(False)
             self.specifyTasksPerNodeCheck.setChecked(False)
+
 
         #if int(self.parent.count)>=0:
         #    self.numberOfNodesSpin.setValue(int(self.parent.count))
