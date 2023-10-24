@@ -16,28 +16,49 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import subprocess
+import subprocess, getpass, os, json
 
-def find_conda_envs():
-    result = subprocess.run(["conda", "env", "list"], capture_output=True)
+class CondaInstall:
+    def __init__(self):
+        self.user_name = getpass.getuser()
+        self.home_dir = os.path.expanduser("~")
+        self.conda_dir = os.path.join(self.home_dir, ".conda")
+        self.conda_envs_dir = os.path.join(self.conda_dir, "envs")
+        self.conda_envs = {}
+        self.__query_conda_envs()
 
-    env_list = []
+    def have_conda_dir(self):
+        return os.path.exists(self.conda_dir)
+    
+    def have_conda_envs_dir(self):
+        return os.path.exists(self.conda_envs_dir)
 
-    if result.returncode == 0:
+    def __query_conda_envs(self):
+        if self.have_conda_envs_dir():
 
-        lines = str(result.stdout).split("\\n")
-        for e in lines:
-            if not '#' in e:
-                items = e.split()
-                if len(items)>1:
-                    env_list.append(items[0])
+            print("Parsing environments...")
 
-    return env_list
+            file_entries = os.listdir(self.conda_envs_dir)
+
+            self.conda_envs.clear()
+
+            for entry in file_entries:
+                env_dir = os.path.join(self.conda_envs_dir, entry)
+                if os.path.isdir(env_dir):
+                    self.conda_envs[entry] = {"env_dir":env_dir, "packages":{}}
+
+                    meta_dir = os.path.join(env_dir, "conda-meta")
+
+                    package_entries = os.listdir(meta_dir)
+
+                    for package_filename in package_entries:
+                        try: 
+                            package_dict = json.load(open(os.path.join(meta_dir, package_filename), "r"))
+                            self.conda_envs[entry]["packages"][package_dict["name"]] = package_dict
+                        except json.decoder.JSONDecodeError:
+                            pass
 
 if __name__ == "__main__":
 
-    env_list = find_conda_envs()
-    print(env_list)
-
-
-
+    conda = CondaInstall()
+    print(conda.conda_envs["compute-env"]["packages"]["numpy"]["version"])

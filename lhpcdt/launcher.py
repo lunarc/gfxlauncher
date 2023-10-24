@@ -685,14 +685,30 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         if self.args.part_disable:
             self.partCombo.setEnabled(False)
+            self.resource_group.setVisible(False)
 
         if self.args.feature_disable:
             self.featureCombo.setEnabled(False)
+            self.feature_group.setVisible(False)
 
         if self.args.title != "":
             self.setWindowTitle(self.args.title)
 
-    def enable_extras_panel(self):
+        plain_text_usage = "Default usage. "
+        
+        if self.exclusive:
+            plain_text_usage = "Full node. "
+        else:
+            if int(self.tasks_per_node)>0:
+                plain_text_usage = f"{self.tasks_per_node} tasks / node. "
+
+        if self.memory>0:
+            plain_text_usage += f"{self.memory} MB / task."
+
+        self.node_usage_label.setText(plain_text_usage)
+
+
+    def enable_extras_panel(self): 
         """Clear user interface components in extras panel"""
 
         self.extraControlsLayout.setEnabled(True)
@@ -747,7 +763,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
             self.only_submit = True
 
             self.job = jobs.JupyterNotebookJob(
-                notebook_module=self.notebook_module, use_localhost=self.jupyter_use_localhost)
+                notebook_module=self.notebook_module, use_localhost=self.jupyter_use_localhost, conda_env=self.conda_env)
             self.job.on_notebook_url_found = self.on_notebook_url_found
 
             # Create extra user interface controls for reconnection
@@ -769,7 +785,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
             self.only_submit = True
 
             self.job = jobs.JupyterLabJob(
-                jupyterlab_module=self.jupyterlab_module, use_localhost=self.jupyter_use_localhost)
+                jupyterlab_module=self.jupyterlab_module, use_localhost=self.jupyter_use_localhost, conda_env=self.conda_env)
             self.job.on_notebook_url_found = self.on_notebook_url_found
 
             # Create extra user interface controls for reconnection
@@ -1072,21 +1088,13 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
                 # Create a Jupyter notbook job
 
-                job = jobs.JupyterNotebookJob(notebook_module = self.notebook_module, use_localhost=self.jupyter_use_localhost)
-                if self.use_conda_env:
-                    job.conda_use_env = self.conda_env
-                else:
-                    job.conda_use_env = ""
+                job = jobs.JupyterNotebookJob(notebook_module = self.notebook_module, use_localhost=self.jupyter_use_localhost, conda_env=self.conda_env)
 
             elif self.job_type == "jupyterlab":
 
                 # Create a Jupyter notbook job
 
-                job = jobs.JupyterLabJob(jupyterlab_module = self.jupyterlab_module, use_localhost=self.jupyter_use_localhost)
-                if self.use_conda_env:
-                    job.conda_use_env = self.conda_env
-                else:
-                    job.conda_use_env = ""
+                job = jobs.JupyterLabJob(jupyterlab_module = self.jupyterlab_module, use_localhost=self.jupyter_use_localhost, conda_env=self.conda_env)
 
             elif self.job_type == "vm":
 
@@ -1210,11 +1218,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
     @QtCore.pyqtSlot()
     def on_show_job_settings_button_clicked(self):
         """Open help page if set"""
-
-        conda_env_list = cu.find_conda_envs()
-
+        
         self.job_ui_window = job_ui.JupyterNotebookJobPropWindow(self)
-        self.job_ui_window.custom_anaconda_env_list = conda_env_list
         self.job_ui_window.python_module = self.jupyterlab_module
         self.job_ui_window.use_custom_anaconda_env = self.use_conda_env
         self.job_ui_window.custom_anaconda_env = self.conda_env
