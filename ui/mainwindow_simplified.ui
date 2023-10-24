@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>364</width>
-    <height>550</height>
+    <width>366</width>
+    <height>637</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -15,17 +15,20 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
+    <property name="spacing">
+     <number>9</number>
+    </property>
     <property name="leftMargin">
-     <number>8</number>
+     <number>9</number>
     </property>
     <property name="topMargin">
-     <number>8</number>
+     <number>9</number>
     </property>
     <property name="rightMargin">
-     <number>8</number>
+     <number>9</number>
     </property>
     <property name="bottomMargin">
-     <number>8</number>
+     <number>9</number>
     </property>
     <item>
      <widget class="QLabel" name="application_req_label">
@@ -132,6 +135,16 @@
            <string>24:00:00</string>
           </property>
          </item>
+         <item>
+          <property name="text">
+           <string>36:00:00</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>48:00:00</string>
+          </property>
+         </item>
         </widget>
        </item>
        <item>
@@ -149,7 +162,8 @@
           <string>...</string>
          </property>
          <property name="icon">
-          <iconset theme="applications-system"/>
+          <iconset theme="applications-system">
+           <normaloff>.</normaloff>.</iconset>
          </property>
          <property name="toolButtonStyle">
           <enum>Qt::ToolButtonIconOnly</enum>
@@ -158,6 +172,56 @@
        </item>
       </layout>
      </widget>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_6">
+      <item>
+       <widget class="QLabel" name="label_2">
+        <property name="minimumSize">
+         <size>
+          <width>100</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>Usage</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="node_usage_label">
+        <property name="minimumSize">
+         <size>
+          <width>200</width>
+          <height>26</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>200</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>8</pointsize>
+         </font>
+        </property>
+        <property name="frameShape">
+         <enum>QFrame::Panel</enum>
+        </property>
+        <property name="frameShadow">
+         <enum>QFrame::Sunken</enum>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+     </layout>
     </item>
     <item>
      <widget class="QWidget" name="resource_group" native="true">

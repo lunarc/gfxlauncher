@@ -34,6 +34,7 @@ from . import remote
 from . import settings
 from . import config
 from . import launcher
+from . import conda_utils as cu
 
 class JupyterNotebookJobPropWindow(QtWidgets.QDialog):
     """Resource specification window"""
@@ -52,20 +53,27 @@ class JupyterNotebookJobPropWindow(QtWidgets.QDialog):
         self.__python_module = "Anaconda3"
         self.__use_custom_anaconda_env = False
         self.__custom_anaconda_env = ""
-        self.__custom_anaconda_env_list = []
+        self.__conda_install = cu.CondaInstall()
 
         self.set_data()
 
-    def set_data(self):
-        """Assign values to controls"""
+    def update_controls(self):
         self.conda_module_text.setText(self.__python_module)
         self.use_custom_env_check.setChecked(self.__use_custom_anaconda_env)
+        self.conda_env_list.setEnabled(self.__use_custom_anaconda_env)
 
+    def update_list(self):
         self.conda_env_list.clear()
 
-        for e in self.__custom_anaconda_env_list:
-            self.conda_env_list.addItem(e)
+        for e in self.__conda_install.conda_envs.keys():
+            if "ipykernel" in self.__conda_install.conda_envs[e]["packages"]:
+                self.conda_env_list.addItem(e)
 
+
+    def set_data(self):
+        """Assign values to controls"""
+        self.update_controls()
+        self.update_list()
 
     def get_data(self):
         """Get values from controls"""
@@ -121,3 +129,8 @@ class JupyterNotebookJobPropWindow(QtWidgets.QDialog):
     def on_cancel_button_clicked(self):
         """Event method for Cancel button"""
         self.close()
+
+    @QtCore.pyqtSlot()
+    def on_use_custom_env_check_clicked(self):
+        self.__use_custom_anaconda_env = self.use_custom_env_check.isChecked()
+        self.set_data()

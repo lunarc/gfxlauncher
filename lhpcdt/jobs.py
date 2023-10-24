@@ -226,7 +226,7 @@ unset __conda_setup
 class JupyterNotebookJob(Job):
     """Jupyter notebook job"""
 
-    def __init__(self, account="", partition="", time="00:30:00", notebook_module="Anaconda3", use_localhost=False):
+    def __init__(self, account="", partition="", time="00:30:00", notebook_module="Anaconda3", use_localhost=False, conda_env=""):
         Job.__init__(self, account, partition, time)
 
         self.use_localhost = use_localhost
@@ -236,7 +236,7 @@ class JupyterNotebookJob(Job):
         self.notebook_module = notebook_module
  
         self.conda_source_env = ""
-        self.conda_use_env = ""
+        self.conda_env = conda_env
 
         if ',' in self.notebook_module:
             modules = self.notebook_module.split(",")
@@ -250,8 +250,8 @@ class JupyterNotebookJob(Job):
         if self.conda_source_env != "":
             self.add_custom_script("source %s" % self.conda_source_env)
 
-        if self.conda_use_env != "":
-            self.add_custom_script("conda activate %s" % self.conda_use_env)
+        if self.conda_env != "":
+            self.add_custom_script("conda activate %s" % self.conda_env)
 
         if self.use_localhost:
             self.add_custom_script('jupyter-notebook --no-browser')
@@ -289,7 +289,7 @@ class JupyterNotebookJob(Job):
 class JupyterLabJob(Job):
     """Jupyter lab job"""
 
-    def __init__(self, account="", partition="", time="00:30:00", jupyterlab_module="Anaconda3", use_localhost=False):
+    def __init__(self, account="", partition="", time="00:30:00", jupyterlab_module="Anaconda3", use_localhost=False, conda_env=""):
         Job.__init__(self, account, partition, time)
         self.use_localhost = use_localhost
         self.notebook_url = ""
@@ -298,8 +298,7 @@ class JupyterLabJob(Job):
         self.jupyterlab_module = jupyterlab_module
 
         self.init_conda = False
-        self.use_conda_env = False
-        self.conda_env = ""
+        self.conda_env = conda_env
 
         if ',' in self.jupyterlab_module:
             modules = self.jupyterlab_module.split(",")
@@ -312,9 +311,9 @@ class JupyterLabJob(Job):
 
         if self.init_conda:
             self.add_custom_script(conda_initialise_script)
-        if self.use_conda_env:
-            if self.conda_env!="":
-                self.add_custom_script("conda activate %s" % (self.conda_env))
+
+        if self.conda_env != "":
+            self.add_custom_script("conda activate %s" % self.conda_env)
 
         if self.use_localhost:
             self.add_custom_script('jupyter-lab --no-browser')

@@ -445,7 +445,46 @@ class Slurm(object):
         """Query if job is in an non-running state"""
         self.job_status(job)
         return job.status != "R"
+    
+class Accounting:
+    """
+    sacct -o jobid%20,jobname%50,state%30,exitcode%20
+    """
 
+    def __init__(self):
+        self.job_status = {}
+        self.query_job_accouting()
+
+    def query_job_accouting(self):
+        output = execute_cmd("sacct -p -n -b")
+        lines = output.split("\n")
+
+        for line in lines:
+            items = line.split("|")
+            job = items[0].split(".")
+
+            if len(items)<=1:
+                continue
+
+            if len(job)>1:
+                job_id = job[0]
+                job_step = job[1]
+            else:
+                job_id = job[0]
+                job_step = "first"
+
+            job_state = items[1]
+            job_exit_code = items[2]
+
+            if not job_id in self.job_status:
+                self.job_status[job_id] = {}
+                self.job_status[job_id][job_step] = []
+
+            if not job_step in self.job_status[job_id]:
+                self.job_status[job_id][job_step] = []
+
+            self.job_status[job_id][job_step].append(job_state)
+            self.job_status[job_id][job_step].append(job_exit_code)
 
 class AccountManager:
     def __init__(self, user=""):
@@ -517,5 +556,8 @@ if __name__ == "__main__":
     #features = slurm.query_features("snic")
     # print(features)
 
-    accmgr = AccountManager()
-    accmgr.query_user_account_info()
+    #saccmgr = AccountManager()
+    #saccmgr.query_user_account_info()
+
+    sacct = Accounting()
+    print(sacct.job_status)
