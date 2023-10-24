@@ -94,7 +94,7 @@
         <widget class="QComboBox" name="wallTimeEdit">
          <property name="minimumSize">
           <size>
-           <width>164</width>
+           <width>200</width>
            <height>0</height>
           </size>
          </property>
@@ -147,29 +147,6 @@
          </item>
         </widget>
        </item>
-       <item>
-        <widget class="QToolButton" name="resourceDetailsButton">
-         <property name="minimumSize">
-          <size>
-           <width>0</width>
-           <height>26</height>
-          </size>
-         </property>
-         <property name="toolTip">
-          <string>Additional more advanced job options.</string>
-         </property>
-         <property name="text">
-          <string>...</string>
-         </property>
-         <property name="icon">
-          <iconset theme="applications-system">
-           <normaloff>.</normaloff>.</iconset>
-         </property>
-         <property name="toolButtonStyle">
-          <enum>Qt::ToolButtonIconOnly</enum>
-         </property>
-        </widget>
-       </item>
       </layout>
      </widget>
     </item>
@@ -184,27 +161,41 @@
          </size>
         </property>
         <property name="text">
-         <string>Usage</string>
+         <string>Requirements</string>
         </property>
        </widget>
+      </item>
+      <item>
+       <spacer name="horizontalSpacer">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
       </item>
       <item>
        <widget class="QLabel" name="node_usage_label">
         <property name="minimumSize">
          <size>
-          <width>200</width>
+          <width>167</width>
           <height>26</height>
          </size>
         </property>
         <property name="maximumSize">
          <size>
-          <width>200</width>
+          <width>167</width>
           <height>16777215</height>
          </size>
         </property>
         <property name="font">
          <font>
           <pointsize>8</pointsize>
+          <italic>true</italic>
          </font>
         </property>
         <property name="frameShape">
@@ -218,6 +209,29 @@
         </property>
         <property name="alignment">
          <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QToolButton" name="resourceDetailsButton">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>26</height>
+         </size>
+        </property>
+        <property name="toolTip">
+         <string>Additional more advanced job options.</string>
+        </property>
+        <property name="text">
+         <string>...</string>
+        </property>
+        <property name="icon">
+         <iconset theme="applications-system">
+          <normaloff>.</normaloff>.</iconset>
+        </property>
+        <property name="toolButtonStyle">
+         <enum>Qt::ToolButtonIconOnly</enum>
         </property>
        </widget>
       </item>
@@ -461,15 +475,18 @@
        <widget class="QToolButton" name="show_job_settings_button">
         <property name="minimumSize">
          <size>
-          <width>29</width>
+          <width>200</width>
           <height>25</height>
          </size>
         </property>
+        <property name="layoutDirection">
+         <enum>Qt::LeftToRight</enum>
+        </property>
         <property name="text">
-         <string>Job settings...</string>
+         <string> Job settings...</string>
         </property>
         <property name="icon">
-         <iconset theme="gnome-settings">
+         <iconset theme="document-properties">
           <normaloff>.</normaloff>.</iconset>
         </property>
         <property name="toolButtonStyle">
