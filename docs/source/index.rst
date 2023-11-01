@@ -15,7 +15,7 @@ The GFX Launcher toolkit provide the means for launching graphical applications 
    technical_description.rst
    installation.rst
    configuration.rst
-   pam_exec.rst
+   node_config.rst
    gfxlaunch.rst
    gfxmenu.rst
    configuration_slurmvm.rst
