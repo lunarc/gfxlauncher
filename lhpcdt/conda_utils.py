@@ -25,6 +25,12 @@ class CondaInstall:
         self.conda_dir = os.path.join(self.home_dir, ".conda")
         self.conda_envs_dir = os.path.join(self.conda_dir, "envs")
         self.conda_envs = {}
+        self.on_query_env = None
+        self.on_query_package = None
+        self.on_query_completed = None
+        self.query_packages = False
+
+    def query(self):
         self.__query_conda_envs()
 
     def have_conda_dir(self):
@@ -45,18 +51,32 @@ class CondaInstall:
             for entry in file_entries:
                 env_dir = os.path.join(self.conda_envs_dir, entry)
                 if os.path.isdir(env_dir):
+
+                    if self.on_query_env is not None:
+                        self.on_query_env(entry)
+
                     self.conda_envs[entry] = {"env_dir":env_dir, "packages":{}}
 
-                    meta_dir = os.path.join(env_dir, "conda-meta")
+                    if self.query_packages:
 
-                    package_entries = os.listdir(meta_dir)
+                        meta_dir = os.path.join(env_dir, "conda-meta")
 
-                    for package_filename in package_entries:
-                        try: 
-                            package_dict = json.load(open(os.path.join(meta_dir, package_filename), "r"))
-                            self.conda_envs[entry]["packages"][package_dict["name"]] = package_dict
-                        except json.decoder.JSONDecodeError:
-                            pass
+                        package_entries = os.listdir(meta_dir)
+
+                        for package_filename in package_entries:
+
+                            if self.on_query_package is not None:
+                                self.on_query_package(package_filename)
+
+                            try: 
+                                package_dict = json.load(open(os.path.join(meta_dir, package_filename), "r"))
+                                self.conda_envs[entry]["packages"][package_dict["name"]] = package_dict
+                            except json.decoder.JSONDecodeError:
+                                print("error")
+
+            if self.on_query_completed is not None:
+                self.on_query_completed()
+
 
 if __name__ == "__main__":
 

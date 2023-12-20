@@ -24,6 +24,7 @@ This module provide job user interface functionality.
 
 import os
 import getpass
+import subprocess
 from datetime import datetime
 
 from PyQt5 import Qt, QtCore, QtGui, QtWidgets, uic
@@ -54,13 +55,46 @@ class JupyterNotebookJobPropWindow(QtWidgets.QDialog):
         self.__use_custom_anaconda_env = False
         self.__custom_anaconda_env = ""
         self.__conda_install = cu.CondaInstall()
+        self.__conda_install.query_packages = False
+        self.__conda_install.on_query_env = self.on_query_env
+        self.__conda_install.on_query_completed = self.on_query_completed
 
-        self.set_data()
+
+    def showEvent(self, event):
+        self.disable_controls()
+        self.timer = QtCore.QTimer()
+        self.timer.timeout.connect(self.on_timeout)
+        self.timer.start(1000)
+
+    def disable_controls(self):
+        self.control_frame.setEnabled(False)
+
+    def enable_controls(self):
+        self.control_frame.setEnabled(True)
+
+
+    def on_timeout(self):
+        self.timer.stop()
+        self.__conda_install.query()
+
+    def on_query_env(self, conda_env):
+        self.env_status_text.setText(f'Querying environment: {conda_env}')
+        self.update()
+        QtCore.QCoreApplication.processEvents()
+    
+    def on_query_completed(self):
+        self.env_status_text.setText('')
+        self.update()
+        QtCore.QCoreApplication.processEvents()
+        self.enable_controls()
+        self.update_controls()
 
     def update_controls(self):
-        self.conda_module_text.setText(self.__python_module)
+        self.conda_module_text.setPlainText(self.__python_module)
         self.use_custom_env_check.setChecked(self.__use_custom_anaconda_env)
         self.conda_env_list.setEnabled(self.__use_custom_anaconda_env)
+        if not self.__use_custom_anaconda_env:
+            self.conda_env_list.setCurrentIndex(-1)
 
     def update_list(self):
         self.conda_env_list.clear()
@@ -72,14 +106,14 @@ class JupyterNotebookJobPropWindow(QtWidgets.QDialog):
 
     def set_data(self):
         """Assign values to controls"""
-        self.update_controls()
         self.update_list()
+        self.update_controls()
 
     def get_data(self):
         """Get values from controls"""
         print("get_data()")
         self.__custom_anaconda_env = self.conda_env_list.currentText()
-        self.__python_module = self.conda_module_text.text()
+        self.__python_module = self.conda_module_text.toPlainText()
         self.__use_custom_anaconda_env = self.use_custom_env_check.isChecked()
 
     @property
@@ -134,3 +168,23 @@ class JupyterNotebookJobPropWindow(QtWidgets.QDialog):
     def on_use_custom_env_check_clicked(self):
         self.__use_custom_anaconda_env = self.use_custom_env_check.isChecked()
         self.set_data()
+
+    @QtCore.pyqtSlot()
+    def on_browse_modules_button_clicked(self):
+        output = subprocess.check_output("ml-browse --select --name-only --filter=python", shell=True)
+        if output!="":
+            module_list = []
+            append_module = False
+            for line in output.decode("utf-8").split("\n"):
+                if "#MODSTART#" in line.strip():
+                    append_module = True
+                else:
+                    if append_module:
+                        if line.strip()=="":
+                            append_module = False
+                        else:
+                            if len(line)>0:
+                                module_list.append(line.strip())
+
+            self.conda_module_text.setPlainText(",".join(module_list))
+        
