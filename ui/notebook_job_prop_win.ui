@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Form</class>
- <widget class="QDialog" name="Form">
+ <class>notebook_prop_form</class>
+ <widget class="QDialog" name="notebook_prop_form">
   <property name="windowModality">
    <enum>Qt::ApplicationModal</enum>
   </property>
