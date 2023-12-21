@@ -1,7 +1,12 @@
 Configuring compute nodes
 =========================
 
-To be able launch application in the same context as the placeholder job running on the node, a special pam module and script must be used.
+There are two requirements for the compute nodes:
+
+ 1. A user must be able to SSH to the node of the running job. See SLURM documentation (https://slurm.schedmd.com/pam_slurm_adopt.html)
+ 2.  When executing the application on the node it has to be associated with the same context as the placeholder job. 
+
+To solve the second point a special pam module is required to associate the SSH session with the running job. I the following sections a solution to this is configured. It should also be possible to configure this with the **pam_slurm_adopt** module, but it has not been thoroughly tested yet.
 
 Adding pam_exec to /etc/pam.d/sshd
 ----------------------------------

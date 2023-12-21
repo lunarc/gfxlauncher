@@ -44,14 +44,14 @@ Required directories for the Installation
 
 The recommended way of installing GfxLauncher is to create a main directory, **ondemand-dt**, in which we place the launcher scripts as well as the configuration and run-scripts.
 
-+-------------------------------+--------------------------------------------------------------------------------------------+
++----------------------------------------------------------------------------------------------------------------------------+
 | Directory                     | Description                                                                                |
 +-------------------------------+--------------------------------------------------------------------------------------------+
-| .../ondemand-dt/gfxlauncher | Main installation directory of GfxLauncher                                                 |
+| .../ondemand-dt/gfxlauncher   | Main installation directory of GfxLauncher                                                 |
 +-------------------------------+--------------------------------------------------------------------------------------------+
-| .../ondemand-dt/etc         | Launcher configuration files.                                                              |
+| .../ondemand-dt/etc           | Launcher configuration files.                                                              |
 +-------------------------------+--------------------------------------------------------------------------------------------+
-| .../ondemand-dt/run         | Launcher run-scripts with launcher tags.                                                   |
+| .../ondemand-dt/run           | Launcher run-scripts with launcher tags.                                                   |
 +-------------------------------+--------------------------------------------------------------------------------------------+
     
 Setting up a runtime environment

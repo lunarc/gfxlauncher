@@ -1,14 +1,16 @@
 Generating menus
 ================
 
-**gfxmenu** is a special tool for automatically generating a user menu structure and related shortcuts with **gfxlaunch** commands. The main concept is that a script is provided for each application that should run on the backend nodes. **gfxmenu** reads these scripts and automatically creates a user menu structure according to special meta tags in the scripts. 
+To maintain a large number of graphical applications that is using a SLURM backend in different way we need an easy way of creating shortcuts and menus without a lot of manual work. To support this the other part of the GFX Launcher framework is the **gfxmenu** command which is a special tool for automatically generating a user menu structure and related shortcuts with **gfxlaunch** commands. 
 
-The gfxmenu command should be run as the user login in and will create entries in the **.local/** and **.config/** folders of the users home directory. A suitable place for this script is in the **/etc/profile.d** folder. 
+The main concept is to provide a script for each application that is going run on the backend nodes. The scripts contains the commands for how to start the application and a number of special tags for configuring the behavior of the user interface presented by the **gfxlaunch** command. **gfxmenu** reads these scripts and automatically creates a user menu structure according to the tags in the scripts. 
+
+The **gfxmenu** command should be run at user login and creates entries in the **.local/** and **.config/** folders of the users home directory. A suitable place for this script is a runscript in the **/etc/profile.d** folder, calling the **gfxmenu** command (described below). 
 
 Creating start-scripts for use with gfxmenu
 -------------------------------------------
 
-To use the **gfxmenu** tool to generate menus, every application that should be integrated in the menu needs to have a special start script. **gfxmenu** requires the filename of the script to have the form:
+To use the **gfxmenu** tool to generate menus, every application that should be integrated into the menu needs to have a special start script. The filenames of these scripts should be in the form of:
 
 ``[Application name and version].sh``
 
@@ -16,7 +18,7 @@ An example of a script filename is shown below:
 
 ``blender-3.1.0.sh``
 
-The purpose of the script is to launch the application. If the application requires hardware accelerated graphics it is usually started with the **vglrun** command in this script. An example of such a script is shown below:
+The main purpose of the script is to launch the application and provide launcher tags customising the **gfxlaunch** user interface. If the application requires hardware accelerated graphics it is usually started with the **vglrun** command in this script. An example of such a script is shown below:
 
 .. code-block:: bash
 
@@ -28,23 +30,27 @@ The purpose of the script is to launch the application. If the application requi
 
     vglrun /sw/pkg/paraview/5.9.1/bin/paraview
 
-The ``##LDT`` tags are special attributes used by the **gfxmenu** scripts to greate **gfxlaunch** commands in the desktop shortcuts with the proper window title.
+The ``##LDT`` tags are special tags used by the **gfxmenu** scripts to greate **gfxlaunch** commands in the desktop shortcuts with the proper settings and window title.
 
 The following attributes are supported by **gfxmenu**:
 
-+----------------+-------------------------------------------------------------------+
-| Attribute      | Description                                                       |
-+----------------+-------------------------------------------------------------------+
-| ##LDT category | Menu category to add the menu item.                               |
-+----------------+-------------------------------------------------------------------+
-| ##LDT title    | Menu item name. This will also be assigned to the GfxLauncher UI. |
-+----------------+-------------------------------------------------------------------+
-| ##LDT part     | Default partition used when submitting the job                    |
-+----------------+-------------------------------------------------------------------+
-| ##LDT job      | Job type. Currently one of vm, notebook and jupyterlab            |
-+----------------+-------------------------------------------------------------------+
-| ##LDT group    | Partition group to display in user interface (--group)            |
-+----------------+-------------------------------------------------------------------+
++------------------------+-------------------------------------------------------------------+
+| Attribute              | Description                                                       |
++------------------------+-------------------------------------------------------------------+
+| ##LDT category         | Menu category to add the menu item.                               |
++------------------------+-------------------------------------------------------------------+
+| ##LDT title            | Menu item name. This will also be assigned to the GfxLauncher UI. |
++------------------------+-------------------------------------------------------------------+
+| ##LDT part             | Default partition used when submitting the job                    |
++------------------------+-------------------------------------------------------------------+
+| ##LDT job              | Job type. Currently one of vm, notebook and jupyterlab            |
++------------------------+-------------------------------------------------------------------+
+| ##LDT group            | Partition group to display in user interface (--group)            |
++------------------------+-------------------------------------------------------------------+
+| ##LDT feature_disable  | Hide the feature selection combo.                                 |
++------------------------+-------------------------------------------------------------------+
+| ##LDT part_disable     | Hide the partition selection combi                                |
++------------------------+-------------------------------------------------------------------+
 
 When the job attribute is specified the script can be empty except for the attribute declarations.
 
@@ -56,7 +62,7 @@ A script for a Jupyter Lab session is shown below:
 
     ##LDT category = "Development"
     ##LDT title = "Jupyter Lab"
-    ##LDT part = "snic"
+    ##LDT part = "lu"
     ##LDT job = "jupyterlab"
 
 Generating menus and desktop entries
@@ -67,7 +73,7 @@ The **gfxmenu** uses the directories in the /etc/gfxlauncher.conf configuration 
 .. code-block:: bash
 
     $ gfxmenu
-    LUNARC HPC Desktop - User menu tool - Version 0.1
+    LUNARC HPC Desktop - User menu tool - Version 0.9.4
     Written by Jonas Lindemann (jonas.lindemann@lunarc.lu.se)
     Copyright (C) 2018-2023 LUNARC, Lund University
     Using configuration file : /sw/pkg/ondemand-dt/etc/gfxlauncher.conf

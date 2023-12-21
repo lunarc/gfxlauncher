@@ -17,16 +17,17 @@ import sys
 sys.path.insert(0, os.path.abspath('../..'))
 
 
+
 # -- Project information -----------------------------------------------------
 
-project = 'GfxLauncher - A graphical application launcher for SLURM'
+project = 'GFX Launcher - An application launcher framework for SLURM'
 copyright = '2017-2023, Jonas Lindemann'
 author = 'Jonas Lindemann'
 
 # The short X.Y version
-version = '0.9.3'
+version = '0.9.8'
 # The full version, including alpha/beta/rc tags
-release = '0.9.3'
+release = '0.9.8'
 
 
 # -- General configuration ---------------------------------------------------
@@ -67,7 +68,7 @@ master_doc = 'index'
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = 'en'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -89,7 +90,7 @@ html_theme = 'sphinx_material'
 html_theme_options = {
 
     # Set the name of the project to appear in the navigation.
-    'nav_title': 'GfxLauncher',
+    'nav_title': 'GFX Launcher Toolkit',
 
     # Set you GA account ID to enable tracking
     #'google_analytics_account': 'UA-XXXXX',
@@ -99,7 +100,7 @@ html_theme_options = {
     #'base_url': 'https://project.github.io/project',
 
     # Set the color and the accent color
-    'color_primary': 'blue',
+    'color_primary': 'dark-blue',
     'color_accent': 'light-blue',
 
     # Set the repo location to get a badge with stats
@@ -107,7 +108,7 @@ html_theme_options = {
     #'repo_name': 'Project',
 
     # Visible levels of the global TOC; -1 means unlimited
-    'globaltoc_depth': 3,
+    'globaltoc_depth': 2,
     # If False, expand all TOC entries
     'globaltoc_collapse': True,
     # If True, show hidden TOC entries
@@ -128,7 +129,7 @@ html_sidebars = {
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+#html_static_path = ['_static']
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.

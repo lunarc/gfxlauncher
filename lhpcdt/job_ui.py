@@ -24,6 +24,7 @@ This module provide job user interface functionality.
 
 import os
 import getpass
+import subprocess
 from datetime import datetime
 
 from PyQt5 import Qt, QtCore, QtGui, QtWidgets, uic
@@ -35,6 +36,19 @@ from . import settings
 from . import config
 from . import launcher
 from . import conda_utils as cu
+
+class ProcessThread(QtCore.QThread):
+    """Job submission thread"""
+    def __init__(self, cmd):
+        QtCore.QThread.__init__(self)
+
+        self.__cmd = cmd
+        self.output = ""
+
+    def run(self):
+        """Main thread method"""
+
+        self.output = subprocess.check_output(self.__cmd, shell=True)
 
 class JupyterNotebookJobPropWindow(QtWidgets.QDialog):
     """Resource specification window"""
@@ -54,32 +68,91 @@ class JupyterNotebookJobPropWindow(QtWidgets.QDialog):
         self.__use_custom_anaconda_env = False
         self.__custom_anaconda_env = ""
         self.__conda_install = cu.CondaInstall()
+        self.__conda_install.query_packages = False
+        self.__conda_install.on_query_env = self.on_query_env
+        self.__conda_install.on_query_completed = self.on_query_completed
 
-        self.set_data()
+    def showEvent(self, event):
+        """Disable controls and start timer for querying modules"""
+        self.disable_controls()
+        self.timer = QtCore.QTimer()
+        self.timer.timeout.connect(self.on_timeout)
+        self.timer.start(1000)
 
-    def update_controls(self):
-        self.conda_module_text.setText(self.__python_module)
-        self.use_custom_env_check.setChecked(self.__use_custom_anaconda_env)
-        self.conda_env_list.setEnabled(self.__use_custom_anaconda_env)
+    def disable_controls(self):
+        """Disable controls on dialog"""
+        self.setEnabled(False)
 
-    def update_list(self):
-        self.conda_env_list.clear()
+    def enable_controls(self):
+        """Enable all controls on dialog"""
+        self.setEnabled(True)
 
-        for e in self.__conda_install.conda_envs.keys():
-            if "ipykernel" in self.__conda_install.conda_envs[e]["packages"]:
-                self.conda_env_list.addItem(e)
+    def on_timeout(self):
+        """Timeout for starting conda query"""
+        self.timer.stop()
+        self.__conda_install.query()
 
+    def on_query_env(self, conda_env):
+        """Conda query callback for updating UI"""
 
-    def set_data(self):
-        """Assign values to controls"""
+        self.env_status_text.setText(f'Querying environment: {conda_env}')
+        self.update()
+        QtCore.QCoreApplication.processEvents()
+    
+    def on_query_completed(self):
+        """Conda queryt callback when query is completed"""
+
+        self.env_status_text.setText('')
+        self.update()
+        QtCore.QCoreApplication.processEvents()
+        self.enable_controls()
+        self.get_data()
         self.update_controls()
         self.update_list()
 
+    def update_controls(self):
+        """Update user interface controls"""
+
+        if not self.modules_supports_anaconda():
+            self.__use_custom_anaconda_env = False
+            self.conda_env_list.setCurrentIndex(-1)
+            self.conda_env_list.setEnabled(False)
+            self.use_custom_env_check.setEnabled(False)
+        else:
+            self.conda_env_list.setCurrentIndex(-1)
+            self.conda_env_list.setEnabled(True)
+            self.use_custom_env_check.setEnabled(True)
+
+        self.conda_module_text.setPlainText(self.__python_module)
+        self.use_custom_env_check.setChecked(self.__use_custom_anaconda_env)
+        self.conda_env_list.setEnabled(self.__use_custom_anaconda_env)
+        if not self.__use_custom_anaconda_env:
+            self.conda_env_list.setCurrentIndex(-1)
+
+
+    def update_list(self):
+        """Update list box"""
+
+        self.conda_env_list.clear()
+
+        for e in self.__conda_install.conda_envs.keys():
+            self.conda_env_list.addItem(e)
+
+        self.conda_env_list.setCurrentIndex(-1)
+
+    def modules_supports_anaconda(self):
+        """Check for anaconda support"""
+        return "anaconda" in self.__python_module.lower()
+
+    def set_data(self):
+        """Assign values to controls"""
+        self.update_list()
+        self.update_controls()
+
     def get_data(self):
         """Get values from controls"""
-        print("get_data()")
         self.__custom_anaconda_env = self.conda_env_list.currentText()
-        self.__python_module = self.conda_module_text.text()
+        self.__python_module = self.conda_module_text.toPlainText()
         self.__use_custom_anaconda_env = self.use_custom_env_check.isChecked()
 
     @property
@@ -134,3 +207,38 @@ class JupyterNotebookJobPropWindow(QtWidgets.QDialog):
     def on_use_custom_env_check_clicked(self):
         self.__use_custom_anaconda_env = self.use_custom_env_check.isChecked()
         self.set_data()
+
+    @QtCore.pyqtSlot()
+    def on_browse_modules_button_clicked(self):
+        """Start ml-browse as a separate thread"""
+        self.disable_controls()
+
+        self.process_thread = ProcessThread("ml-browse --select --name-only --filter=python")
+        self.process_thread.finished.connect(self.on_process_thread_finished)
+        self.process_thread.start()
+
+    @QtCore.pyqtSlot()
+    def on_process_thread_finished(self):        
+        """Handle output from ml-browse"""
+        self.enable_controls()
+
+        output = self.process_thread.output
+
+        if output!="":
+            module_list = []
+            append_module = False
+            for line in output.decode("utf-8").split("\n"):
+                if "#MODSTART#" in line.strip():
+                    append_module = True
+                else:
+                    if append_module:
+                        if line.strip()=="":
+                            append_module = False
+                        else:
+                            if len(line)>0:
+                                module_list.append(line.strip())
+
+            self.__python_module = ",".join(module_list)
+            self.update_controls()
+            self.update_list()
+        
