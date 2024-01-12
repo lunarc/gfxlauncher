@@ -1,7 +1,7 @@
 #!/bin/env python
 #
 # LUNARC HPC Desktop On-Demand graphical launch tool
-# Copyright (C) 2017-2023 LUNARC, Lund University
+# Copyright (C) 2017-2024 LUNARC, Lund University
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -525,7 +525,17 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.simplified = True
         self.only_submit = self.args.only_submit
         self.job_type = self.args.job_type
-        self.job_name = self.args.job_name
+
+        if self.args.job_name == "lhpc":
+            self.job_name = "lhpc_"+"_".join(self.args.title.strip().lower().split())
+        else:
+            self.job_name = self.args.job_name
+
+        #self.job_name = self.args.job_name
+            
+        print("job name args : ", self.args.job_name)
+        print("job name is   : ", self.job_name)
+        
         self.tasks_per_node = self.args.tasks_per_node
         self.cpus_per_task = self.args.cpus_per_task
         self.no_requeue = self.args.no_requeue
