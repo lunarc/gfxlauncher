@@ -1,0 +1,29 @@
+#!/bin/bash
+
+# Command line launcher for running command line OpenGL applications.
+
+# Check if no arguments were provided
+if [ $# -eq 0 ]; then
+  echo "Error: No arguments provided."
+  echo "Usage: $0 <path_to_script> [additional arguments...]"
+  exit 1
+fi
+
+# Save the current module environment
+ml save
+
+# Resolve the full canonical path of the first argument
+FULL_PATH_BIN=$(readlink --canonicalize "$1")
+FULL_PATH=$(dirname "${FULL_PATH_BIN}")
+EXE_NAME=$(basename "${FULL_PATH_BIN}")
+
+# Shift the first argument so only additional arguments remain
+shift
+
+# Launch the graphics application with the provided arguments
+CMD="ml restore;cd ${FULL_PATH};vglrun ./${EXE_NAME} $@"
+TMP_SCRIPT=$(mktemp -p ${FULL_PATH})
+echo ${CMD} >> ${TMP_SCRIPT}
+chmod +x ${TMP_SCRIPT}
+gfxlaunch --vgl --group ondemand --title "GfxRun" --feature-disable --cmd ${TMP_SCRIPT}
+rm ${TMP_SCRIPT}
