@@ -1,0 +1,82 @@
+#!/bin/bash
+
+# Command line launcher for running command line OpenGL applications.
+
+GFX_GROUP="cpuamd"
+
+# Make sure we use the system Python is used.
+
+OLD_PATH=$PATH
+PATH=/bin:$PATH
+
+OLD_PYTHONPATH=$PYTHONPATH
+PYTHONPATH=/usr/lib64/python3.9/site-packages
+
+OLD_LD_LIBRARY_PATH=$LD_LIBRARY_PATH
+LD_LIBRARY_PATH=/usr/lib64/python3.9/site-packages/PyQt5
+
+CURR_DIR=$(pwd)
+
+# Define the options
+
+TEMP=$(getopt -o s,n --long silent,tasks-per-node: -n 'intrun' -- "$@")
+
+# Exit if the options have not been successfully parsed
+
+if [ $? != 0 ]; then echo "Terminating..." >&2; exit 1; fi
+
+# Note the quotes around `$TEMP`: they are essential!
+
+eval set -- "$TEMP"
+
+# Default values for options
+
+silent=''
+tasks_per_node=1
+
+# Extract options and their arguments into variables
+
+while true; do
+  case "$1" in
+    --silent)
+      silent='--silent'; shift ;;
+    --tasks-per-node)
+      tasks_per_node="$2"; shift 2 ;;
+    --)
+      shift; break ;;
+    *)
+      echo "Internal error!"; exit 1 ;;
+  esac
+done
+
+if [ -z $1 ]; then
+  echo "Error: No arguments provided."
+  echo "Usage: $0 <path_to_script> [additional arguments...]"
+  exit 1
+fi
+
+# Resolve the full canonical path of the first argument
+
+FULL_PATH_BIN=$(readlink --canonicalize "$1")
+FULL_PATH=$(dirname "${FULL_PATH_BIN}")
+EXE_NAME=$(basename "${FULL_PATH_BIN}")
+
+shift
+
+# Launch the graphics application with the provided arguments
+
+if [ -f "$FULL_PATH" ]; then
+  CMD="export PATH=$OLD_PATH;export LD_LIBRARY_PATH=$OLD_LD_LIBRARY_PATH;export PYTHONPATH=$OLD_PYTHONPATH;cd ${FULL_PATH};./${EXE_NAME} $@"
+  TMP_SCRIPT=$(mktemp -p ${FULL_PATH})
+  echo ${CMD} >> ${TMP_SCRIPT}
+  chmod +x ${TMP_SCRIPT}
+  gfxlaunch --group $GFX_GROUP --title "Interactive Local Run" $silent --tasks-per-node=$tasks_per_node --feature-disable --cmd ${TMP_SCRIPT}
+  rm ${TMP_SCRIPT}
+else
+  CMD="export PATH=$OLD_PATH;export LD_LIBRARY_PATH=$OLD_LD_LIBRARY_PATH;export PYTHONPATH=$OLD_PYTHONPATH;cd $CURR_DIR;${EXE_NAME} $@"
+  TMP_SCRIPT=$(mktemp -p ${FULL_PATH})
+  echo ${CMD} >> ${TMP_SCRIPT}
+  chmod +x ${TMP_SCRIPT}
+  gfxlaunch --group $GFX_GROUP --title "Interactive Run" $silent --tasks-per-node=$tasks_per_node --feature-disable --cmd ${TMP_SCRIPT}
+  rm ${TMP_SCRIPT}
+fi
