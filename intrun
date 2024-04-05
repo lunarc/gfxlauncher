@@ -15,6 +15,8 @@ PYTHONPATH=/usr/lib64/python3.9/site-packages
 OLD_LD_LIBRARY_PATH=$LD_LIBRARY_PATH
 LD_LIBRARY_PATH=/usr/lib64/python3.9/site-packages/PyQt5
 
+CURR_DIR=$(pwd)
+
 # Define the options
 
 TEMP=$(getopt -o s,n --long silent,tasks-per-node: -n 'intrun' -- "$@")
@@ -71,7 +73,7 @@ if [ -f "$FULL_PATH" ]; then
   gfxlaunch --group $GFX_GROUP --title "Interactive Local Run" $silent --tasks-per-node=$tasks_per_node --feature-disable --cmd ${TMP_SCRIPT}
   rm ${TMP_SCRIPT}
 else
-  CMD="export PATH=$OLD_PATH;export LD_LIBRARY_PATH=$OLD_LD_LIBRARY_PATH;export PYTHONPATH=$OLD_PYTHONPATH;${EXE_NAME} $@"
+  CMD="export PATH=$OLD_PATH;export LD_LIBRARY_PATH=$OLD_LD_LIBRARY_PATH;export PYTHONPATH=$OLD_PYTHONPATH;cd $CURR_DIR;${EXE_NAME} $@"
   TMP_SCRIPT=$(mktemp -p ${FULL_PATH})
   echo ${CMD} >> ${TMP_SCRIPT}
   chmod +x ${TMP_SCRIPT}
