@@ -1,7 +1,7 @@
 #!/bin/env python
 #
 # LUNARC HPC Desktop On-Demand graphical launch tool
-# Copyright (C) 2017-2023 LUNARC, Lund University
+# Copyright (C) 2017-2024 LUNARC, Lund University
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -29,19 +29,20 @@ import sys
 import getpass
 import argparse
 import time
+import logging
 
 from lhpcdt import integration as it
 from lhpcdt import scripts as scr
 from lhpcdt import config
 
 gfxmenu_copyright = """LUNARC HPC Desktop On-Demand - Version %s
-Copyright (C) 2017-2023 LUNARC, Lund University
+Copyright (C) 2017-2024 LUNARC, Lund University
 This program comes with ABSOLUTELY NO WARRANTY; for details see LICENSE.
 This is free software, and you are welcome to redistribute it
 under certain conditions; see LICENSE for details.
 """
 gfxmenu_copyright_short = """LUNARC HPC Desktop On-Demand - %s"""
-gfxmenu_version = "0.9.4"
+gfxmenu_version = "0.9.10"
 
 if __name__ == "__main__":
 
@@ -51,6 +52,7 @@ if __name__ == "__main__":
     parser.add_argument("--no-launcher", help="Generate menus and scripts with direct launch.", action="store_true")
     parser.add_argument("--config", help="Show configuration", action="store_true")
     parser.add_argument("--silent", help="Run without output", action="store_true")
+    parser.add_argument("--verbose", help="Verbose logging", action="store_true")
     args = parser.parse_args()
 
     # ----- Show version information
@@ -58,9 +60,12 @@ if __name__ == "__main__":
     if not args.silent:
         print(("LUNARC HPC Desktop - User menu tool - Version %s" % gfxmenu_version))
         print("Written by Jonas Lindemann (jonas.lindemann@lunarc.lu.se)")
-        print("Copyright (C) 2018-2023 LUNARC, Lund University")
+        print("Copyright (C) 2018-2024 LUNARC, Lund University")
 
     # ----- Read configuration
+
+    if args.verbose:
+        logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S', level=logging.DEBUG)
 
     cfg = config.GfxConfig.create()
 

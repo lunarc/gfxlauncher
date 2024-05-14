@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
-import os, sys, time
+import os, sys, time, logging
+
+from lhpcdt import config
 
 class XmlBase:
     def __init__(self):
@@ -187,10 +189,21 @@ class UserMenus(XmlBase):
     def __init__(self, dryrun=False):
         super().__init__()
         self.__menus = []
-        self.__menu_location = "~/.config/menus/applications-merged"
-        self.__app_location = "~/.local/share/applications"
-        self.__dir_location = "~/.local/share/desktop-directories"
-        self.__ondemand_location = "~/.local/share/ondemand-dt"
+
+        # Default locations
+
+        cfg = config.GfxConfig.create()
+
+        self.__menu_location = cfg.menu_location
+        self.__app_location = cfg.app_location
+        self.__dir_location = cfg.dir_location
+        self.__ondemand_location = cfg.ondemand_location
+
+        # self.__menu_location = "~/.config/menus/applications-merged"
+        # self.__app_location = "~/.local/share/applications"
+        # self.__dir_location = "~/.local/share/desktop-directories"
+        # self.__ondemand_location = "~/.local/share/ondemand-dt"
+
         self.__menu_filename = ""
 
         self.__name = "On-Demand applications"
@@ -202,7 +215,6 @@ class UserMenus(XmlBase):
 
         self.__menu_name_prefix = "On-Demand "
         self.__desktop_entry_prefix = "gfx-"
-
 
         self.__resolve_locations()
         self.__check_directories()
@@ -229,6 +241,7 @@ class UserMenus(XmlBase):
         self.__abs_ondemand_location = os.path.abspath(os.path.expanduser(self.__ondemand_location))
 
     def __check_directories(self):
+        logging.debug("Checking directories")
         if not os.path.exists(self.abs_app_location):
             os.makedirs(self.abs_app_location)
         if not os.path.exists(self.abs_dir_location):
@@ -239,20 +252,24 @@ class UserMenus(XmlBase):
             os.makedirs(self.abs_ondemand_location)
 
     def __create_links(self):
+        logging.debug("Creating links")
         for prefix in self.__desktop_prefixes:
             link_path = self.abs_menu_location.replace("applications-merged", prefix+"-applications-merged")
             if not os.path.exists(link_path):
                 os.symlink(self.abs_menu_location, link_path)
                         
     def __update_filenames(self):
+        logging.debug("Updating filenames")
         self.__menu_filename = os.path.join(self.__abs_menu_location, "applications.menu")
 
     def __update(self):
+        logging.debug("Updating")
         self.__resolve_locations()
         self.__check_directories()
         self.__update_filenames()
 
     def add_menu(self, menu):
+        logging.debug(f"Adding menu {menu.name}")
         self.__menus.append(menu)
 
     def add_scripts(self, script_db):
@@ -260,10 +277,14 @@ class UserMenus(XmlBase):
 
         for category, scripts in script_db.items():
 
+            logging.debug(f"Adding category {category}")
+
             menu = Menu(self)
             menu.name = category
          
             for script in scripts:
+                logging.debug(f"Adding script {script.variables['title']}")
+                logging.debug(f"\t cmd = {script.launch_cmd}")
                 desktop_entry = DesktopEntry()
                 desktop_entry.name = script.variables["title"]
                 desktop_entry.exec = script.launch_cmd
@@ -283,6 +304,8 @@ class UserMenus(XmlBase):
         dir_entries = None
 
         with open(self.__menu_filename, "w") as f: 
+
+            logging.debug(f"Writing menu file {self.__menu_filename}")
 
             self.write_header(f)
 
@@ -343,6 +366,7 @@ class UserMenus(XmlBase):
                 with open(abs_filename, "w") as fde:
                     fde.write(str(dir_entry))
 
+        logging.debug(f"Updating timestamp {self.time_stamp_filename}")
         with open(self.time_stamp_filename, "w") as f:
             f.write(str(time.time()))
 
