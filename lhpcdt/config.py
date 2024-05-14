@@ -308,10 +308,10 @@ class GfxConfig(object):
             self.menu_prefix = self._config_get(config, "menus", "menu_prefix").replace('"', '')
             self.desktop_entry_prefix = self._config_get(config, "menus", "desktop_entry_prefix").replace('"', '')
 
-            self.menu_location = self._config_get(config, "menus", "menu_location")
-            self.app_location = self._config_get(config, "menus", "app_location")
-            self.dir_location = self._config_get(config, "menus", "dir_location")
-            self.ondemand_location = self._config_get(config, "menus", "ondemand_location")
+            self.menu_location = self._config_get(config, "menus", "menu_location", self.menu_location)
+            self.app_location = self._config_get(config, "menus", "app_location", self.app_location)
+            self.dir_location = self._config_get(config, "menus", "dir_location", self.dir_location)
+            self.ondemand_location = self._config_get(config, "menus", "ondemand_location", self.ondemand_location)
 
             self.applications_direct_dir = self._config_get(
                 config, "menus-direct", "applications_dir")
