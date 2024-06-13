@@ -215,6 +215,7 @@ class UserMenus(XmlBase):
 
         self.__menu_name_prefix = "On-Demand "
         self.__desktop_entry_prefix = "gfx-"
+        self.__menu_name_no_launch_suffix = " [Desktop]"
 
         self.__resolve_locations()
         self.__check_directories()
@@ -286,7 +287,10 @@ class UserMenus(XmlBase):
                 logging.debug(f"Adding script {script.variables['title']}")
                 logging.debug(f"\t cmd = {script.launch_cmd}")
                 desktop_entry = DesktopEntry()
-                desktop_entry.name = script.variables["title"]
+                if script.no_launcher:
+                    desktop_entry.name = script.variables["title"] + self.__menu_name_no_launch_suffix
+                else:
+                    desktop_entry.name = script.variables["title"]
                 desktop_entry.exec = script.launch_cmd
                 desktop_entry.changed = script.changed
                 menu.add_entry(desktop_entry)
@@ -440,6 +444,14 @@ class UserMenus(XmlBase):
     @desktop_entry_prefix.setter
     def desktop_entry_prefix(self, value):
         self.__desktop_entry_prefix = value
+
+    @property
+    def menu_name_no_launch_suffix(self):
+        return self.__menu_name_no_launch_suffix
+    
+    @menu_name_no_launch_suffix.setter
+    def menu_name_no_launch_suffix(self, value):
+        self.__menu_name_no_launch_suffix = value
         
 class Menu:
     def __init__(self, parent):

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os, sys, datetime
+import os, sys, datetime, logging
 
 from . import integration
 
@@ -26,6 +26,7 @@ class RunScript:
         ##LDT vgl = "yes"
         ##LDT part_disable = "yes"
         ##LDT feature_disable = "yes"
+        ##LDT direct_launch = "yes"
 
         self.__variables = {}
 
@@ -78,6 +79,12 @@ class RunScript:
             if self.__variables["feature_disable"] == "yes":
                 cmd_options += ' --feature-disable'
 
+        if "no_launcher" in self.__variables:
+            if self.__variables["no_launcher"] == "yes":
+                self.__no_launcher = True
+            else:
+                self.__no_launcher = False
+
 
         cmd_options += " --cmd %s" % self.filename
 
@@ -116,6 +123,10 @@ class RunScript:
     @property
     def parse_failed(self):
         return self.__parse_failed
+    
+    @property
+    def no_launcher(self):
+        return self.__no_launcher
 
 class RunScripts:
     def __init__(self, script_dir=""):
@@ -124,13 +135,15 @@ class RunScripts:
         self.__script_dict = {}
 
 
-    def parse(self, dryrun=False, no_launcher=False):
+    def parse(self, dryrun=False):
 
         """Parse script directory for run-scripts"""
 
         #cfg = config.GfxConfig.create()
         #script_dir = cfg.script_dir
         script_dir = self.__script_dir
+
+        logging.debug("Parsing script directory: %s" % script_dir)
 
         self.__script_dict = {}
 
@@ -154,7 +167,9 @@ class RunScripts:
 
                 server_filename = os.path.basename(filename)
 
-                if no_launcher:
+                use_launcher = not run_script.no_launcher
+
+                if run_script.no_launcher:
                     slurm_client_filename = 'run_%s_rviz-direct.sh' % app_name
                 else:
                     slurm_client_filename = 'run_%s_rviz-slurm.sh' % app_name
@@ -198,7 +213,7 @@ class RunScripts:
 
 if __name__ == "__main__":
 
-    run_scripts = RunScripts("/home/lindemann/Development/gfxlauncher/tests/scripts")
+    run_scripts = RunScripts("/home/lindemann/Development/gfxlauncher/scripts")
     run_scripts.parse()
 
     script_db = run_scripts.database
