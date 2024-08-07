@@ -149,7 +149,7 @@ class ResourceSpecWindow(QtWidgets.QWidget):
         if self.specifyMemoryCheck.isChecked():
             self.memoryPerCpuEdit.setEnabled(True)
             self.memoryPerCpuEdit.setVisible(True)
-            self.memoryPerCpuEdit.setText(str(self.default_job.memory))
+            self.memoryPerCpuEdit.setText(str(self.parent.default_memory))
         else:
             self.memoryPerCpuEdit.setEnabled(False)
             self.memoryPerCpuEdit.setVisible(False)
@@ -160,7 +160,7 @@ class ResourceSpecWindow(QtWidgets.QWidget):
         if self.specifyTasksPerNodeCheck.isChecked():
             self.tasksPerNodeSpin.setEnabled(True)
             self.tasksPerNodeSpin.setVisible(True)
-            self.tasksPerNodeSpin.setValue(self.default_job.tasksPerNode)
+            self.tasksPerNodeSpin.setValue(self.parent.default_tasks)
         else:
             self.tasksPerNodeSpin.setEnabled(False)
             self.tasksPerNodeSpin.setVisible(False)

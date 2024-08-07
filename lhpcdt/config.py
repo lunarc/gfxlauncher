@@ -142,6 +142,10 @@ class GfxConfig(object):
         self.part_groups = {}
         self.part_groups_defaults = {}
 
+        self.default_tasks = 1
+        self.default_memory = 3000
+        self.default_exclusive = False
+
 
     def print_config(self):
         """Print configuration"""
@@ -413,5 +417,27 @@ class GfxConfig(object):
         except configparser.Error as e:
             self.print_error(e)
             return False
+
+        try:
+            tasks = self._config_get(
+                config, "slurm", "default_tasks", "1")
+            memory = self._config_get(
+                config, "slurm", "default_memory", "3000")
+            exclusive = self._config_get(
+                config, "slurm", "default_exclusive", "no")
+            
+            if exclusive == "yes":
+                exclusive = True
+            else:
+                exclusive = False
+
+            self.default_tasks = int(tasks)
+            self.default_memory = int(memory)
+            self.default_exclusive = exclusive
+                  
+        except configparser.Error as e:
+            self.print_error(e)
+            return False
+
 
         return True
