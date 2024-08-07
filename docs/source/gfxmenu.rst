@@ -16,7 +16,7 @@ To use the **gfxmenu** tool to generate menus, every application that should be 
 
 An example of a script filename is shown below:
 
-``blender-3.1.0.sh``
+``blender-3.5.1.sh``
 
 The main purpose of the script is to launch the application and provide launcher tags customising the **gfxlaunch** user interface. If the application requires hardware accelerated graphics it is usually started with the **vglrun** command in this script. An example of such a script is shown below:
 
@@ -51,6 +51,8 @@ The following attributes are supported by **gfxmenu**:
 +------------------------+-------------------------------------------------------------------+
 | ##LDT part_disable     | Hide the partition selection combi                                |
 +------------------------+-------------------------------------------------------------------+
+| ##LDT no_launcher      | Creates a direct launch of the script, bypassing the backend (yes)|
++------------------------+-------------------------------------------------------------------+
 
 When the job attribute is specified the script can be empty except for the attribute declarations.
 
@@ -64,6 +66,10 @@ A script for a Jupyter Lab session is shown below:
     ##LDT title = "Jupyter Lab"
     ##LDT part = "lu"
     ##LDT job = "jupyterlab"
+
+.. note::
+
+    The **gfxmenu** the no_launcher attribute is used to create a direct launch of the script, bypassing the backend. This is useful for applications that do not require a backend job to be started. However, as the gnome shell is launched early it is not certain that module commands are available. The start scripts needs to set the paths to the applications manually.
 
 Generating menus and desktop entries
 ------------------------------------

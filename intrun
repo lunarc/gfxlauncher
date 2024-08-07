@@ -19,35 +19,36 @@ CURR_DIR=$(pwd)
 
 # Define the options
 
-TEMP=$(getopt -o s,n --long silent,tasks-per-node: -n 'intrun' -- "$@")
+#TEMP=$(getopt -o s,n --long silent,tasks-per-node,dbus: -n 'intrun' -- "$@")
 
 # Exit if the options have not been successfully parsed
 
-if [ $? != 0 ]; then echo "Terminating..." >&2; exit 1; fi
+#if [ $? != 0 ]; then echo "Terminating..." >&2; exit 1; fi
 
 # Note the quotes around `$TEMP`: they are essential!
 
-eval set -- "$TEMP"
+#eval set -- "$TEMP"
 
-# Default values for options
+# Parse options meant for the script itself
 
 silent=''
 tasks_per_node=1
+dbus=''
+
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --silent) silent='--silent'; shift ;;
+        --dbus) dbus='--dbus'; shift ;;
+        --tasks-per-node) tasks_per_node="$2"; shift 2 ;;
+        --) shift; break ;; # Explicitly split script options from command
+        *) echo "Unknown option: $1"; exit 1 ;;
+    esac
+done
+
+# Default values for options
 
 # Extract options and their arguments into variables
 
-while true; do
-  case "$1" in
-    --silent)
-      silent='--silent'; shift ;;
-    --tasks-per-node)
-      tasks_per_node="$2"; shift 2 ;;
-    --)
-      shift; break ;;
-    *)
-      echo "Internal error!"; exit 1 ;;
-  esac
-done
 
 if [ -z $1 ]; then
   echo "Error: No arguments provided."
@@ -63,17 +64,22 @@ EXE_NAME=$(basename "${FULL_PATH_BIN}")
 
 shift
 
+if [ ! -z $dbus ]; then
+  DBUS_LAUNCH_CMD="dbus-launch --exit-with-session"
+  DBUS_CLEANUP_CMD="killall dbus-launch" 
+fi
+
 # Launch the graphics application with the provided arguments
 
 if [ -f "$FULL_PATH" ]; then
-  CMD="export PATH=$OLD_PATH;export LD_LIBRARY_PATH=$OLD_LD_LIBRARY_PATH;export PYTHONPATH=$OLD_PYTHONPATH;cd ${FULL_PATH};./${EXE_NAME} $@"
+  CMD="export PATH=$OLD_PATH;export LD_LIBRARY_PATH=$OLD_LD_LIBRARY_PATH;export PYTHONPATH=$OLD_PYTHONPATH;cd ${FULL_PATH};${DBUS_LAUNCH_CMD} ./${EXE_NAME} $@;${DBUS_CLEANUP_CMD}"
   TMP_SCRIPT=$(mktemp -p ${FULL_PATH})
   echo ${CMD} >> ${TMP_SCRIPT}
   chmod +x ${TMP_SCRIPT}
   gfxlaunch --group $GFX_GROUP --title "Interactive Local Run" $silent --tasks-per-node=$tasks_per_node --feature-disable --cmd ${TMP_SCRIPT}
   rm ${TMP_SCRIPT}
 else
-  CMD="export PATH=$OLD_PATH;export LD_LIBRARY_PATH=$OLD_LD_LIBRARY_PATH;export PYTHONPATH=$OLD_PYTHONPATH;cd $CURR_DIR;${EXE_NAME} $@"
+  CMD="export PATH=$OLD_PATH;export LD_LIBRARY_PATH=$OLD_LD_LIBRARY_PATH;export PYTHONPATH=$OLD_PYTHONPATH;cd $CURR_DIR;${DBUS_LAUNCH_CMD} ${EXE_NAME} $@;${DBUS_CLEANUP_CMD}"
   TMP_SCRIPT=$(mktemp -p ${FULL_PATH})
   echo ${CMD} >> ${TMP_SCRIPT}
   chmod +x ${TMP_SCRIPT}

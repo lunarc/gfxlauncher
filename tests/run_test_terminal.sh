@@ -1,1 +1,1 @@
-../gfxlaunch.py --title "Terminal" --partition lvis --account lvis-test --exclusive --cmd gnome-terminal --simplified
+../gfxlaunch.py --title "Terminal" --partition lu48 --account lu-test --cmd "xterm -fa 'Monospace' -fs 12"

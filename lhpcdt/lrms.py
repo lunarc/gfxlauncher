@@ -186,6 +186,7 @@ class Slurm(object):
         self.partitions = []
         self.node_lists = {}
         self.verbose = True
+        self.job_output_dir = os.path.join(os.path.expanduser("~"), ".lhpc")
 
     def __include_part(self, part, exclude_set):
         include = True
@@ -411,8 +412,11 @@ class Slurm(object):
     def job_output(self, job):
         """Query job output"""
         if self.is_running(job):
-            output_filename = os.path.join(
-                os.environ["HOME"], "slurm-%d.out" % job.id)
+            #output_filename = os.path.join(
+            #    os.environ["HOME"], "slurm-%d.out" % job.id)
+
+            output_filename = os.path.join(self.job_output_dir, "lhpcdt-%d.out" % job.id)
+            
             if os.path.exists(output_filename):
                 output_file = open(output_filename, "r")
                 output = output_file.readlines()

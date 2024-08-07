@@ -1,7 +1,7 @@
 #!/bin/env python
 #
 # LUNARC HPC Desktop On-Demand graphical launch tool
-# Copyright (C) 2017-2023 LUNARC, Lund University
+# Copyright (C) 2017-2024 LUNARC, Lund University
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -101,7 +101,12 @@ class GfxConfig(object):
         self.directories_direct_dir = "/home/bmjl/test-menu/share/desktop-directories"
         self.menu_direct_dir = "/home/bmjl/test-menu/etc/xdg/menus/applications-merged"
         self.menu_direct_filename = "Lunarc-On-Demand-Direct.menu"
-        
+
+        self.menu_location = "~/.config/menus/applications-merged"
+        self.app_location = "~/.local/share/applications"
+        self.dir_location = "~/.local/share/desktop-directories"
+        self.ondemand_location = "~/.local/share/ondemand-dt"
+
         self.menu_prefix = "LUNARC - "
         self.desktop_entry_prefix = "gfx-"
         
@@ -136,6 +141,10 @@ class GfxConfig(object):
 
         self.part_groups = {}
         self.part_groups_defaults = {}
+
+        self.default_tasks = 1
+        self.default_memory = 3000
+        self.default_exclusive = False
 
 
     def print_config(self):
@@ -176,18 +185,24 @@ class GfxConfig(object):
         print("Menu settings")
         print("")
 
-        print("application_dir = %s" % self.applications_dir)
-        print("directories_dir = %s" % self.directories_dir)
-        print("menu_dir = %s" % self.menu_dir)
-        print("menu_filename = %s" % self.menu_filename)
-
-        print("application_direct_dir = %s" % self.applications_dir)
-        print("directories_direct_dir = %s" % self.directories_dir)
-        print("menu_direct_dir = %s" % self.menu_dir)
-        print("menu_direct_filename = %s" % self.menu_filename)
+        print("menu_location = %s" % self.menu_location)
+        print("app_location = %s" % self.app_location)
+        print("dir_location = %s" % self.dir_location)
+        print("ondemand_location = %s" % self.ondemand_location)                
 
         print("menu_prefix = '%s'" % self.menu_prefix)
         print("desktop_entry_prefix = %s" % self.desktop_entry_prefix)
+
+        # print("application_dir = %s" % self.applications_dir)
+        # print("directories_dir = %s" % self.directories_dir)
+        # print("menu_dir = %s" % self.menu_dir)
+        # print("menu_filename = %s" % self.menu_filename)
+
+        # print("application_direct_dir = %s" % self.applications_dir)
+        # print("directories_direct_dir = %s" % self.directories_dir)
+        # print("menu_direct_dir = %s" % self.menu_dir)
+        # print("menu_direct_filename = %s" % self.menu_filename)
+
 
         print("")
         print("VGL settings")
@@ -297,6 +312,11 @@ class GfxConfig(object):
             self.menu_prefix = self._config_get(config, "menus", "menu_prefix").replace('"', '')
             self.desktop_entry_prefix = self._config_get(config, "menus", "desktop_entry_prefix").replace('"', '')
 
+            self.menu_location = self._config_get(config, "menus", "menu_location", self.menu_location)
+            self.app_location = self._config_get(config, "menus", "app_location", self.app_location)
+            self.dir_location = self._config_get(config, "menus", "dir_location", self.dir_location)
+            self.ondemand_location = self._config_get(config, "menus", "ondemand_location", self.ondemand_location)
+
             self.applications_direct_dir = self._config_get(
                 config, "menus-direct", "applications_dir")
             self.directories_direct_dir = self._config_get(
@@ -397,5 +417,27 @@ class GfxConfig(object):
         except configparser.Error as e:
             self.print_error(e)
             return False
+
+        try:
+            tasks = self._config_get(
+                config, "slurm", "default_tasks", "1")
+            memory = self._config_get(
+                config, "slurm", "default_memory", "3000")
+            exclusive = self._config_get(
+                config, "slurm", "default_exclusive", "no")
+            
+            if exclusive == "yes":
+                exclusive = True
+            else:
+                exclusive = False
+
+            self.default_tasks = int(tasks)
+            self.default_memory = int(memory)
+            self.default_exclusive = exclusive
+                  
+        except configparser.Error as e:
+            self.print_error(e)
+            return False
+
 
         return True

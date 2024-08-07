@@ -213,7 +213,7 @@ class JupyterNotebookJobPropWindow(QtWidgets.QDialog):
         """Start ml-browse as a separate thread"""
         self.disable_controls()
 
-        self.process_thread = ProcessThread("ml-browse --select --name-only --filter=python")
+        self.process_thread = ProcessThread("ml-browse --select --name-only --filter=%s" %(self.__python_module))
         self.process_thread.finished.connect(self.on_process_thread_finished)
         self.process_thread.start()
 
@@ -223,6 +223,8 @@ class JupyterNotebookJobPropWindow(QtWidgets.QDialog):
         self.enable_controls()
 
         output = self.process_thread.output
+
+        print(output.decode("utf-8"))
 
         if output!="":
             module_list = []
@@ -238,7 +240,8 @@ class JupyterNotebookJobPropWindow(QtWidgets.QDialog):
                             if len(line)>0:
                                 module_list.append(line.strip())
 
-            self.__python_module = ",".join(module_list)
-            self.update_controls()
-            self.update_list()
+            if len(module_list)>0:
+                self.__python_module = ",".join(module_list)
+                self.update_controls()
+                self.update_list()
         

@@ -42,6 +42,7 @@ from . import settings
 from . import config
 from . import resource_win
 from . import conda_utils as cu
+from . import user_config
 
 from subprocess import Popen, PIPE, STDOUT
 
@@ -191,6 +192,11 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         if not self.config.is_ok:
             QtWidgets.QMessageBox.information(self, 'Error', self.config.errors)
             sys.exit(1)
+
+        # Set up user configuration
+
+        self.user_config = user_config.UserConfig()
+        self.user_config.setup()
 
         # Parse partition and feature excludes
 
@@ -507,6 +513,10 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.group = ""
         self.silent = False
         self.browser_command = self.config.browser_command
+
+        self.default_memory = self.config.default_memory
+        self.default_exclusive = self.config.default_exclusive
+        self.default_tasks = self.config.default_tasks
 
     def get_defaults_from_cmdline(self):
         """Get properties from command line"""
@@ -843,6 +853,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
         self.job.account = str(self.projectCombo.currentText())
         self.job.partition = str(self.selected_part)
         self.job.time = str(self.time)
+        self.job.output = self.user_config.job_output_file_path
         if self.job_type != "vm":
             self.job.memory = int(self.memory)
             self.job.nodeCount = int(self.count)
@@ -1118,6 +1129,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
             job.account = str(self.projectCombo.currentText())
             job.partition = str(self.selected_part)
             job.time = str(self.time)
+            job.output = self.user_config.job_output_file_path
             if self.job_type != "vm":
                 job.memory = int(self.memory)
                 job.nodeCount = int(self.count)

@@ -77,6 +77,8 @@ class Job(object):
 
         self.processing_description = ""
 
+        self.output = ""
+
         self._create_script()
 
     def add_constraint(self, constraint):
@@ -116,6 +118,9 @@ class Job(object):
         else:
             if self.partition != "":
                 self.add_option("-p %s" % self.partition)
+
+        if self.output != "":
+            self.add_option("--output=%s" % self.output)
 
         if self.nodeCount >= 0:
             self.add_option("-N %d" % self.nodeCount)
