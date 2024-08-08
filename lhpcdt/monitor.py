@@ -404,9 +404,9 @@ class SessionWindow(QtWidgets.QMainWindow):
 
         self.queue.update()
 
-        print(self.queue.jobs)
-        print(self.queue.max_nodes)
-        print(self.queue.max_cpus)
+        #print(self.queue.jobs)
+        #print(self.queue.max_nodes)
+        #print(self.queue.max_cpus)
 
         # Get user information
 
