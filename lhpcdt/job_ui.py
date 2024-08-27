@@ -36,6 +36,7 @@ from . import settings
 from . import config
 from . import launcher
 from . import conda_utils as cu
+from . import ui_notebook_job_prop_win as ui
 
 class ProcessThread(QtCore.QThread):
     """Job submission thread"""
@@ -50,18 +51,16 @@ class ProcessThread(QtCore.QThread):
 
         self.output = subprocess.check_output(self.__cmd, shell=True)
 
-class JupyterNotebookJobPropWindow(QtWidgets.QDialog):
+class JupyterNotebookJobPropWindow(QtWidgets.QDialog, ui.Ui_notebook_prop_form):
     """Resource specification window"""
 
     def __init__(self, parent=None):
         """Resource window constructor"""
 
         super(QtWidgets.QDialog, self).__init__(parent, QtCore.Qt.Window)
+        self.setupUi(self)
 
         self.tool_path = settings.LaunchSettings.create().tool_path
-        ui_path = os.path.join(self.tool_path, "ui")
-
-        uic.loadUi(os.path.join(ui_path, "notebook_job_prop_win.ui"), self)
 
         self.parent = parent
         self.__python_module = "Anaconda3"

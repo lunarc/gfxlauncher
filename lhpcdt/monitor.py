@@ -29,6 +29,7 @@ from . import remote
 from . import settings
 from . import config
 from . import resources
+from . import ui_session_manager as ui
 
 from subprocess import Popen, PIPE, STDOUT
 
@@ -353,24 +354,17 @@ class QueueTableModel(QtCore.QAbstractTableModel):
         return 11
 
 
-class SessionWindow(QtWidgets.QMainWindow):
+class SessionWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
     """Session Window class"""
 
     def __init__(self, parent=None):
         super(SessionWindow, self).__init__(parent)
+        self.setupUi(self)
 
         self.slurm = lrms.Slurm()
         self.queue = lrms.Queue()
 
-        #uic.loadUi("../session_manager.ui", self)
-
         self.tool_path = settings.LaunchSettings.create().tool_path
-
-        ui_path = os.path.join(self.tool_path, "ui")
-
-        # Load appropriate user interface
-
-        uic.loadUi(os.path.join(ui_path, "session_manager.ui"), self)
 
         self.refresh_timer = QtCore.QTimer()
         self.refresh_timer.setInterval(15000)

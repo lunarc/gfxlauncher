@@ -34,14 +34,16 @@ from . import remote
 from . import settings
 from . import config
 from . import launcher
+from . import ui_resource_specification as ui
 
-class ResourceSpecWindow(QtWidgets.QWidget):
+class ResourceSpecWindow(QtWidgets.QWidget, ui.Ui_resourceWindow):
     """Resource specification window"""
 
     def __init__(self, parent=None):
         """Resource window constructor"""
 
         super(ResourceSpecWindow, self).__init__(parent, QtCore.Qt.Window)
+        self.setupUi(self)
 
         self.default_job = jobs.Job()
         self.default_job.memory = 3200
@@ -52,9 +54,6 @@ class ResourceSpecWindow(QtWidgets.QWidget):
         self.old_tasks_per_node = -1
 
         self.tool_path = settings.LaunchSettings.create().tool_path
-        ui_path = os.path.join(self.tool_path, "ui")
-
-        uic.loadUi(os.path.join(ui_path, "resource_specification.ui"), self)
 
         self.parent = parent
 

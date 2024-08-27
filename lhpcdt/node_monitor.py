@@ -29,6 +29,7 @@ from . import remote
 from . import settings
 from . import config
 from . import resources
+from . import ui_node_window as ui  
 
 from subprocess import Popen, PIPE, STDOUT
 
@@ -282,23 +283,16 @@ class NodeTableModel(QtCore.QAbstractTableModel):
         return len(self.__headers)
 
 
-class NodeWindow(QtWidgets.QMainWindow):
+class NodeWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
     """Session Window class"""
 
     def __init__(self, parent=None):
         super(NodeWindow, self).__init__(parent)
+        self.setupUi(self)
 
         self.slurm = lrms.Slurm()
 
-        #uic.loadUi("../session_manager.ui", self)
-
         self.tool_path = settings.LaunchSettings.create().tool_path
-
-        ui_path = os.path.join(self.tool_path, "ui")
-
-        # Load appropriate user interface
-
-        uic.loadUi(os.path.join(ui_path, "node_window.ui"), self)
 
         self.refresh_timer = QtCore.QTimer()
         self.refresh_timer.setInterval(15000)

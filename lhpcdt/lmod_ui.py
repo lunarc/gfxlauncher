@@ -7,6 +7,7 @@ from PyQt5 import Qt, QtCore, QtGui, QtWidgets, uic
 from . import lmod
 from . import settings
 from . import config
+from . import ui_lmod_query as ui
 
 from subprocess import Popen, PIPE, STDOUT
 
@@ -15,19 +16,16 @@ def execute_with_output(command):
     output, error = process.communicate()
     return output
 
-class LmodQueryWindow(QtWidgets.QWidget):
+class LmodQueryWindow(QtWidgets.QWidget, ui.Ui_LmodQueryWindow):
     """Resource specification window"""
 
     def __init__(self, parent=None):
         """Resource window constructor"""
 
         super(LmodQueryWindow, self).__init__(parent, QtCore.Qt.Window)
+        self.setupUi(self)
 
         self.tool_path = settings.LaunchSettings.create().tool_path
-        ui_path = os.path.join(self.tool_path, "ui")
-
-        uic.loadUi(os.path.join(ui_path, "lmod_query.ui"), self)
-        #uic.loadUi(os.path.join("../ui", "lmod_query.ui"), self)
 
         self.config = config.GfxConfig.create()
 

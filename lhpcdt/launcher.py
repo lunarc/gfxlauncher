@@ -43,6 +43,7 @@ from . import config
 from . import resource_win
 from . import conda_utils as cu
 from . import user_config
+from . import ui_main_window_simplified as ui
 
 from subprocess import Popen, PIPE, STDOUT
 
@@ -145,12 +146,14 @@ class TunnelThread(QtCore.QThread):
         while self.connected and self.ssh_tunnel.is_active():
             time.sleep(1)
 
-class GfxLaunchWindow(QtWidgets.QMainWindow):
+class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
     """Main launch window user interface"""
 
     def __init__(self, parent=None):
         """Launch window constructor"""
         super(GfxLaunchWindow, self).__init__(parent)
+
+        self.setupUi(self)
 
         self.__console_output = sys.stdout
         self.__redirect_thread = None
@@ -176,14 +179,6 @@ class GfxLaunchWindow(QtWidgets.QMainWindow):
 
         self.reconnect_nb_button = None
         self.reconnect_vm_button = None
-
-        # Where can we find the user interface definitions (ui-files)
-
-        ui_path = os.path.join(self.tool_path, "ui")
-
-        # Load appropriate user interface
-
-        uic.loadUi(os.path.join(ui_path, "mainwindow_simplified.ui"), self)
 
         # Read configuration
 
