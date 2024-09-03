@@ -31,8 +31,8 @@ This program comes with ABSOLUTELY NO WARRANTY; for details see LICENSE.
 This is free software, and you are welcome to redistribute it
 under certain conditions; see LICENSE for details.
 """
-gfxlaunch_copyright_short = """LUNARC HPC Desktop On-Demand GfxUsage - %s"""
-gfxlaunch_version = "0.9.11"
+gfxlaunch_copyright_short = """LUNARC HPC Desktop On-Demand GfxNodes - %s"""
+gfxlaunch_version = "0.9.13"
 
 # --- Fix search path for tool
 

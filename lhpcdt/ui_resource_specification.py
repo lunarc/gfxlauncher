@@ -1,0 +1,93 @@
+# -*- coding: utf-8 -*-
+
+# Form implementation generated from reading ui file 'resource_specification.ui'
+#
+# Created by: PyQt5 UI code generator 5.9.2
+#
+# WARNING! All changes made in this file will be lost!
+
+from PyQt5 import QtCore, QtGui, QtWidgets
+
+class Ui_resourceWindow(object):
+    def setupUi(self, resourceWindow):
+        resourceWindow.setObjectName("resourceWindow")
+        resourceWindow.resize(497, 172)
+        self.verticalLayout = QtWidgets.QVBoxLayout(resourceWindow)
+        self.verticalLayout.setObjectName("verticalLayout")
+        self.gridLayout = QtWidgets.QGridLayout()
+        self.gridLayout.setSizeConstraint(QtWidgets.QLayout.SetMinAndMaxSize)
+        self.gridLayout.setVerticalSpacing(7)
+        self.gridLayout.setObjectName("gridLayout")
+        self.jobNameEdit = QtWidgets.QLineEdit(resourceWindow)
+        self.jobNameEdit.setObjectName("jobNameEdit")
+        self.gridLayout.addWidget(self.jobNameEdit, 0, 2, 1, 1)
+        self.memoryPerCpuEdit = QtWidgets.QLineEdit(resourceWindow)
+        self.memoryPerCpuEdit.setObjectName("memoryPerCpuEdit")
+        self.gridLayout.addWidget(self.memoryPerCpuEdit, 2, 2, 1, 1)
+        self.label_2 = QtWidgets.QLabel(resourceWindow)
+        self.label_2.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
+        self.label_2.setIndent(10)
+        self.label_2.setObjectName("label_2")
+        self.gridLayout.addWidget(self.label_2, 2, 0, 1, 1)
+        self.label = QtWidgets.QLabel(resourceWindow)
+        self.label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
+        self.label.setIndent(10)
+        self.label.setObjectName("label")
+        self.gridLayout.addWidget(self.label, 0, 0, 1, 1)
+        self.label_3 = QtWidgets.QLabel(resourceWindow)
+        self.label_3.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
+        self.label_3.setIndent(10)
+        self.label_3.setObjectName("label_3")
+        self.gridLayout.addWidget(self.label_3, 5, 0, 1, 1)
+        self.specifyMemoryCheck = QtWidgets.QCheckBox(resourceWindow)
+        self.specifyMemoryCheck.setText("")
+        self.specifyMemoryCheck.setObjectName("specifyMemoryCheck")
+        self.gridLayout.addWidget(self.specifyMemoryCheck, 2, 1, 1, 1)
+        self.specifyTasksPerNodeCheck = QtWidgets.QCheckBox(resourceWindow)
+        self.specifyTasksPerNodeCheck.setText("")
+        self.specifyTasksPerNodeCheck.setObjectName("specifyTasksPerNodeCheck")
+        self.gridLayout.addWidget(self.specifyTasksPerNodeCheck, 1, 1, 1, 1)
+        self.exclusiveCheck = QtWidgets.QCheckBox(resourceWindow)
+        self.exclusiveCheck.setLayoutDirection(QtCore.Qt.LeftToRight)
+        self.exclusiveCheck.setText("")
+        self.exclusiveCheck.setObjectName("exclusiveCheck")
+        self.gridLayout.addWidget(self.exclusiveCheck, 5, 1, 1, 1)
+        self.label_4 = QtWidgets.QLabel(resourceWindow)
+        self.label_4.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
+        self.label_4.setIndent(10)
+        self.label_4.setObjectName("label_4")
+        self.gridLayout.addWidget(self.label_4, 1, 0, 1, 1)
+        self.tasksPerNodeSpin = QtWidgets.QSpinBox(resourceWindow)
+        self.tasksPerNodeSpin.setMinimum(-1)
+        self.tasksPerNodeSpin.setProperty("value", 1)
+        self.tasksPerNodeSpin.setObjectName("tasksPerNodeSpin")
+        self.gridLayout.addWidget(self.tasksPerNodeSpin, 1, 2, 1, 1)
+        self.verticalLayout.addLayout(self.gridLayout)
+        self.horizontalLayout = QtWidgets.QHBoxLayout()
+        self.horizontalLayout.setObjectName("horizontalLayout")
+        spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        self.horizontalLayout.addItem(spacerItem)
+        self.okButton = QtWidgets.QPushButton(resourceWindow)
+        self.okButton.setObjectName("okButton")
+        self.horizontalLayout.addWidget(self.okButton)
+        self.cancelButton = QtWidgets.QPushButton(resourceWindow)
+        self.cancelButton.setObjectName("cancelButton")
+        self.horizontalLayout.addWidget(self.cancelButton)
+        spacerItem1 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        self.horizontalLayout.addItem(spacerItem1)
+        self.verticalLayout.addLayout(self.horizontalLayout)
+
+        self.retranslateUi(resourceWindow)
+        QtCore.QMetaObject.connectSlotsByName(resourceWindow)
+
+    def retranslateUi(self, resourceWindow):
+        _translate = QtCore.QCoreApplication.translate
+        resourceWindow.setWindowTitle(_translate("resourceWindow", "Resource specification"))
+        self.memoryPerCpuEdit.setText(_translate("resourceWindow", "3200"))
+        self.label_2.setText(_translate("resourceWindow", "Memory"))
+        self.label.setText(_translate("resourceWindow", "Jobname"))
+        self.label_3.setText(_translate("resourceWindow", "Full node"))
+        self.label_4.setText(_translate("resourceWindow", "Tasks per node"))
+        self.okButton.setText(_translate("resourceWindow", "OK"))
+        self.cancelButton.setText(_translate("resourceWindow", "Cancel"))
+
