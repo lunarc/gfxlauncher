@@ -1,3 +1,0 @@
-#!/bin/sh 
-GFXLAUNCH_DIR="$( cd "$(dirname "$0")" ; pwd -P )"
-python3 $GFXLAUNCH_DIR/gfxusage.py "$@"
