@@ -17,7 +17,46 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 class BasicConfig:
+    """
+    BasicConfig is a class that manages configuration settings for a specific application.
+
+    Attributes:
+        script_dir (str): Directory where scripts are located.
+        install_dir (str): Directory where the application is installed.
+        help_url (str): URL for the help documentation.
+        browser_cmd (str): Command to open the browser.
+        features (dict): Dictionary of features with their descriptions.
+        partitions (dict): Dictionary of partitions with their descriptions.
+        groups (dict): Dictionary of groups with their associated partitions.
+        default_tasks (int): Default number of tasks.
+        default_memory (int): Default memory allocation.
+        default_exclusive (bool): Default exclusivity setting.
+        default_part (str): Default partition.
+        default_account (str): Default account.
+        use_sacctmgr (bool): Flag to indicate if sacctmgr should be used.
+        menu_prefix (str): Prefix for menu items.
+        desktop_entry_prefix (str): Prefix for desktop entries.
+        vgl_bin (str): Path to the vglconnect binary.
+        vgl_path (str): Path to the vgl directory.
+        notebook_module (str): Module for Jupyter Notebook.
+        jupyterlab_module (str): Module for JupyterLab.
+        __config (str): Internal string to store the configuration.
+
+    Methods:
+        clear(): Clears the internal configuration string.
+        section(name): Adds a section header to the configuration.
+        new_line(): Adds a new line to the configuration.
+        var(name, value): Adds a variable to the configuration.
+        str_var(name, value): Adds a string variable to the configuration.
+        list_var(f, name, value): Adds a list variable to the configuration.
+        create_config(): Creates the configuration string based on the attributes.
+        save(filename): Saves the configuration to a file.
+        __str__(): Returns the configuration as a string.
+    """
     def __init__(self):
+        """
+        Initializes the configuration with default values for the GFX Launcher.
+        """
 
         self.script_dir = "/sw/pkg/ondemand-dt/run"
         self.install_dir = "/sw/pkg/gfxlauncher"
@@ -57,26 +96,93 @@ class BasicConfig:
         self.__config = ""
 
     def clear(self):
+        """
+        Clears the current configuration by setting it to an empty string.
+        """
         self.__config = ""
 
     def section(self, name):
+        """
+        Adds a new section header to the configuration.
+
+        Args:
+            name (str): The name of the section to be added.
+
+        Returns:
+            None
+        """
         self.__config += f"[{name}]\n"
 
     def new_line(self):
+        """
+        Appends a new line character to the existing configuration string.
+
+        This method modifies the internal configuration string by adding a newline
+        character ("\n") at the end. It does not return any value.
+
+        Returns:
+            None
+        """
         self.__config += "\n"
 
     def var(self, name, value):
+        """
+        Adds a configuration variable to the internal configuration string.
+
+        Args:
+            name (str): The name of the configuration variable.
+            value (str): The value of the configuration variable.
+        """
         self.__config += f"{name} = {value}\n"
 
     def str_var(self, name, value):
+        """
+        Adds a string variable to the configuration.
+
+        Args:
+            name (str): The name of the variable.
+            value (str): The value of the variable.
+        """
         self.__config += f"{name} = \"{value}\"\n"
 
     def list_var(self, f, name, value):
+        """
+        Appends a formatted string to the configuration.
+
+        This method takes a function `f`, a string `name`, and a list `value`. 
+        It applies the function `f` to each element in the list `value`, joins 
+        the results with a comma, and appends the formatted string to the 
+        configuration attribute `__config`.
+
+        Args:
+            f (function): A function to apply to each element in the list `value`.
+            name (str): The name to be used in the formatted string.
+            value (list): A list of elements to be processed by the function `f`.
+
+        Returns:
+            None
+        """
 
         group_str = ", ".join([f(x) for x in value])
         self.__config += f"{name} = {group_str}\n"
 
     def create_config(self):
+        """
+        Generates and clears the configuration settings for various sections including 
+        general, slurm, menus, vgl, and jupyter. This method organizes the configuration 
+        into sections and assigns values to various configuration variables.
+
+        Sections:
+        - general: Includes script and install directories, help URL, and browser command.
+        - slurm: Includes features, partitions, groups, and default settings for SLURM.
+        - menus: Includes menu prefix and desktop entry prefix.
+        - vgl: Includes VirtualGL binary and path.
+        - jupyter: Includes notebook and JupyterLab modules.
+
+        The method uses helper functions to add variables, string variables, and list variables 
+        to the configuration.
+        """
+        self.clear()
         self.section("general")
         self.new_line()
         self.var("script_dir", self.script_dir)
@@ -126,9 +232,30 @@ class BasicConfig:
         self.str_var("notebook_module", self.notebook_module)
         self.str_var("jupyterlab_module", self.jupyterlab_module)
 
+    def save(self, filename):
+        """
+        Saves the current configuration to a file.
 
+        This method first creates the configuration by calling `create_config()`
+        and then writes the configuration to the specified file.
+
+        Args:
+            filename (str): The path to the file where the configuration will be saved.
+        """
+        self.create_config()
+        with open(filename, 'w') as f:
+            f.write(self.__config)
 
     def __str__(self):
+        """
+        Returns a string representation of the configuration.
+
+        This method calls `create_config` to generate the configuration
+        and then returns the resulting configuration string.
+
+        Returns:
+            str: The configuration string.
+        """
         self.create_config()
         return self.__config
     
@@ -136,7 +263,5 @@ class BasicConfig:
 if __name__ == "__main__":
 
     config = BasicConfig()
-
-
     print(config)
 
