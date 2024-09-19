@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from . import lrms
+
 class BasicConfig:
     """
     BasicConfig is a class that manages configuration settings for a specific application.
@@ -64,22 +66,18 @@ class BasicConfig:
         self.browser_cmd = "firefox"
 
 
-        self.features = {"mem256gb":"256 GB Memory node"}
+        self.features = {            
+        }
 
         self.partitions = {
-            "gpua40":"AMD/NVIDIA A40 48c 24h",
-            "gpua40i":"Intel/NVIDIA A40 32c 48h",
-            "test":"Test partition"
         }            
         self.groups = {
-            "ondemand":["gpua40", "gpua40i"], 
-            "all":["test"]
         }
 
         self.default_tasks = 1
         self.default_memory = 5300
         self.default_exclusive = False
-        self.default_part = "gpua40"
+        self.default_part = ""
         self.default_account = ""
 
         self.use_sacctmgr = True
@@ -94,6 +92,34 @@ class BasicConfig:
         self.jupyterlab_module = "Anaconda3"
 
         self.__config = ""
+
+        self.query_slurm()
+
+    def query_slurm(self):
+        """
+        Query the SLURM scheduler for partition information.
+
+        This method uses the `sinfo` command to query the SLURM scheduler for partition information.
+        It then parses the output to extract the partition names and descriptions.
+        The partition names and descriptions are stored in the `config` attribute.
+
+        Returns:
+            None
+        """
+        slurm = lrms.Slurm()
+        slurm.query_partitions()
+
+        for part in slurm.partitions:
+            self.partitions[part] = ""
+
+        for part in self.partitions:
+            features = slurm.query_features(part)
+
+            for feature in features:
+                self.features[feature] = ""
+
+        print(self.partitions)
+        print(self.features)
 
     def clear(self):
         """
@@ -194,17 +220,35 @@ class BasicConfig:
         self.section("slurm")
         self.new_line()
 
+        n_features = 0
+
         for k, v in self.features.items():
-            self.str_var(k, v)
-        self.new_line()
+            if v!="":
+                self.str_var(f"feature_{k}", v)
+                n_features += 1
+        
+        if n_features > 0:
+            self.new_line()
+
+        n_partitions = 0
 
         for k, v in self.partitions.items():
-            self.str_var(k, v)
-        self.new_line()
+            if v!="":
+                self.str_var(f"part_{k}", v)
+                n_partitions += 1
+
+        if n_partitions > 0:
+            self.new_line()
+
+        n_groups = 0
 
         for k, v in self.groups.items():
-            self.list_var(lambda x: f"{x}", k, v)
-        self.new_line()
+            if v!="":
+                self.list_var(lambda x: f"{x}", f"group_{k}", v)
+                n_groups += 1
+        
+        if n_groups > 0:
+            self.new_line()
 
         self.var("default_part", self.default_part)
         self.str_var("default_account", self.default_account)

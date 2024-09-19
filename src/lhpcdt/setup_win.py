@@ -47,31 +47,356 @@ class SetupWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         super(SetupWindow, self).__init__(parent)
 
         self.setupUi(self)
+        self.config_tabs.setCurrentIndex(0)
         self.config = basic_config.BasicConfig()
-        self.query_slurm()
         self.update_controls()
 
-    def query_slurm(self):
-        """
-        Query the SLURM scheduler for partition information.
 
-        This method uses the `sinfo` command to query the SLURM scheduler for partition information.
-        It then parses the output to extract the partition names and descriptions.
-        The partition names and descriptions are stored in the `config` attribute.
+
+    def update_controls(self):
+        """
+        Update various controls by calling specific update methods.
+
+        This method sequentially updates the following components:
+        - General settings
+        - SLURM configurations
+        - Menus
+        - VirtualGL settings
+        - Jupyter configurations
+
+        Each component has its own dedicated update method which is called in turn.
+        """
+        self.update_general()
+        self.update_slurm()
+        self.update_menus()
+        self.update_vgl()
+        self.update_jupyter()
+        self.update_partitions()
+        self.update_features()
+        self.update_groups()
+        self.update_group_parts()
+        self.update_config_preview()
+
+    def update_general(self):
+        """
+        Update the general settings in the user interface with values from the configuration.
+        """
+        self.script_dir_edit.setText(self.config.script_dir)
+        #self.install_dir_edit.setText(self.config.install_dir)
+        self.help_url_edit.setText(self.config.help_url)
+        self.browser_cmd_edit.setText(self.config.browser_cmd)
+
+    def update_slurm(self):
+        """
+        Update the SLURM settings in the UI with the current configuration values.
+        """
+        self.default_part_edit.setText(self.config.default_part)
+        self.default_account_edit.setText(self.config.default_account)
+        self.default_tasks_edit.setText(str(self.config.default_tasks))
+        self.default_memory_edit.setText(str(self.config.default_memory))
+
+    def update_menus(self):
+        """
+        Update the menu settings by setting the text of the menu prefix and 
+        desktop entry prefix edit fields based on the current configuration.
+
+        This method retrieves the `menu_prefix` and `desktop_entry_prefix` 
+        from the `config` attribute and updates the corresponding text fields 
+        in the user interface.
 
         Returns:
             None
         """
-        slurm = lrms.Slurm()
-        slurm.query_partitions()
-        self.config.partitions = slurm.partitions
+        self.menu_prefix_edit.setText(self.config.menu_prefix)
+        self.desktop_entry_prefix_edit.setText(self.config.desktop_entry_prefix)
 
-        for part in self.config.partitions:
-            print(part)
-            features = slurm.query_features(part)
-            print(features)
+    def update_vgl(self):
+        """
+        Update the VirtualGL (VGL) settings in the user interface.
 
-        print(self.config.partitions)
+        This method sets the text of the VGL binary and VGL path edit fields
+        to the corresponding values from the configuration.
+        """
+        self.vgl_bin_edit.setText(self.config.vgl_bin)
+        self.vgl_path_edit.setText(self.config.vgl_path)
+
+    def update_jupyter(self):
+        """
+        Update Jupyter settings by setting the text of the notebook and JupyterLab module edit fields.
+
+        This method updates the text fields for the notebook and JupyterLab modules
+        based on the current configuration settings.
+        """
+        self.notebook_module_edit.setText(self.config.notebook_module)
+        self.jupyterlab_module_edit.setText(self.config.jupyterlab_module)
+
+    def update_partitions(self):
+        """
+        Update the partition settings in the user interface.
+
+        This method updates the partition settings in the user interface by
+        setting the text of the partition combo box to the partition names
+        stored in the configuration.
+        """
+        self.all_part_list.clear()
+        self.all_part_list.addItems(self.config.partitions.keys())
+        self.all_part_group_list.clear()
+        self.all_part_group_list.addItems(self.config.partitions.keys())
+
+    def update_features(self):
+        """
+        Update the feature settings in the user interface.
+
+        This method updates the feature settings in the user interface by
+        setting the text of the feature combo box to the feature names
+        stored in the configuration.
+        """
+        self.feature_list.clear()
+        self.feature_list.addItems(self.config.features.keys())
+
+    def update_groups(self):
+        """
+        Update the partition group settings in the user interface.
+
+        This method updates the partition group settings in the user interface by
+        setting the text of the partition group combo box to the partition group names
+        stored in the configuration.
+        """
+        self.group_list.clear()
+        self.group_list.addItems(self.config.groups.keys())
+
+    def update_group_parts(self):
+        """
+        Update the partition group settings in the user interface.
+
+        This method updates the partition group settings in the user interface by
+        setting the text of the partition group combo box to the partition group names
+        stored in the configuration.
+        """
+        if not self.group_list.currentItem():
+            return
+        
+        group_name = self.group_list.currentItem().text()
+        if group_name:
+            self.group_part_list.clear()
+            self.group_part_list.addItems(self.config.groups[group_name])
+
+    def update_config_preview(self):
+        """
+        Update the configuration preview in the user interface.
+
+        This method generates a preview of the configuration file based on the
+        current settings and displays it in the text edit widget.
+        """
+        self.config_preview_edit.setPlainText(str(self.config))
+
+    @QtCore.pyqtSlot()
+    def on_new_action_triggered(self):
+        """
+        Handles the event when the New action is triggered.
+
+        This method creates a new configuration instance and updates the controls.
+        """
+        self.config = basic_config.BasicConfig()
+        self.update_controls()
+
+    @QtCore.pyqtSlot()
+    def on_open_action_triggered(self):
+        """
+        Handles the event when the Open action is triggered.
+
+        This method opens a file dialog to select a configuration file.
+        If a valid file is selected, it loads the configuration from the file
+        and updates the controls.
+        """
+        config_filename, _ = QtWidgets.QFileDialog.getOpenFileName(
+            self, "Open configuration file", "", "Configuration files (*.conf)")
+        if config_filename != "":
+            #self.config.load(config_filename)
+            self.update_controls()
+
+    @QtCore.pyqtSlot()
+    def on_save_action_triggered(self):
+        """
+        Handles the event when the Save action is triggered.
+
+        This method opens a file dialog to select a location to save the configuration file.
+        If a valid location is selected, it saves the current configuration to the file.
+        """
+        config_filename, _ = QtWidgets.QFileDialog.getSaveFileName(
+            self, "Save configuration file", "gfxlauncher.conf", "Configuration files (*.conf)")
+        if config_filename != "":
+            self.config.save(config_filename)
+
+    @QtCore.pyqtSlot()
+    def on_save_as_action_triggered(self):
+        """
+        Handles the event when the Save As action is triggered.
+
+        This method opens a file dialog to select a location to save the configuration file.
+        If a valid location is selected, it saves the current configuration to the file.
+        """
+        config_filename, _ = QtWidgets.QFileDialog.getSaveFileName(
+            self, "Save configuration file", "gfxlauncher.conf", "Configuration files (*.conf)")
+        if config_filename != "":
+            self.config.save(config_filename)
+
+    @QtCore.pyqtSlot()
+    def on_exit_action_triggered(self):
+        """
+        Handles the event when the Exit action is triggered.
+
+        This method closes the current window.
+        """
+        self.close()
+
+    @QtCore.pyqtSlot()
+    def on_copy_action_triggered(self):
+        """
+        Handles the event when the Copy action is triggered.
+
+        This method copies the contents of the configuration preview to the clipboard.
+        """
+        clipboard = QtWidgets.QApplication.clipboard()
+        clipboard.setText(self.config_preview_edit.toPlainText())
+
+    @QtCore.pyqtSlot()
+    def on_config_action_triggered(self):
+        """
+        Handles the event when the Configuration action is triggered.
+
+        This method opens the configuration window.
+        """
+        self.config_tabs.setCurrentIndex(8)
+        
+
+    @QtCore.pyqtSlot()
+    def on_group_list_itemSelectionChanged(self):
+        """
+        Handles the event when an item in the partition group list is selected.
+
+        This method updates the partition list for the selected partition group.
+        """
+        self.update_group_parts()
+
+    @QtCore.pyqtSlot()
+    def on_add_group_button_clicked(self):
+        """
+        Handles the event when the add partition to group button is clicked.
+
+        This method adds the selected partition to the selected partition group.
+        """
+        print("Add partition to group")
+        group_name, ok = QtWidgets.QInputDialog.getText(self, "Create partition group", "Group alias")
+        if ok and group_name:
+            self.config.groups[group_name] = []
+            self.update_controls()
+
+    @QtCore.pyqtSlot()
+    def on_remove_group_button_clicked(self):
+        """
+        Handles the event when the remove group button is clicked.
+
+        This method removes the selected partition group from the configuration.
+        """
+        group_name = self.group_list.currentItem().text()
+        del self.config.groups[group_name]
+        self.update_controls()
+
+    @QtCore.pyqtSlot()
+    def on_add_part_group_button_clicked(self):
+        """
+        Handles the event when the add partition group button is clicked.
+
+        This method adds the selected partition to the selected partition group.
+        """
+        print("Add partition to group")
+        if not self.all_part_group_list.currentItem():
+            return
+        if not self.group_list.currentItem():
+            return
+        
+        print("Add partition to group - OK")
+
+        part_name = self.all_part_group_list.currentItem().text()
+        group_name = self.group_list.currentItem().text()
+
+        if part_name in self.config.groups[group_name]:
+            return
+
+        self.config.groups[group_name].append(part_name)
+        self.update_controls()
+
+    @QtCore.pyqtSlot()
+    def on_remove_part_group_button_clicked(self):
+        """
+        Handles the event when the remove partition from group button is clicked.
+
+        This method removes the selected partition from the selected partition group.
+        """
+        part_name = self.all_part_group_list.currentItem().text()
+        group_name = self.group_list.currentItem().text()
+
+        if part_name and group_name:
+            self.config.partition_groups[group_name].remove(part_name)
+            self.update_controls()
+
+    @QtCore.pyqtSlot()
+    def on_feature_list_itemSelectionChanged(self):
+        """
+        Handles the event when an item in the feature list is selected.
+
+        This method updates the feature description edit widget with the description
+        of the selected feature.
+        """
+        selected_feature = self.feature_list.currentItem().text()
+        self.feature_descr_edit.setText(self.config.features[selected_feature])
+
+    @QtCore.pyqtSlot()
+    def on_all_part_list_itemSelectionChanged(self):
+        """
+        Handles the event when an item in the partition list is selected.
+
+        This method updates the partition description edit widget with the description
+        of the selected partition.
+        """
+        selected_part = self.all_part_list.currentItem().text()
+        self.part_descr_edit.setText(self.config.partitions[selected_part])
+
+    @QtCore.pyqtSlot()
+    def on_part_descr_assign_button_clicked(self):
+        """
+        Handles the event when the assign button for partition description is clicked.
+
+        This method assigns the description to the selected partition based on the
+        text entered in the partition description edit widget.
+        """
+        part_name = self.all_part_list.currentItem().text()
+        part_descr = self.part_descr_edit.text()
+        self.config.partitions[part_name] = part_descr
+        self.update_controls()
+
+    @QtCore.pyqtSlot()
+    def on_feature_descr_assign_button_clicked(self):
+        """
+        Handles the event when the assign button for feature description is clicked.
+
+        This method assigns the description to the selected feature based on the
+        text entered in the feature description edit widget.
+        """
+        feature_name = self.feature_list.currentItem().text()
+        feature_descr = self.feature_descr_edit.text()
+        self.config.features[feature_name] = feature_descr
+        self.update_controls()
+
+    @QtCore.pyqtSlot()
+    def on_config_tabs_currentChanged(self, idx):
+        """
+        Handles the event when the current tab in the configuration window changes.
+
+        This method updates the controls based on the new tab that is selected.
+        """
+        self.update_controls()
 
     @QtCore.pyqtSlot()
     def on_script_dir_button_clicked(self):
@@ -138,77 +463,6 @@ class SetupWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         if config_filename != "":
             self.config.save(config_filename)
 
-    def update_controls(self):
-        """
-        Update various controls by calling specific update methods.
-
-        This method sequentially updates the following components:
-        - General settings
-        - SLURM configurations
-        - Menus
-        - VirtualGL settings
-        - Jupyter configurations
-
-        Each component has its own dedicated update method which is called in turn.
-        """
-        self.update_general()
-        self.update_slurm()
-        self.update_menus()
-        self.update_vgl()
-        self.update_jupyter()
-
-    def update_general(self):
-        """
-        Update the general settings in the user interface with values from the configuration.
-        """
-        self.script_dir_edit.setText(self.config.script_dir)
-        #self.install_dir_edit.setText(self.config.install_dir)
-        self.help_url_edit.setText(self.config.help_url)
-        self.browser_cmd_edit.setText(self.config.browser_cmd)
-
-    def update_slurm(self):
-        """
-        Update the SLURM settings in the UI with the current configuration values.
-        """
-        self.default_part_edit.setText(self.config.default_part)
-        self.default_account_edit.setText(self.config.default_account)
-        self.default_tasks_edit.setText(str(self.config.default_tasks))
-        self.default_memory_edit.setText(str(self.config.default_memory))
-
-    def update_menus(self):
-        """
-        Update the menu settings by setting the text of the menu prefix and 
-        desktop entry prefix edit fields based on the current configuration.
-
-        This method retrieves the `menu_prefix` and `desktop_entry_prefix` 
-        from the `config` attribute and updates the corresponding text fields 
-        in the user interface.
-
-        Returns:
-            None
-        """
-        self.menu_prefix_edit.setText(self.config.menu_prefix)
-        self.desktop_entry_prefix_edit.setText(self.config.desktop_entry_prefix)
-
-    def update_vgl(self):
-        """
-        Update the VirtualGL (VGL) settings in the user interface.
-
-        This method sets the text of the VGL binary and VGL path edit fields
-        to the corresponding values from the configuration.
-        """
-        self.vgl_bin_edit.setText(self.config.vgl_bin)
-        self.vgl_path_edit.setText(self.config.vgl_path)
-
-    def update_jupyter(self):
-        """
-        Update Jupyter settings by setting the text of the notebook and JupyterLab module edit fields.
-
-        This method updates the text fields for the notebook and JupyterLab modules
-        based on the current configuration settings.
-        """
-        self.notebook_module_edit.setText(self.config.notebook_module)
-        self.jupyterlab_module_edit.setText(self.config.jupyterlab_module)
 
 
 if __name__ == "__main__":
