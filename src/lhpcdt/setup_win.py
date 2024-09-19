@@ -34,6 +34,7 @@ class SetupWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
     SetupWindow is a QMainWindow that provides a graphical interface for configuring
     various settings related to the application.
     """
+
     def __init__(self, parent=None):
         """
         Initializes the SetupWindow instance.
@@ -50,8 +51,6 @@ class SetupWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         self.config_tabs.setCurrentIndex(0)
         self.config = basic_config.BasicConfig()
         self.update_controls()
-
-
 
     def update_controls(self):
         """
@@ -75,6 +74,7 @@ class SetupWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         self.update_features()
         self.update_groups()
         self.update_group_parts()
+        self.update_group_defaults()
         self.update_config_preview()
 
     def update_general(self):
@@ -82,7 +82,7 @@ class SetupWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         Update the general settings in the user interface with values from the configuration.
         """
         self.script_dir_edit.setText(self.config.script_dir)
-        #self.install_dir_edit.setText(self.config.install_dir)
+        # self.install_dir_edit.setText(self.config.install_dir)
         self.help_url_edit.setText(self.config.help_url)
         self.browser_cmd_edit.setText(self.config.browser_cmd)
 
@@ -108,7 +108,8 @@ class SetupWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
             None
         """
         self.menu_prefix_edit.setText(self.config.menu_prefix)
-        self.desktop_entry_prefix_edit.setText(self.config.desktop_entry_prefix)
+        self.desktop_entry_prefix_edit.setText(
+            self.config.desktop_entry_prefix)
 
     def update_vgl(self):
         """
@@ -165,6 +166,9 @@ class SetupWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         self.group_list.clear()
         self.group_list.addItems(self.config.groups.keys())
 
+        self.group_default_list.clear()
+        self.group_default_list.addItems(self.config.groups.keys())
+
     def update_group_parts(self):
         """
         Update the partition group settings in the user interface.
@@ -175,11 +179,35 @@ class SetupWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         """
         if not self.group_list.currentItem():
             return
-        
+
         group_name = self.group_list.currentItem().text()
         if group_name:
             self.group_part_list.clear()
             self.group_part_list.addItems(self.config.groups[group_name])
+
+    def update_group_defaults(self):
+        """
+        Update the partition group settings in the user interface.
+
+        This method updates the partition group settings in the user interface by
+        setting the text of the partition group combo box to the partition group names
+        stored in the configuration.
+        """
+        if not self.group_default_list.currentItem():
+            return
+        
+        self.group_default_tasks_edit.setText("")
+        self.group_default_memory_edit.setText("")
+        self.group_default_exclusive_check.setChecked(False)
+
+        group_name = self.group_default_list.currentItem().text()
+        if group_name in self.config.group_defaults:
+            if "tasks" in self.config.group_defaults[group_name]:
+                self.group_default_tasks_edit.setText(str(self.config.group_defaults[group_name]['tasks']))
+            if "memory" in self.config.group_defaults[group_name]:
+                self.group_default_memory_edit.setText(str(self.config.group_defaults[group_name]['memory']))
+            if "exclusive" in self.config.group_defaults[group_name]:
+                self.group_default_exclusive_check.setChecked(self.config.group_defaults[group_name]['exclusive'])
 
     def update_config_preview(self):
         """
@@ -189,6 +217,15 @@ class SetupWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         current settings and displays it in the text edit widget.
         """
         self.config_preview_edit.setPlainText(str(self.config))
+
+    @QtCore.pyqtSlot()
+    def on_group_default_list_itemSelectionChanged(self):
+        """
+        Handles the event when an item in the partition group list is selected.
+
+        This method updates the partition list for the selected partition group.
+        """
+        self.update_group_defaults()
 
     @QtCore.pyqtSlot()
     def on_new_action_triggered(self):
@@ -212,7 +249,7 @@ class SetupWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         config_filename, _ = QtWidgets.QFileDialog.getOpenFileName(
             self, "Open configuration file", "", "Configuration files (*.conf)")
         if config_filename != "":
-            #self.config.load(config_filename)
+            self.config.load(config_filename)
             self.update_controls()
 
     @QtCore.pyqtSlot()
@@ -268,7 +305,6 @@ class SetupWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         This method opens the configuration window.
         """
         self.config_tabs.setCurrentIndex(8)
-        
 
     @QtCore.pyqtSlot()
     def on_group_list_itemSelectionChanged(self):
@@ -287,7 +323,8 @@ class SetupWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         This method adds the selected partition to the selected partition group.
         """
         print("Add partition to group")
-        group_name, ok = QtWidgets.QInputDialog.getText(self, "Create partition group", "Group alias")
+        group_name, ok = QtWidgets.QInputDialog.getText(
+            self, "Create partition group", "Group alias")
         if ok and group_name:
             self.config.groups[group_name] = []
             self.update_controls()
@@ -315,7 +352,7 @@ class SetupWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
             return
         if not self.group_list.currentItem():
             return
-        
+
         print("Add partition to group - OK")
 
         part_name = self.all_part_group_list.currentItem().text()
@@ -462,7 +499,6 @@ class SetupWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
             self, "Save configuration file", "gfxlauncher.conf", "Configuration files (*.conf)")
         if config_filename != "":
             self.config.save(config_filename)
-
 
 
 if __name__ == "__main__":

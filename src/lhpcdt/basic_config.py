@@ -18,6 +18,11 @@
 
 from . import lrms
 
+import configparser
+import re
+import string
+
+
 class BasicConfig:
     """
     BasicConfig is a class that manages configuration settings for a specific application.
@@ -55,23 +60,34 @@ class BasicConfig:
         save(filename): Saves the configuration to a file.
         __str__(): Returns the configuration as a string.
     """
+
     def __init__(self):
         """
         Initializes the configuration with default values for the GFX Launcher.
         """
 
+        self.clear()
+        self.init_defaults()
+        self.query_slurm()
+
+    def init_defaults(self):
+        """
+        Initializes the configuration with default values for the GFX Launcher.
+        """
         self.script_dir = "/sw/pkg/ondemand-dt/run"
         self.install_dir = "/sw/pkg/gfxlauncher"
         self.help_url = "https://lunarc-documentation.readthedocs.io/en/latest/getting_started/gfxlauncher/"
         self.browser_cmd = "firefox"
 
-
-        self.features = {            
+        self.features = {
         }
 
         self.partitions = {
-        }            
+        }
         self.groups = {
+        }
+
+        self.group_defaults = {
         }
 
         self.default_tasks = 1
@@ -90,10 +106,6 @@ class BasicConfig:
 
         self.notebook_module = "Anaconda3"
         self.jupyterlab_module = "Anaconda3"
-
-        self.__config = ""
-
-        self.query_slurm()
 
     def query_slurm(self):
         """
@@ -117,9 +129,6 @@ class BasicConfig:
 
             for feature in features:
                 self.features[feature] = ""
-
-        print(self.partitions)
-        print(self.features)
 
     def clear(self):
         """
@@ -159,7 +168,8 @@ class BasicConfig:
             name (str): The name of the configuration variable.
             value (str): The value of the configuration variable.
         """
-        self.__config += f"{name} = {value}\n"
+        if value != "":
+            self.__config += f"{name} = {value}\n"
 
     def str_var(self, name, value):
         """
@@ -169,7 +179,21 @@ class BasicConfig:
             name (str): The name of the variable.
             value (str): The value of the variable.
         """
-        self.__config += f"{name} = \"{value}\"\n"
+        if value != "":
+            self.__config += f"{name} = \"{value}\"\n"
+
+    def bool_var(self, name, value):
+        """
+        Adds a boolean variable to the configuration.
+
+        Args:
+            name (str): The name of the variable.
+            value (bool): The value of the variable.
+        """
+        if value:
+            self.__config += f"{name} = yes\n"
+        else:
+            self.__config += f"{name} = no\n"
 
     def list_var(self, f, name, value):
         """
@@ -223,17 +247,17 @@ class BasicConfig:
         n_features = 0
 
         for k, v in self.features.items():
-            if v!="":
+            if v != "":
                 self.str_var(f"feature_{k}", v)
                 n_features += 1
-        
+
         if n_features > 0:
             self.new_line()
 
         n_partitions = 0
 
         for k, v in self.partitions.items():
-            if v!="":
+            if v != "":
                 self.str_var(f"part_{k}", v)
                 n_partitions += 1
 
@@ -243,21 +267,21 @@ class BasicConfig:
         n_groups = 0
 
         for k, v in self.groups.items():
-            if v!="":
+            if v != "":
                 self.list_var(lambda x: f"{x}", f"group_{k}", v)
                 n_groups += 1
-        
+
         if n_groups > 0:
             self.new_line()
 
         self.var("default_part", self.default_part)
-        self.str_var("default_account", self.default_account)
+        self.var("default_account", self.default_account)
         self.var("default_tasks", self.default_tasks)
         self.var("default_memory", self.default_memory)
-        self.var("default_exclusive", self.default_exclusive)
+        self.bool_var("default_exclusive", self.default_exclusive)
         self.new_line()
-        self.var("use_sacctmgr", self.use_sacctmgr)   
-        self.new_line()     
+        self.bool_var("use_sacctmgr", self.use_sacctmgr)
+        self.new_line()
 
         self.section("menus")
         self.new_line()
@@ -290,6 +314,120 @@ class BasicConfig:
         with open(filename, 'w') as f:
             f.write(self.__config)
 
+    def _config_get(self, config, section, option, default_value=""):
+        """Safe config retrieval"""
+
+        if config.has_option(section, option):
+            return config.get(section, option)
+        else:
+            return default_value
+
+    def _config_getboolean(self, config, section, option, default_value=False):
+        """Safe config retrieval"""
+
+        if config.has_option(section, option):
+            return config.getboolean(section, option)
+        else:
+            return default_value
+
+    def _config_getint(self, config, section, option, default_value=0):
+        """Safe config retrieval"""
+
+        if config.has_option(section, option):
+            return config.getint(section, option)
+        else:
+            return default_value
+        
+    def _config_getquoted(self, config, section, option, default_value=""):
+        """Safe config retrieval"""
+
+        if config.has_option(section, option):
+            quoted_string = config.get(section, option)
+            return quoted_string.strip("\"")
+        else:
+            return default_value
+
+    def load(self, filename):
+        """
+        Loads the configuration from a file.
+
+        This method reads the configuration from the specified file and stores it
+        in the internal configuration attribute `__config`.
+
+        Args:
+            filename (str): The path to the file containing the configuration.
+        """
+        self.clear()
+        self.init_defaults()
+        self.query_slurm()
+
+        config = configparser.RawConfigParser()
+        config.read(filename)
+
+        self.script_dir = self._config_get(
+            config, "general", "script_dir", self.script_dir)
+        self.install_dir = self._config_get(
+            config, "general", "install_dir", self.install_dir)
+        self.help_url = self._config_getquoted(
+            config, "general", "help_url", self.help_url)
+        self.browser_cmd = self._config_get(
+            config, "general", "browser_cmd", self.browser_cmd)
+
+        self.menu_prefix = self._config_get(
+            config, "menus", "menu_prefix", self.menu_prefix)
+        self.desktop_entry_prefix = self._config_get(
+            config, "menus", "desktop_entry_prefix", self.desktop_entry_prefix)
+
+        self.vgl_bin = self._config_get(config, "vgl", "vgl_bin", self.vgl_bin)
+        self.vgl_path = self._config_get(
+            config, "vgl", "vgl_path", self.vgl_path)
+
+        self.notebook_module = self._config_get(
+            config, "jupyter", "notebook_module", self.notebook_module)
+        self.jupyterlab_module = self._config_get(
+            config, "jupyter", "jupyterlab_module", self.jupyterlab_module)
+
+        self.default_tasks = self._config_getint(
+            config, "slurm", "default_tasks", self.default_tasks)
+        self.default_memory = self._config_getint(
+            config, "slurm", "default_memory", self.default_memory)
+        self.default_exclusive = self._config_getboolean(
+            config, "slurm", "default_exclusive", self.default_exclusive)
+        self.default_part = self._config_get(
+            config, "slurm", "default_part", self.default_part)
+        self.default_account = self._config_get(
+            config, "slurm", "default_account", self.default_account)
+        self.use_sacctmgr = self._config_getboolean(
+            config, "slurm", "use_sacctmgr", self.use_sacctmgr)
+
+        slurm_items = config.items("slurm")
+        for key, value in slurm_items:
+            if key.startswith("feature_"):
+                self.features[key[8:]] = value.strip("\"")
+            elif key.startswith("part_"):
+                self.partitions[key[5:]] = value.strip("\"")
+            elif key.startswith("group_"):
+                if "_tasks" in key:
+                    group_name = key.split("_")[1]
+                    group_tasks = int(value)
+                    if group_name not in self.group_defaults:
+                        self.group_defaults[group_name] = {}
+                    self.group_defaults[group_name]["tasks"] = group_tasks
+                elif "_memory" in key:
+                    group_name = key.split("_")[1]
+                    group_memory = int(value)
+                    if group_name not in self.group_defaults:
+                        self.group_defaults[group_name] = {}
+                    self.group_defaults[group_name]["memory"] = group_memory
+                elif "_exclusive" in key:
+                    group_name = key.split("_")[1]
+                    group_exclusive = value == "yes"
+                    if group_name not in self.group_defaults:
+                        self.group_defaults[group_name] = {}
+                    self.group_defaults[group_name]["exclusive"] = group_exclusive
+                else:
+                    self.groups[key[6:]] = [v.strip() for v in value.split(",")]
+
     def __str__(self):
         """
         Returns a string representation of the configuration.
@@ -302,10 +440,9 @@ class BasicConfig:
         """
         self.create_config()
         return self.__config
-    
+
 
 if __name__ == "__main__":
 
     config = BasicConfig()
     print(config)
-
