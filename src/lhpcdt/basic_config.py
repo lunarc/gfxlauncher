@@ -274,6 +274,22 @@ class BasicConfig:
         if n_groups > 0:
             self.new_line()
 
+        n_group_props = 0
+
+        for k, v in self.group_defaults.items():
+            if "tasks" in v:
+                self.var(f"group_{k}_tasks", v["tasks"])
+                n_group_props += 1
+            if "memory" in v:
+                self.var(f"group_{k}_memory", v["memory"])
+                n_group_props += 1
+            if "exclusive" in v:
+                self.bool_var(f"group_{k}_exclusive", v["exclusive"])
+                n_group_props += 1
+
+        if n_group_props > 0:
+            self.new_line()
+
         self.var("default_part", self.default_part)
         self.var("default_account", self.default_account)
         self.var("default_tasks", self.default_tasks)

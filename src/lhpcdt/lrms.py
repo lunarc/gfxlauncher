@@ -323,7 +323,7 @@ class Slurm(object):
         """Query features of partition"""
 
         if self.verbose:
-            print("Please wait, querying nodes for features %s ...")
+            print(f"Querying {part} for features ...")
 
         node_info = self.query_nodes()
 
@@ -336,10 +336,6 @@ class Slurm(object):
                     for feature in features:
                         if self.__include_feature(feature, exclude_set):
                             feature_list.append(feature)
-
-        if self.verbose:
-            # print(list(set(feature_list)))
-            print("Done.")
 
         return list(set(feature_list))
 

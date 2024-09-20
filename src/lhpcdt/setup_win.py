@@ -219,6 +219,30 @@ class SetupWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         self.config_preview_edit.setPlainText(str(self.config))
 
     @QtCore.pyqtSlot()
+    def on_apply_group_defaults_button_clicked(self):
+        """
+        Handles the event when the apply group defaults button is clicked.
+
+        This method applies the default settings to the selected partition group.
+        """
+        group_name = self.group_default_list.currentItem().text()
+        if group_name:
+            tasks = self.group_default_tasks_edit.text()
+            memory = self.group_default_memory_edit.text()
+            exclusive = self.group_default_exclusive_check.isChecked()
+
+            if group_name not in self.config.group_defaults:
+                self.config.group_defaults[group_name] = {}
+
+            if tasks:
+                self.config.group_defaults[group_name]['tasks'] = int(tasks)
+            if memory:
+                self.config.group_defaults[group_name]['memory'] = int(memory)
+            self.config.group_defaults[group_name]['exclusive'] = exclusive
+
+            self.update_controls()
+
+    @QtCore.pyqtSlot()
     def on_group_default_list_itemSelectionChanged(self):
         """
         Handles the event when an item in the partition group list is selected.
@@ -304,7 +328,7 @@ class SetupWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
 
         This method opens the configuration window.
         """
-        self.config_tabs.setCurrentIndex(8)
+        self.config_tabs.setCurrentIndex(9)
 
     @QtCore.pyqtSlot()
     def on_group_list_itemSelectionChanged(self):
