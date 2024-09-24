@@ -220,6 +220,13 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
 
         self.get_defaults_from_cmdline()
 
+        # Check for valid SLURM installation
+
+        if not self.slurm.check_environment():
+            QtWidgets.QMessageBox.information(
+                self, self.title, "SLURM not available. Please contact support.")
+            sys.exit(1)
+
         # Query partition features
 
         self.slurm.query_partitions(exclude_set=self.part_exclude_set)

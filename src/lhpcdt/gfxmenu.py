@@ -44,15 +44,19 @@ under certain conditions; see LICENSE for details.
 gfxmenu_copyright_short = """LUNARC HPC Desktop On-Demand - %s"""
 gfxmenu_version = "0.9.13"
 
-if __name__ == "__main__":
 
+def main():
     # ----- Parse command line arguments
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--no-launcher", help="Generate menus and scripts with direct launch.", action="store_true")
-    parser.add_argument("--config", help="Show configuration", action="store_true")
-    parser.add_argument("--silent", help="Run without output", action="store_true")
-    parser.add_argument("--verbose", help="Verbose logging", action="store_true")
+    parser.add_argument(
+        "--no-launcher", help="Generate menus and scripts with direct launch.", action="store_true")
+    parser.add_argument(
+        "--config", help="Show configuration", action="store_true")
+    parser.add_argument(
+        "--silent", help="Run without output", action="store_true")
+    parser.add_argument("--verbose", help="Verbose logging",
+                        action="store_true")
     args = parser.parse_args()
 
     # ----- Show version information
@@ -65,16 +69,18 @@ if __name__ == "__main__":
     # ----- Read configuration
 
     if args.verbose:
-        logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S', level=logging.DEBUG)
+        logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s',
+                            datefmt='%d-%b-%y %H:%M:%S', level=logging.DEBUG)
 
     cfg = config.GfxConfig.create()
 
     if args.config:
         cfg.print_config()
-        sys.exit(0)    
+        sys.exit(0)
 
     if not cfg.is_ok:
         print("Somehting is wrong with the configuration.")
+        sys.exit(0)
 
     # ----- Parse script directory
 
@@ -91,3 +97,8 @@ if __name__ == "__main__":
     user_menu.desktop_entry_prefix = cfg.desktop_entry_prefix
     user_menu.add_scripts(script_db)
     user_menu.generate()
+
+
+if __name__ == "__main__":
+
+    main()

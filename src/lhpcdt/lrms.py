@@ -24,6 +24,7 @@ import time
 import datetime
 import getpass
 import sys
+import shutil
 
 from subprocess import Popen, PIPE, STDOUT
 
@@ -188,6 +189,24 @@ class Slurm(object):
         self.verbose = True
         self.job_output_dir = os.path.join(os.path.expanduser("~"), ".lhpc")
 
+    def is_exec_available(self, executable):
+        """Check if executable is available"""
+        exec_found = shutil.which(executable)
+        #if self.verbose:
+        #    print("Executable %s is %s" % (executable, "found" if exec_found else "not found"))
+        return shutil.which(executable) is not None
+
+    def check_environment(self):
+        """Check if SLURM commands are available"""
+
+        self.sbatch_available = self.is_exec_available("sbatch")
+        self.squeue_available = self.is_exec_available("squeue")
+        self.scancel_available = self.is_exec_available("scancel")
+        self.sinfo_available = self.is_exec_available("sinfo")
+
+        return self.sbatch_available and self.squeue_available and self.scancel_available and self.sinfo_available
+
+
     def __include_part(self, part, exclude_set):
         include = True
 
@@ -304,7 +323,7 @@ class Slurm(object):
         """Query features of partition"""
 
         if self.verbose:
-            print("Please wait, querying nodes for features %s ...")
+            print(f"Querying {part} for features ...")
 
         node_info = self.query_nodes()
 
@@ -317,10 +336,6 @@ class Slurm(object):
                     for feature in features:
                         if self.__include_feature(feature, exclude_set):
                             feature_list.append(feature)
-
-        if self.verbose:
-            # print(list(set(feature_list)))
-            print("Done.")
 
         return list(set(feature_list))
 

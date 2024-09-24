@@ -17,7 +17,7 @@
 #
 """LUNARC HPC Desktop Monitor Module"""
 
-import os, math
+import os, math, sys
 import getpass
 from datetime import datetime
 
@@ -291,6 +291,11 @@ class NodeWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         self.setupUi(self)
 
         self.slurm = lrms.Slurm()
+
+        if not self.slurm.check_environment():
+            QtWidgets.QMessageBox.information(
+                self, "GfxLauncher", "SLURM not available. Please contact support.")
+            sys.exit(1)
 
         self.tool_path = settings.LaunchSettings.create().tool_path
 

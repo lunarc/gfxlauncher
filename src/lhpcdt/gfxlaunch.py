@@ -41,7 +41,7 @@ tool_path = os.path.dirname(os.path.abspath(sys.argv[0]))
 sys.path.insert(0, tool_path)
 
 
-if __name__ == '__main__':
+def main():
 
     # Show version information
 
@@ -137,12 +137,12 @@ if __name__ == '__main__':
                         dest="splash",
                         help="Show splash screen.",
                         action="store_true", default=False)
-    
+
     parser.add_argument("--restrict",
                         dest="restrict",
                         help="Restrict usage to unix-group.",
                         default="")
-    
+
     parser.add_argument("--part-disable",
                         dest="part_disable",
                         help="Disable partition selection.",
@@ -205,9 +205,14 @@ if __name__ == '__main__':
         receiver.moveToThread(thread)
 
         thread.started.connect(receiver.run)
-        thread.start()        
+        thread.start()
         form.redirect_thread = thread
 
     # Start main application loop
 
     app.exec_()
+
+
+if __name__ == '__main__':
+
+    main()

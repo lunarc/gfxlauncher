@@ -1,0 +1,29 @@
+[project]
+name = "gfxlauncher"
+version = "0.9.13"
+description = "The GFX Launcher toolkit provide the means for launching graphical applications through SLURM. The toolkit comes with a configurable launcher, graphical job monitor and tools for automatically generating menus and shortcuts for the launcher."
+authors = [
+    {name = "Jonas Lindemann", email = "jonas.lindemann@lunarc.lu.se"},
+]
+dependencies = [
+    "qtpy>=2.0.1",
+    "pyqt5>=5.15.6",
+]
+requires-python = ">=3.6"
+readme = "README.md"
+license = {text = "GPL-3.0"}
+
+[project.scripts]
+gfxlaunch = "lhpcdt.gfxlaunch:main"
+gfxusage = "lhpcdt.gfxusage:main"
+gfxmenu = "lhpcdt.gfxmenu:main"
+gfxnodes = "lhpcdt.gfxnodes:main"
+gfxconfig = "lhpcdt.gfxconfig:main"
+
+
+[build-system]
+requires = ["pdm-pep517>=1.0.0"]
+build-backend = "pdm.pep517.api"
+
+[tool]
+[tool.pdm]
