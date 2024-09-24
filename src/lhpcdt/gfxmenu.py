@@ -80,6 +80,7 @@ def main():
 
     if not cfg.is_ok:
         print("Somehting is wrong with the configuration.")
+        sys.exit(0)
 
     # ----- Parse script directory
 

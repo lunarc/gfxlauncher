@@ -18,6 +18,7 @@ gfxlaunch = "lhpcdt.gfxlaunch:main"
 gfxusage = "lhpcdt.gfxusage:main"
 gfxmenu = "lhpcdt.gfxmenu:main"
 gfxnodes = "lhpcdt.gfxnodes:main"
+gfxconfig = "lhpcdt.gfxconfig:main"
 
 
 [build-system]
