@@ -1,7 +1,7 @@
 Configuring the launcher
 ========================
 
-GfxLauncher and the gfxconvert script is configured in the **/etc/gfxlauncher.conf** configuration file. This file controls all the default settings and slurm templates used.
+GfxLauncher and the gfxmenu script is configured in the **/etc/gfxlauncher.conf** configuration file. This file controls all the default settings and slurm templates used.
 
 An example configuration file is shown below:
 
@@ -9,7 +9,6 @@ An example configuration file is shown below:
 
     [general]
     script_dir = /sw/pkg/ondemand-dt/run
-    install_dir = /sw/pkg/gfxlauncher
     help_url = "https://lunarc-documentation.readthedocs.io/en/latest/getting_started/gfxlauncher/"
     browser_command = firefox
 
@@ -75,7 +74,9 @@ An example configuration file is shown below:
 General section - [general]
 ---------------------------
 
-The general section mainly contains information on where the **gfxconvert** tool can find the server scripts used for starting the applications on the backend infrastructure, **install_dir**. The server scripts also contains meta data for menu generation. The **script_dir** tells **gfxconvert** where the run-scripts should be generated.
+The general section contain common settings for all tools provided by the GFX Launcher framework. The most important configuration variable is the **script_dir** which tells the **gfxmenu** tool where to find the application scripts used for starting the applications on the backend infrastructure. 
+
+The **help_url** variable is used to provide a link to the documentation for the users. The **browser_command** variable is used to specify the command to start the browser when the user clicks the help button in the launcher.
 
 SLURM section - [slurm]
 -----------------------
@@ -89,25 +90,20 @@ This section contain settings related to SLURM.
 +-----------------+--------------------------------------------------------------------------------------------+
 | default_account | If no account information is given this is the default account used.                       |
 +-----------------+--------------------------------------------------------------------------------------------+
-| use_sacctmgr    | If set to yes (default) gfxlaunch will use project information from the sacctmgr command   |
-|                 | instead of grantfiles. This is the default.                                                |
-+-----------------+--------------------------------------------------------------------------------------------+
-
-.. note:: grantfile and grantfile_base are specific to SNIC/LUNARC HPC resources and can be disabled.
 
 Feature descriptions
 ~~~~~~~~~~~~~~~~~~~~
 
-It is also possible to give descriptive names of SLURM features, which will be displayed in the user interface combobox. Feature descriptions are given by variables prefixed with **feature_** and the name of the feature in SLURM. An feature variable name for the SLURM feature **gpu4k20** will then be **feature_gpu4k20**. The description is a string assigned to the configuration variable, enclosed with "". An example feature variable assignment is shown below:
+To make the resource selection more intuitive it is possible to give the SLURM features more easy to understand descriptions. This is done by providing special feature variables prefixed with **feature_** and the name of the feature in SLURM. A feature variable name for the SLURM feature **gpua100** would then be **feature_gpua100**. The description is a string assigned to the configuration variable, enclosed with "". An example feature variable assignment is shown below:
 
 .. code-block:: ini
 
-    feature_gpu4k20 = "4 x NVIDIA K20 GPU"
+    feature_gpua100 = "NVIDIA A100 GPU"
     
 Ignoring features
 ~~~~~~~~~~~~~~~~~
 
-Not all features should be automatically be exposed to the users. To hide these the **feature_ignore** configuration variable can be used to list features that shoudln't be considered in the user interface. The following example shows this variable used:
+In a HPC environment there are many features that shouldn't be selectable by the user. These features can be hidden using the **feature_ignore** configuration variable. The following example shows this variable used:
 
 .. code-block:: ini
 
@@ -116,7 +112,7 @@ Not all features should be automatically be exposed to the users. To hide these 
 Partition descriptions
 ~~~~~~~~~~~~~~~~~~~~~~
 
-To make the resource selection more intuitive it is also possible to give the SLURM partitions more easy to understand descriptions. This is done by providing special partition variables prefixed with **part_** and the name of the partition in SLURM. A partition variable name for the SLURM partition **gpua100** would then be **part_gpua100**. The description is a string assigned to the configuration variable, enclosed with "". An example partition variable assignment is shonw below:
+In the same ways as for features, partitions can alos be given more intuitive descriptions. This is done by providing special partition variables prefixed with **part_** and the name of the partition in SLURM. A partition variable name for the SLURM partition **gpua100** would then be **part_gpua100**. The description is a string assigned to the configuration variable, enclosed with "". An example partition variable assignment is shown below:
 
 .. code-block:: ini
 
@@ -134,7 +130,7 @@ Just as with features, not all partitions should be automatically be exposed to 
 Grouping partitions
 ~~~~~~~~~~~~~~~~~~~
 
-Certain applications will require certain partitions when running. To limit the choices in the user interface it is possible to define groups of partitions, this can be done by defining variables with the **group_**-prefix followed by the groupname. For each group a number of partitions can be specified. Examples of group definitions are shown below:
+For certain applications you want the users to select partitions from a limited set of partitions. This can be done by the group feature in GfxLauncher. Groups are defined by creating variables with the **group_**-prefix followed by the groupname. For each group a number of partitions can be specified. Examples of group definitions are shown below: 
 
 .. code-block:: ini
 
@@ -149,7 +145,7 @@ The partition groups can be used the **gfxlaunch** switch --group to only displa
 Menu section - [menu]
 ---------------------
 
-Directories and files for the **gfxconvert** menu generation is given in this section. The following variables are used by **gfxconvert**.
+Directories and files for the **gfxmenu** menu generation is given in this section. The following variables are used by **gfxmenu**.
 
 +----------------------------+-------------------------------------------------------------------------------+
 | Variable                   | Description                                                                   |
@@ -157,14 +153,6 @@ Directories and files for the **gfxconvert** menu generation is given in this se
 | menu_prefix                | Prefix added to the menu descriptions to identify menus generated by gfxmenu. |
 +----------------------------+-------------------------------------------------------------------------------+
 | directdesktop_entry_prefix | Prefix added to desktop-shortcut files generated by gfxmenu.                  |
-+----------------------------+-------------------------------------------------------------------------------+
-| menu_location              | Location of the menu files (applications-merged).                             |
-+----------------------------+-------------------------------------------------------------------------------+
-| app_location               | Location of the application files (applications).                             |
-+----------------------------+-------------------------------------------------------------------------------+
-| dir_location               | Location of the desktop files (desktop-directories).                          |
-+----------------------------+-------------------------------------------------------------------------------+
-| ondemand_location          | Location where to write the generation timestamp                              |
 +----------------------------+-------------------------------------------------------------------------------+
 
 VirtualGL section - [vgl]

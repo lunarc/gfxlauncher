@@ -1,9 +1,11 @@
 Configuring compute nodes
 =========================
 
+The compute nodes are where the applications will launched by the GfxLauncher framework. Usually the compute nodes are part of a cluster and managed by a job scheduler like SLURM. For the GfxLauncher to work properly the compute nodes need to be configured so that applications can be launched by issuing a command on the node using SSH or vglconnect. The following sections describe one way of how to configuring the compute nodes for GfxLauncher.
+
 There are two requirements for the compute nodes:
 
- 1. A user must be able to SSH to the node of the running job. See SLURM documentation (https://slurm.schedmd.com/pam_slurm_adopt.html)
+ 1. A user must be able to use SSH execute applications. See SLURM documentation (https://slurm.schedmd.com/pam_slurm_adopt.html)
  2.  When executing the application on the node it has to be associated with the same context as the placeholder job. 
 
 To solve the second point a special pam module is required to associate the SSH session with the running job. I the following sections a solution to this is configured. It should also be possible to configure this with the **pam_slurm_adopt** module, but it has not been thoroughly tested yet.
