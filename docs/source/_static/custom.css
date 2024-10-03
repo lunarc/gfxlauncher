@@ -1,0 +1,12 @@
+.md-nav__title,
+.md-nav__item--nested > .md-nav__link {
+    font-size: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    visibility: hidden !important;
+}
+
+.md-nav__item--nested > .md-nav__link:after {
+    display: none !important;
+}
