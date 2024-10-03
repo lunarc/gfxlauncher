@@ -5,11 +5,9 @@
   
 The GFX Launcher toolkit provide the means for launching graphical applications through SLURM. The toolkit comes with a configurable launcher, graphical job monitor and tools for automatically generating menus and shortcuts for the launcher. 
 
-
-
 .. toctree::
-   :maxdepth: 1
-   :caption: Contents:
+   :maxdepth: 2
+   :hidden:
 
    introduction.rst
    technical_description.rst
@@ -22,9 +20,3 @@ The GFX Launcher toolkit provide the means for launching graphical applications 
    code_documentation.rst   
 
 
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
