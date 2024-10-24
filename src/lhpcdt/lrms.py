@@ -28,9 +28,9 @@ import shutil
 
 from subprocess import Popen, PIPE, STDOUT
 
-from . import hostlist
-from . import config
-from . import jobs
+from lhpcdt import hostlist
+from lhpcdt import config
+from lhpcdt import jobs
 
 
 def execute_cmd(cmd):
@@ -310,6 +310,71 @@ class Slurm(object):
                                 node_dict[current_node_name][var_name] = var_value
 
         return node_dict
+    
+    def query_reservations(self):
+        """Query SLURM reservations"""
+
+        """
+        ReservationName=lu2023-2-82 StartTime=2023-10-16T14:38:40 EndTime=2040-01-01T00:00:00 Duration=5920-10:21:20
+        Nodes=cx[02-03] NodeCnt=2 CoreCnt=96 Features=(null) PartitionName=(null) Flags=IGNORE_JOBS,SPEC_NODES
+        TRES=cpu=96
+        Users=(null) Groups=(null) Accounts=lu2023-2-82 Licenses=(null) State=ACTIVE BurstBuffer=(null) Watts=n/a
+        MaxStartDelay=(null)
+
+        ReservationName=lu2023-2-18 StartTime=2023-11-02T14:26:25 EndTime=2040-01-01T00:00:00 Duration=5903-09:33:35
+        Nodes=ca[01-18] NodeCnt=18 CoreCnt=360 Features=(null) PartitionName=(null) Flags=IGNORE_JOBS,SPEC_NODES
+        TRES=cpu=360
+        Users=(null) Groups=(null) Accounts=lu2023-2-18 Licenses=(null) State=ACTIVE BurstBuffer=(null) Watts=n/a
+        MaxStartDelay=(null)
+
+        ReservationName=reimann StartTime=2024-03-21T08:57:04 EndTime=2040-01-01T00:00:00 Duration=5763-15:02:56
+        Nodes=ca[19-22] NodeCnt=4 CoreCnt=96 Features=(null) PartitionName=(null) Flags=IGNORE_JOBS,SPEC_NODES
+        TRES=cpu=96
+        Users=(null) Groups=(null) Accounts=lu2024-2-46 Licenses=(null) State=ACTIVE BurstBuffer=(null) Watts=n/a
+        MaxStartDelay=(null)
+
+        ReservationName=RPJM-course StartTime=2024-10-24T09:00:00 EndTime=2024-10-24T16:00:00 Duration=07:00:00
+        Nodes=cn[157-158] NodeCnt=2 CoreCnt=96 Features=(null) PartitionName=(null) Flags=IGNORE_JOBS,DAILY,SPEC_NODES
+        TRES=cpu=96
+        Users=(null) Groups=(null) Accounts=lu2024-7-80 Licenses=(null) State=INACTIVE BurstBuffer=(null) Watts=n/a
+        MaxStartDelay=(null)        
+        """
+
+        p = Popen("scontrol show res", stdout=PIPE,
+                  stderr=PIPE, shell=True, universal_newlines=True)
+        scontrol_output = p.communicate()[0].split("\n")
+
+        reservations = []
+
+        for line in scontrol_output:
+            if line.find("ReservationName") != -1:
+                reservation = {}
+                parts = line.split(" ")
+                for part in parts:
+                    if part.find("=") != -1:
+                        key = part.split("=")[0]
+                        value = part.split("=")[1]
+                        reservation[key] = value
+
+            elif line.find("Nodes") != -1:
+                parts = line.split(" ")
+                for part in parts:
+                    if part.find("=") != -1:
+                        key = part.split("=")[0]
+                        value = part.split("=")[1]
+                        reservation[key] = value
+
+            elif line.find("Users") != -1:
+                parts = line.split(" ")
+                for part in parts:
+                    if part.find("=") != -1:
+                        key = part.split("=")[0]
+                        value = part.split("=")[1]
+                        reservation[key] = value
+
+                reservations.append(reservation)
+
+        return reservations
 
     def __include_feature(self, feature, exclude_set):
         include = True
@@ -565,18 +630,36 @@ class AccountManager:
 
         self.account_dict = account_dict
 
-    def query_active_projects(self, user):
+    def query_active_projects(self, user="") -> list:
         return list(self.user_account_dict.keys())
+    
+    def query_active_reservations(self) -> list:
+        self.query_user_account_info()
+        slurm = Slurm()
+        reservations = slurm.query_reservations()
+        print(reservations)
+        projects = self.query_active_projects()
+        print(projects)
+        active_reservations = []
+        for reservation in reservations:
+            account = reservation["Accounts"]
+            if account in projects:
+                active_reservations.append(reservation["ReservationName"])
+
+        return active_reservations
+
 
 
 if __name__ == "__main__":
 
-    #slurm = Slurm()
-    #features = slurm.query_features("snic")
-    # print(features)
+    account_mgr = AccountManager()
+    print(account_mgr.query_active_reservations())
 
+        
     #saccmgr = AccountManager()
     #saccmgr.query_user_account_info()
 
-    sacct = Accounting()
-    print(sacct.job_status)
+    #sacct = Accounting()
+    #print(sacct.job_status)
+
+

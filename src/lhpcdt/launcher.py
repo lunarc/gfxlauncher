@@ -487,6 +487,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         self.vgl_path = self.config.vgl_path
         self.account = self.config.default_account
         self.part = self.config.default_part
+        self.reservation = ""
         self.grant_filename = ""
         self.cmd = "xterm"
         self.title = "Lunarc HPC Desktop Launcher"
@@ -856,6 +857,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         self.job.partition = str(self.selected_part)
         self.job.time = str(self.time)
         self.job.output = self.user_config.job_output_file_path
+        self.job.reservation = self.reservation
         if self.job_type != "vm":
             self.job.memory = int(self.memory)
             self.job.nodeCount = int(self.count)
@@ -1130,6 +1132,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
             job.name = self.job_name
             job.account = str(self.projectCombo.currentText())
             job.partition = str(self.selected_part)
+            job.reservation = self.reservation
             job.time = str(self.time)
             job.output = self.user_config.job_output_file_path
             if self.job_type != "vm":
