@@ -62,6 +62,7 @@ class Job(object):
         self.memory = -1
         self.account = account
         self.partition = partition
+        self.reservation = ""
         self.node = ""
         self.submitNode = False
         self.constraints = []
@@ -118,6 +119,9 @@ class Job(object):
         else:
             if self.partition != "":
                 self.add_option("-p %s" % self.partition)
+
+        if self.reservation != "":
+            self.add_option("--reservation=%s" % self.reservation)
 
         if self.output != "":
             self.add_option("--output=%s" % self.output)

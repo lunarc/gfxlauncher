@@ -1,7 +1,7 @@
 #!/bin/env python
 #
 # LUNARC HPC Desktop On-Demand graphical launch tool
-# Copyright (C) 2017-2021 LUNARC, Lund University
+# Copyright (C) 2017-2024 LUNARC, Lund University
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -72,6 +72,18 @@ class ResourceSpecWindow(QtWidgets.QWidget, ui.Ui_resourceWindow):
             self.specifyTasksPerNodeCheck.setVisible(True)
             self.specifyMemoryCheck.setVisible(True)
 
+        account_mgr = lrms.AccountManager()
+        self.reservationCombo.clear()
+        self.reservationCombo.addItems(account_mgr.query_active_reservations())
+
+        if self.parent.reservation!="":
+            self.reservationCombo.setVisible(True)
+            self.reservationCheck.setChecked(True)
+            self.reservationCombo.setCurrentText(self.parent.reservation)   
+        else:
+            self.reservationCombo.setVisible(False)
+            self.reservationCheck.setChecked(False)
+
         if int(self.parent.memory)>=0:
             self.memoryPerCpuEdit.setText(str(self.parent.memory))
             self.memoryPerCpuEdit.setVisible(True)
@@ -123,6 +135,12 @@ class ResourceSpecWindow(QtWidgets.QWidget, ui.Ui_resourceWindow):
             self.parent.memory = int(self.memoryPerCpuEdit.text())
             self.parent.exclusive = self.exclusiveCheck.isChecked()
             self.parent.tasks_per_node = self.tasksPerNodeSpin.value()
+
+            if self.reservationCheck.isChecked():
+                self.parent.reservation = self.reservationCombo.currentText()
+            else:
+                self.parent.reservation = ""
+
             self.parent.update_controls()
             #self.parent.count = self.numberOfNodesSpin.value()
             #self.parent.cpus_per_task = self.cpuPerTaskSpin.value()
@@ -183,6 +201,13 @@ class ResourceSpecWindow(QtWidgets.QWidget, ui.Ui_resourceWindow):
                 self.cpuPerTaskSpin.setEnabled(False)
                 self.cpuPerTaskSpin.setValue(-1)
     """
+
+    @QtCore.pyqtSlot()
+    def on_reservationCheck_clicked(self):
+        if self.reservationCheck.isChecked():
+            self.reservationCombo.setVisible(True)
+        else:
+            self.reservationCombo.setVisible(False)
 
     @QtCore.pyqtSlot()
     def on_okButton_clicked(self):

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>497</width>
-    <height>172</height>
+    <height>187</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -15,40 +15,38 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <layout class="QGridLayout" name="gridLayout">
-     <property name="sizeConstraint">
-      <enum>QLayout::SetMinAndMaxSize</enum>
-     </property>
+    <layout class="QGridLayout" name="gridLayout" columnstretch="0,0,0">
      <property name="verticalSpacing">
       <number>7</number>
      </property>
-     <item row="0" column="2">
-      <widget class="QLineEdit" name="jobNameEdit"/>
-     </item>
-     <item row="2" column="2">
-      <widget class="QLineEdit" name="memoryPerCpuEdit">
+     <item row="2" column="1">
+      <widget class="QCheckBox" name="specifyMemoryCheck">
        <property name="text">
-        <string>3200</string>
+        <string/>
        </property>
       </widget>
      </item>
-     <item row="2" column="0">
-      <widget class="QLabel" name="label_2">
-       <property name="text">
-        <string>Memory</string>
+     <item row="1" column="2">
+      <widget class="QSpinBox" name="tasksPerNodeSpin">
+       <property name="minimum">
+        <number>-1</number>
        </property>
-       <property name="alignment">
-        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-       </property>
-       <property name="indent">
-        <number>10</number>
+       <property name="value">
+        <number>1</number>
        </property>
       </widget>
      </item>
-     <item row="0" column="0">
-      <widget class="QLabel" name="label">
+     <item row="1" column="1">
+      <widget class="QCheckBox" name="specifyTasksPerNodeCheck">
        <property name="text">
-        <string>Jobname</string>
+        <string/>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="label_4">
+       <property name="text">
+        <string>Tasks per node</string>
        </property>
        <property name="alignment">
         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -71,17 +69,39 @@
        </property>
       </widget>
      </item>
-     <item row="2" column="1">
-      <widget class="QCheckBox" name="specifyMemoryCheck">
+     <item row="0" column="2">
+      <widget class="QLineEdit" name="jobNameEdit"/>
+     </item>
+     <item row="0" column="0">
+      <widget class="QLabel" name="label">
        <property name="text">
-        <string/>
+        <string>Jobname</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       </property>
+       <property name="indent">
+        <number>10</number>
        </property>
       </widget>
      </item>
-     <item row="1" column="1">
-      <widget class="QCheckBox" name="specifyTasksPerNodeCheck">
+     <item row="2" column="2">
+      <widget class="QLineEdit" name="memoryPerCpuEdit">
        <property name="text">
-        <string/>
+        <string>3200</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="label_2">
+       <property name="text">
+        <string>Memory</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       </property>
+       <property name="indent">
+        <number>10</number>
        </property>
       </widget>
      </item>
@@ -95,10 +115,10 @@
        </property>
       </widget>
      </item>
-     <item row="1" column="0">
-      <widget class="QLabel" name="label_4">
+     <item row="6" column="0">
+      <widget class="QLabel" name="label_5">
        <property name="text">
-        <string>Tasks per node</string>
+        <string>Use reservation</string>
        </property>
        <property name="alignment">
         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -108,13 +128,17 @@
        </property>
       </widget>
      </item>
-     <item row="1" column="2">
-      <widget class="QSpinBox" name="tasksPerNodeSpin">
-       <property name="minimum">
-        <number>-1</number>
+     <item row="6" column="1">
+      <widget class="QCheckBox" name="reservationCheck">
+       <property name="text">
+        <string/>
        </property>
-       <property name="value">
-        <number>1</number>
+      </widget>
+     </item>
+     <item row="6" column="2">
+      <widget class="QComboBox" name="reservationCombo">
+       <property name="editable">
+        <bool>true</bool>
        </property>
       </widget>
      </item>
