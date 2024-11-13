@@ -1,11 +1,11 @@
 Configuring Windows backend
 ===========================
 
-GfxLauncher can be used to launch RDP sessions to preconfigured Windows virtual machines. Access to these virtual machines are handled through a special prolog/epilog script for SLURM. This script will maintain a small database of which allocated VMs are in use by RDP-sessions. The prolog-script will also create a special file in the users home folder for any allocated vm:s during the life time of the job. After job termination the script will also remove this file.
+GfxLauncher can be used to launch RDP sessions to preconfigured Windows virtual machines. Access to these virtual machines are handled through a special prolog/epilog script for Slurm. This script will maintain a small database of which allocated VMs are in use by RDP-sessions. The prolog-script will also create a special file in the users home folder for any allocated vm:s during the life time of the job. After job termination the script will also remove this file.
 
 To make sure the configured virtual machines are not used by other users the prolog/epilog can also be configured to logoff all users after a completed job and also enable/disable user accounts on the configured VMs.
 
-Installing prolog/epilog script in SLURM
+Installing prolog/epilog script in Slurm
 ----------------------------------------
 
 The prolog/epilog script, prolog, is provided in the source distribution in the **slurmvm**. To integrate this script in slurm it must be copied/linked to the slurm configuration directory to /etc/slurm/prolog and /etc/slurm/epilog scripts. The easiest way is to just create symbolic links from the source installation directory for the required files.
@@ -17,7 +17,7 @@ The prolog/epilog script, prolog, is provided in the source distribution in the 
     ln -s /[install-dir]/gfxlauncher/slurmvm/prolog epilog
     ln -s /[install-dir]/gfxlauncher/slurmvm/lhpcvm.py lhpcvm.py
 
-Configuration of SLURM virtual node
+Configuration of Slurm virtual node
 -----------------------------------
 
 A special node must be configured that will handle the allocation of the virtual machines. A typical configuration in the slurm.conf looks like this:
@@ -30,12 +30,12 @@ A special node must be configured that will handle the allocation of the virtual
 
 As the virtual node does not represent real hardware it has to be configured with the **OverSubscribe=YES** directive. This also enable the virtual node to be a small virtual machine with just enough resources to run the slurmd-daemon.
 
-In the configuration above the virtual node wg01 maintains 4 virtual machnies as a consumable SLURM resource, **Gres=win10m:4**. This must match the actual configuration of the prolog/epilog script described in the next section.
+In the configuration above the virtual node wg01 maintains 4 virtual machnies as a consumable Slurm resource, **Gres=win10m:4**. This must match the actual configuration of the prolog/epilog script described in the next section.
 
 Configuring the VM backend
 --------------------------
 
-The configuration of the prolog/epilog script is done through the configuration file **/etc/slurm/lhpcvm.conf**. On a high level the file defines the virtual machines configured by the node. The number of configured machines should correspond to the configured consumable resources in SLURM. 
+The configuration of the prolog/epilog script is done through the configuration file **/etc/slurm/lhpcvm.conf**. On a high level the file defines the virtual machines configured by the node. The number of configured machines should correspond to the configured consumable resources in Slurm.
 
 A typical configuration file for 4 virtual machines are shown below. The different sections are described in separate sections.
 
