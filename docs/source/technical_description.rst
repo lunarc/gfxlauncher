@@ -1,7 +1,7 @@
 Technical overview
 ==================
 
-GfxLauncher is implemented as a command-line tool that takes care of launching graphical or interactive jobs in SLURM. The tool provides numerous switches for customizing the user interface for specific details of the application being launched. An example of how the tool, gfxlaunch, is used is shown below:
+GfxLauncher is implemented as a command-line tool that takes care of launching graphical or interactive jobs in Slurm. The tool provides numerous switches for customizing the user interface for specific details of the application being launched. An example of how the tool, gfxlaunch, is used is shown below:
 
 .. code-block:: bash
 
@@ -10,9 +10,9 @@ GfxLauncher is implemented as a command-line tool that takes care of launching g
 Application launch methods
 --------------------------
 
-The main idea with GfxLauncher is to be able to launch interactive applications, both graphical and web-based, through SLURM. 
+The main idea with GfxLauncher is to be able to launch interactive applications, both graphical and web-based, through Slurm.
 
-GfxLauncher supports 4 different ways of launching applications through SLURM:
+GfxLauncher supports 4 different ways of launching applications through Slurm:
 
 1. Running a placeholder job on a node. Starting application by executing SSH to the allocated node.
 2. Running a placeholder job on a node. Starting application by executing vglconnect (VirtualGL) to the allocated node.
@@ -22,7 +22,7 @@ GfxLauncher supports 4 different ways of launching applications through SLURM:
 SSH based application launching
 -------------------------------
 
-To launch X11-based applications securely through SLURM requires them to be launched through SSH with options for X11 tunneling enabled. This is often not directly available through SLURM based launch methods. GfxLauncher uses a placeholder job to allocate the node. This launch method requires SSH access to the nodes. The following figure illustrates the launch process:
+To launch X11-based applications securely through Slurm requires them to be launched through SSH with options for X11 tunneling enabled. This is often not directly available through Slurm based launch methods. GfxLauncher uses a placeholder job to allocate the node. This launch method requires SSH access to the nodes. The following figure illustrates the launch process:
 
 .. image:: images/std_app_launch.png
   :width: 100%
@@ -33,7 +33,7 @@ To be able to run the application with the same resource limits as the jobs requ
 VGLConnect based application launching
 --------------------------------------
 
-Launching VirtualGL applications through SLRUM has the same requirements as launching through SSH. In addition, the front-end and nodes must have working VirtualGL installations. GfxLauncher uses vglconnect instead of SSH to connect to the allocated node. The following figure below illustrates the launch process:
+Launching VirtualGL applications through Slurm has the same requirements as launching through SSH. In addition, the front-end and nodes must have working VirtualGL installations. GfxLauncher uses vglconnect instead of SSH to connect to the allocated node. The following figure below illustrates the launch process:
 
 .. image:: images/hw_app_launch.png
   :width: 100%
@@ -42,7 +42,7 @@ Launching VirtualGL applications through SLRUM has the same requirements as laun
 Notebook job launching
 ----------------------
 
-Starting a job running a Jupyter Notebook or JypterLab session is very similar to conventional job submission. A job is submitted to SLURM that starts up the notebook web server. GfxLauncher then waits for the job to start and monitors the job output for the URL to the started Jupyter web server. It then starts a browser session to this URL. If the user by mistake closes the browser window there is a special button in the user interface for reconnecting to the running Jupyter server. The figure below describes this process:
+Starting a job running a Jupyter Notebook or JypterLab session is very similar to conventional job submission. A job is submitted to Slurm that starts up the notebook web server. GfxLauncher then waits for the job to start and monitors the job output for the URL to the started Jupyter web server. It then starts a browser session to this URL. If the user by mistake closes the browser window there is a special button in the user interface for reconnecting to the running Jupyter server. The figure below describes this process:
 
 .. image:: images/notebook_launch.png
   :width: 100%
@@ -52,7 +52,7 @@ Starting a job running a Jupyter Notebook or JypterLab session is very similar t
 Connecting to Windows sessions using RDP
 ----------------------------------------
 
-The final launch method is used to connect to specially configured Windows hosts. This launch method also uses a special placeholder job submitted to a specially configured virtual SLURM node. The virtual node is configured with special SLURM epilogue and prologue scripts, that log out current users of the Windows session at job start and automatically log out a user when the walltime has expired. The backend scripts also handle the brokering of backend Windows servers. When a server is allocated, a special file is written in the user directory with the IP number of the backend Windows server. GfxLauncher monitors this file, and when available, launches a remote desktop (RDP) session to the started Windows instance. See the following figure for more details:
+The final launch method is used to connect to specially configured Windows hosts. This launch method also uses a special placeholder job submitted to a specially configured virtual Slurm node. The virtual node is configured with special Slurm epilogue and prologue scripts, that log out current users of the Windows session at job start and automatically log out a user when the walltime has expired. The backend scripts also handle the brokering of backend Windows servers. When a server is allocated, a special file is written in the user directory with the IP number of the backend Windows server. GfxLauncher monitors this file, and when available, launches a remote desktop (RDP) session to the started Windows instance. See the following figure for more details:
 
 .. image:: images/win_session_launch.png
   :width: 100%

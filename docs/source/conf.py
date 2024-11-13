@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.abspath('../..'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'GFX Launcher - An application launcher framework for SLURM'
+project = 'GFX Launcher - An application launcher framework for Slurm'
 copyright = '2017-2024, Jonas Lindemann'
 author = 'Jonas Lindemann'
 
@@ -175,7 +175,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'GfxLauncher-AgraphicalapplicationlauncherforSLURM.tex', 'GfxLauncher - A graphical application launcher for SLURM Documentation',
+    (master_doc, 'GfxLauncher-AgraphicalapplicationlauncherforSLURM.tex', 'GfxLauncher - A graphical application launcher for Slurm Documentation',
      'Jonas Lindemann', 'manual'),
 ]
 
@@ -185,7 +185,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'gfxlauncher-agraphicalapplicationlauncherforslurm', 'GfxLauncher - A graphical application launcher for SLURM Documentation',
+    (master_doc, 'gfxlauncher-agraphicalapplicationlauncherforslurm', 'GfxLauncher - A graphical application launcher for Slurm Documentation',
      [author], 1)
 ]
 
@@ -196,7 +196,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'GfxLauncher-AgraphicalapplicationlauncherforSLURM', 'GfxLauncher - A graphical application launcher for SLURM Documentation',
+    (master_doc, 'GfxLauncher-AgraphicalapplicationlauncherforSLURM', 'GfxLauncher - A graphical application launcher for Slurm Documentation',
      author, 'GfxLauncher-AgraphicalapplicationlauncherforSLURM', 'One line description of project.',
      'Miscellaneous'),
 ]
