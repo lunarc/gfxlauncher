@@ -49,13 +49,13 @@ The command line switches of **gfxlaunch** is described in the table below:
 Running standard X11 application (No graphics)
 ----------------------------------------------
 
-Standard X11 applications are launched by submitting a place holder job to SLURM. When the job is running gfxlaunch will execute the X11 application by using SSH with the -X switch. An example of the command line options used is shown below:
+Standard X11 applications are launched by submitting a place holder job to Slurm. When the job is running gfxlaunch will execute the X11 application by using SSH with the -X switch. An example of the command line options used is shown below:
 
 .. code-block:: bash
 
     gfxlaunch --title "Graphical Terminal" --partition lvis --account lvis-test --exclusive --time 00:45:00 --tasks-per-node=1 --cmd xterm
 
-The **--title** switch sets the window title. **--partition** and **--account** sets the SLURM partition and account to be used when submitting the job. **--exclusive** and **--tasks-per-node** corresponds to SLURM job attributes. **--time** sets the wall time for the job.  Most of these options can be overidden by the user in the user interface.
+The **--title** switch sets the window title. **--partition** and **--account** sets the Slurm partition and account to be used when submitting the job. **--exclusive** and **--tasks-per-node** corresponds to Slurm job attributes. **--time** sets the wall time for the job.  Most of these options can be overidden by the user in the user interface.
 
 If all of the node should be used including all cpu-cores, use **--tasks-per-node=-1** and **--exclusive** the command line becomes:
 
@@ -109,7 +109,7 @@ In this case the script will call the application with the **vglrun** command.
 Running Jupyter Notebooks and Jupyter Labs
 ------------------------------------------
 
-Jupyter Notebook and Jupyter Lab session are local web servers that acts as the applications main user interface. GfxLauncher starts these kind of applications by sending a normal job to the SLURM queue. It then waits for the URL of the started web server to appear in the job output and launches a browser session to this URL. The user interface displays a special button to reconnect to the job if the users closes the browser session by mistake.
+Jupyter Notebook and Jupyter Lab session are local web servers that acts as the applications main user interface. GfxLauncher starts these kind of applications by sending a normal job to the Slurm queue. It then waits for the URL of the started web server to appear in the job output and launches a browser session to this URL. The user interface displays a special button to reconnect to the job if the users closes the browser session by mistake.
 
 To launch a Jupyter Notebook session the following switches for the **gfxlaunch** command.
 
@@ -117,7 +117,7 @@ To launch a Jupyter Notebook session the following switches for the **gfxlaunch*
 
     gfxlaunch --title "Jupyter Notebook" --partition lvis --account lvis-test --only-submit --job=notebook
 
-The **--only-submit** tells **gfxlaunch** to submit a standard job instead of a placeholder job. The **--job=notebook** tells the **gfxlaunch** command to submit a Jupyter Notebook job to SLURM.
+The **--only-submit** tells **gfxlaunch** to submit a standard job instead of a placeholder job. The **--job=notebook** tells the **gfxlaunch** command to submit a Jupyter Notebook job to Slurm.
 
 A Jupyter Lab session is launched in a similar way except for using the switch **--job=jupyterlab**.
 
