@@ -78,10 +78,10 @@ The general section contain common settings for all tools provided by the GFX La
 
 The **help_url** variable is used to provide a link to the documentation for the users. The **browser_command** variable is used to specify the command to start the browser when the user clicks the help button in the launcher.
 
-SLURM section - [slurm]
+Slurm section - [slurm]
 -----------------------
 
-This section contain settings related to SLURM.
+This section contain settings related to Slurm.
 
 +-----------------+--------------------------------------------------------------------------------------------+
 | Variable        | Description                                                                                |
@@ -94,7 +94,7 @@ This section contain settings related to SLURM.
 Feature descriptions
 ~~~~~~~~~~~~~~~~~~~~
 
-To make the resource selection more intuitive it is possible to give the SLURM features more easy to understand descriptions. This is done by providing special feature variables prefixed with **feature_** and the name of the feature in SLURM. A feature variable name for the SLURM feature **gpua100** would then be **feature_gpua100**. The description is a string assigned to the configuration variable, enclosed with "". An example feature variable assignment is shown below:
+To make the resource selection more intuitive it is possible to give the Slurm features more easy to understand descriptions. This is done by providing special feature variables prefixed with **feature_** and the name of the feature in Slurm. A feature variable name for the Slurm feature **gpua100** would then be **feature_gpua100**. The description is a string assigned to the configuration variable, enclosed with "". An example feature variable assignment is shown below:
 
 .. code-block:: ini
 
@@ -112,7 +112,7 @@ In a HPC environment there are many features that shouldn't be selectable by the
 Partition descriptions
 ~~~~~~~~~~~~~~~~~~~~~~
 
-In the same ways as for features, partitions can alos be given more intuitive descriptions. This is done by providing special partition variables prefixed with **part_** and the name of the partition in SLURM. A partition variable name for the SLURM partition **gpua100** would then be **part_gpua100**. The description is a string assigned to the configuration variable, enclosed with "". An example partition variable assignment is shown below:
+In the same ways as for features, partitions can alos be given more intuitive descriptions. This is done by providing special partition variables prefixed with **part_** and the name of the partition in Slurm. A partition variable name for the Slurm partition **gpua100** would then be **part_gpua100**. The description is a string assigned to the configuration variable, enclosed with "". An example partition variable assignment is shown below:
 
 .. code-block:: ini
 

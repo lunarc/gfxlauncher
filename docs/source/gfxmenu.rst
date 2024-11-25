@@ -1,7 +1,7 @@
 Generating menus
 ================
 
-To maintain a large number of graphical applications that is using a SLURM backend in different way we need an easy way of creating shortcuts and menus without a lot of manual work. To support this the other part of the GFX Launcher framework is the **gfxmenu** command which is a special tool for automatically generating a user menu structure and related shortcuts with **gfxlaunch** commands. 
+To maintain a large number of graphical applications that is using a Slurm backend in different way we need an easy way of creating shortcuts and menus without a lot of manual work. To support this the other part of the GFX Launcher framework is the **gfxmenu** command which is a special tool for automatically generating a user menu structure and related shortcuts with **gfxlaunch** commands.
 
 The main concept is to provide a script for each application that is going run on the backend nodes. The scripts contains the commands for how to start the application and a number of special tags for configuring the behavior of the user interface presented by the **gfxlaunch** command. **gfxmenu** reads these scripts and automatically creates a user menu structure according to the tags in the scripts. 
 

@@ -4,7 +4,7 @@ Code documentation
 jobs module
 -----------
 
-This module implements classes for the different SLURM job types used in GfxLauncher.
+This module implements classes for the different Slurm job types used in GfxLauncher.
 
 .. automodule:: lhpcdt.jobs
     :members:
@@ -58,10 +58,10 @@ Module for managing application configuration.
 .. automodule:: lhpcdt.config
     :members:   
 
-lrms module - SLURM interface classes
+lrms module - Slurm interface classes
 -------------------------------------
 
-Module for interfacing with SLURM.
+Module for interfacing with Slurm.
 
 .. automodule:: lhpcdt.lrms
     :members:    
