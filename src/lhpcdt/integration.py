@@ -293,6 +293,8 @@ class UserMenus(XmlBase):
                     desktop_entry.name = script.variables["title"]
                 desktop_entry.exec = script.launch_cmd
                 desktop_entry.changed = script.changed
+                if "icon" in script.variables:
+                    desktop_entry.icon = script.variables["icon"]
                 menu.add_entry(desktop_entry)
 
             self.add_menu(menu)
