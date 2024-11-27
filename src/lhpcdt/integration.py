@@ -198,6 +198,7 @@ class UserMenus(XmlBase):
         self.__app_location = cfg.app_location
         self.__dir_location = cfg.dir_location
         self.__ondemand_location = cfg.ondemand_location
+        self.__force_refresh = False
 
         # self.__menu_location = "~/.config/menus/applications-merged"
         # self.__app_location = "~/.local/share/applications"
@@ -454,6 +455,14 @@ class UserMenus(XmlBase):
     @menu_name_no_launch_suffix.setter
     def menu_name_no_launch_suffix(self, value):
         self.__menu_name_no_launch_suffix = value
+
+    @property
+    def force_refresh(self):
+        return self.__force_refresh
+    
+    @force_refresh.setter
+    def force_refresh(self, value):
+        self.__force_refresh = value
         
 class Menu:
     def __init__(self, parent):
@@ -464,6 +473,7 @@ class Menu:
         self.__prefix = "lhpcdt_"
         self.__filename = ""
         self.__abs_filename = ""
+        self.__force_refresh = False
 
         self.__last_run = 0.0
 
@@ -499,7 +509,7 @@ class Menu:
 
             # Only create a new desktop entry if the script has changed.
 
-            if not os.path.exists(abs_entry_filename) or (entry.changed > self.last_run):
+            if not os.path.exists(abs_entry_filename) or (entry.changed > self.last_run) or self.force_refresh:
                 with open(abs_entry_filename, "w") as f:
                     f.write(str(entry))
 
@@ -531,6 +541,14 @@ class Menu:
     @last_run.setter
     def last_run(self, value):
         self.__last_run = value
+
+    @property
+    def force_refresh(self):
+        return self.__force_refresh
+    
+    @force_refresh.setter
+    def force_refresh(self, value):
+        self.__force_refresh = value
     
 
     

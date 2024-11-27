@@ -28,6 +28,7 @@ class RunScript:
         ##LDT part_disable = "yes"
         ##LDT feature_disable = "yes"
         ##LDT direct_launch = "yes"
+        ##LDT icon = "system-icon"
 
         self.__variables = {}
 
