@@ -42,7 +42,7 @@ This is free software, and you are welcome to redistribute it
 under certain conditions; see LICENSE for details.
 """
 gfxmenu_copyright_short = """LUNARC HPC Desktop On-Demand - %s"""
-gfxmenu_version = "0.9.14"
+gfxmenu_version = "0.9.16"
 
 
 def main():
@@ -57,6 +57,7 @@ def main():
         "--silent", help="Run without output", action="store_true")
     parser.add_argument("--verbose", help="Verbose logging",
                         action="store_true")
+    parser.add_argument("--force", help="Force refresh menu entries", action="store_true")
     args = parser.parse_args()
 
     # ----- Show version information
@@ -96,6 +97,7 @@ def main():
     user_menu.menu_name_prefix = cfg.menu_prefix
     user_menu.desktop_entry_prefix = cfg.desktop_entry_prefix
     user_menu.add_scripts(script_db)
+    user_menu.force_refresh = args.force
     user_menu.generate()
 
 

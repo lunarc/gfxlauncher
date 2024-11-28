@@ -14,6 +14,7 @@ class RunScript:
         self.__changed = None
         self.__parse_metadata()
         self.__parse_failed = False
+        self.__icon = "system-icon"
 
     def __parse_metadata(self):
         """Parse run-script for metadata"""
@@ -27,6 +28,7 @@ class RunScript:
         ##LDT part_disable = "yes"
         ##LDT feature_disable = "yes"
         ##LDT direct_launch = "yes"
+        ##LDT icon = "system-icon"
 
         self.__variables = {}
 
@@ -85,6 +87,8 @@ class RunScript:
             else:
                 self.__no_launcher = False
 
+        if "icon" in self.__variables:
+            self.__icon = self.__variables["icon"]
 
         cmd_options += " --cmd %s" % self.filename
 
@@ -127,6 +131,10 @@ class RunScript:
     @property
     def no_launcher(self):
         return self.__no_launcher
+    
+    @property
+    def icon(self):
+        return self.__icon
 
 class RunScripts:
     def __init__(self, script_dir=""):
