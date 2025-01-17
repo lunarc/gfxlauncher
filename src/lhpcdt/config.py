@@ -42,6 +42,7 @@ class GfxConfig(object):
         self.config_filename = ""
 
         # Find where our application dir is located
+
         app_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
 
         config_alt_loc = []
@@ -54,10 +55,18 @@ class GfxConfig(object):
         config_alt_loc.append("/sw/pkg/rviz/etc/gfxlauncher.conf")
 
         if config_filename == "":
-            for config_loc in config_alt_loc:
-                if os.path.isfile(os.path.expanduser(os.path.realpath(config_loc))):
-                    self.config_filename = os.path.abspath(os.path.expanduser(config_loc))
-                    break
+
+            # Set environment variable overrides default locations.
+
+            if "GFXLAUNCHER_CONFIG" in os.environ:
+                self.config_value = os.environ["GFXLAUNCHER_CONFIG"]
+                if os.path.isfile(self.config_value):
+                    self.config_filename = self.config_value
+            else:
+                for config_loc in config_alt_loc:
+                    if os.path.isfile(os.path.expanduser(os.path.realpath(config_loc))):
+                        self.config_filename = os.path.abspath(os.path.expanduser(config_loc))
+                        break
         else:
             self.config_filename = config_filename
 
