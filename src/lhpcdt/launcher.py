@@ -1,7 +1,7 @@
 #!/bin/env python
 #
 # LUNARC HPC Desktop On-Demand graphical launch tool
-# Copyright (C) 2017-2024 LUNARC, Lund University
+# Copyright (C) 2017-2025 LUNARC, Lund University
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -524,7 +524,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
     def get_defaults_from_cmdline(self):
         """Get properties from command line"""
 
-        self.memory = self.args.memory
+        self.memory = str(self.args.memory)
         self.count = self.args.count
         self.exclusive = self.args.exclusive
         self.vgl = self.args.useVGL
@@ -725,7 +725,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
             if int(self.tasks_per_node)>0:
                 plain_text_usage = f"{self.tasks_per_node} tasks / node. "
 
-        if self.memory>0:
+        if int(self.memory)>0:
             plain_text_usage += f"{self.memory} MB / task."
 
         self.node_usage_label.setText(plain_text_usage)
