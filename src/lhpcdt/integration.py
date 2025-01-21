@@ -341,6 +341,7 @@ class UserMenus(XmlBase):
 
                 menu.prefix = self.__desktop_entry_prefix
                 menu.last_run = self.__last_run
+                menu.force_refresh = self.__force_refresh
                 menu.generate()
 
                 dir_filename = menu.name.replace(" ", "_").lower()+".directory"
