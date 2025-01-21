@@ -1,7 +1,7 @@
 #!/bin/env python
 #
 # LUNARC HPC Desktop On-Demand graphical launch tool
-# Copyright (C) 2017-2024 LUNARC, Lund University
+# Copyright (C) 2017-2025 LUNARC, Lund University
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -36,13 +36,13 @@ from lhpcdt import scripts as scr
 from lhpcdt import config
 
 gfxmenu_copyright = """LUNARC HPC Desktop On-Demand - Version %s
-Copyright (C) 2017-2024 LUNARC, Lund University
+Copyright (C) 2017-2025 LUNARC, Lund University
 This program comes with ABSOLUTELY NO WARRANTY; for details see LICENSE.
 This is free software, and you are welcome to redistribute it
 under certain conditions; see LICENSE for details.
 """
 gfxmenu_copyright_short = """LUNARC HPC Desktop On-Demand - %s"""
-gfxmenu_version = "0.9.16"
+gfxmenu_version = "0.9.17"
 
 
 def main():
@@ -65,7 +65,7 @@ def main():
     if not args.silent:
         print(("LUNARC HPC Desktop - User menu tool - Version %s" % gfxmenu_version))
         print("Written by Jonas Lindemann (jonas.lindemann@lunarc.lu.se)")
-        print("Copyright (C) 2018-2024 LUNARC, Lund University")
+        print("Copyright (C) 2018-2025 LUNARC, Lund University")
 
     # ----- Read configuration
 
