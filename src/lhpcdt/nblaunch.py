@@ -332,7 +332,9 @@ sleep infinity
         for job_id in list(self.active_jobs.keys()):
             self.do_cancel(job_id)
 
-        
+
+def main():
+    NotebookController().cmdloop()        
 
 if __name__ == '__main__':
-    NotebookController().cmdloop()
+    main()
