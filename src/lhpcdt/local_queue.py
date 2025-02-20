@@ -51,7 +51,7 @@ class LocalNotebookJob(object):
     def run(self):
         self.status = "starting"
         try:
-            self.process, self.urlinfo, child_pid = run_jupyter_notebook_and_wait_for_url()
+            self.process, self.urlinfo, child_pid = run_jupyter_notebook_and_wait_for_url(verbose=True)
             self.url = self.urlinfo['complete_url']
             self.port = self.urlinfo['port']
             self.child_pid = child_pid

@@ -46,12 +46,16 @@ def run_jupyter_notebook_and_wait_for_url(timeout=60, port=None, notebook_dir=No
         print(f"Starting Jupyter notebook server with command: {' '.join(command)}")
     
     # Start the process with pipes for stdout and stderr
+
+    command = " ".join(command)
+
     process = subprocess.Popen(
         command,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         bufsize=0,  # Unbuffered
-        universal_newlines=False  # Binary mode
+        universal_newlines=False,  # Binary mode
+        shell=True
     )
     
     # Compile the regex pattern
