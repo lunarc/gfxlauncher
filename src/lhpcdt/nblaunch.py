@@ -9,7 +9,7 @@ import shlex
 import sys
 from pathlib import Path
 
-import local_queue
+from lhpcdt import local_queue
 
 
 @dataclass
@@ -47,10 +47,34 @@ class NotebookLocalController(cmd.Cmd):
         Usage: submit <notebook_path>
         """
 
-        job = local_queue.LocalNotebookJob("Test")
+        name = "noname" 
+        notebook_env = ""
+        walltime = "00:30:00"
+        tasks_per_node = 1
 
+        if arg:
+            args = arg.split()
+            if len(args) > 0:
+                name = args[0]
+            if len(args) > 1:
+                notebook_env = args[1]
+            if len(args) > 2:
+                walltime = args[2]
+            if len(args) > 3:
+                tasks_per_node = int(args[3])
+            
+
+        job = local_queue.LocalNotebookJob("Test")
+        job.name = name
+        job.notebook_env = notebook_env
+        job.walltime = walltime
+        job.tasks_per_node = tasks_per_node
+        
         job_id = self.local_queue.submit(job)
-        print(f"Submitted job {job_id}")
+
+        print(">>>")
+        print(f"{job_id}")
+        print("<<<")
 
     def do_status(self, arg):
         """

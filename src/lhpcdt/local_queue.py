@@ -23,166 +23,14 @@ import os, sys, subprocess, json, copy
 
 import subprocess
 import time
-import re
 
 import subprocess
 import time
-import re
-import select
+
 import json
 import signal
 
-
-def run_jupyter_notebook_and_wait_for_url(timeout=60, port=None, notebook_dir=None):
-    """
-    Execute a Jupyter notebook server via conda, wait for the URL to appear, then keep it running.
-    
-    Args:
-        timeout: Maximum time in seconds to wait for the URL
-        port: Specific port to run Jupyter on (optional)
-        notebook_dir: Directory to start Jupyter in (optional)
-    
-    Returns:
-        process: The running Jupyter process object
-        url_info: Dictionary containing URL components
-    """
-    # Build the command
-    command = ["conda", "run", "--no-capture-output", "-n", "numpy-env", "jupyter", "lab", "--no-browser"]
-    if port:
-        command.extend(["--port", str(port)])
-    if notebook_dir:
-        command.extend(["--notebook-dir", notebook_dir])
-    
-    # Pattern to match Jupyter notebook URL
-    url_pattern = r'(https?://)(localhost|127\.0\.0\.1)(:(\d+))?(/lab\??)(token=([a-zA-Z0-9]+))?'
-    
-    print(f"Starting Jupyter notebook server with command: {' '.join(command)}")
-    
-    # Start the process with pipes for stdout and stderr
-    process = subprocess.Popen(
-        command,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        bufsize=0,  # Unbuffered
-        universal_newlines=False  # Binary mode
-    )
-    
-    # Compile the regex pattern
-    pattern = re.compile(url_pattern)
-    
-    # Track the start time for timeout calculation
-    start_time = time.time()
-    stdout_buffer = b""
-    stderr_buffer = b""
-    
-    print(f"Waiting for Jupyter Lab to start (timeout: {timeout}s)...")
-    
-    # Keep checking the output until we find the URL or time out
-    while time.time() - start_time < timeout:
-        # Check if process has terminated unexpectedly
-        poll_result = process.poll()
-        if poll_result is not None:
-            print(f"Process terminated with exit code: {poll_result}")
-            # Try to read any final output
-            stdout_buffer += process.stdout.read() or b""
-            stderr_buffer += process.stderr.read() or b""
-            raise RuntimeError(f"Jupyter notebook process terminated unexpectedly with code {process.returncode}")
-        
-        # Use select to wait for data with a timeout (prevents blocking)
-        ready_to_read, _, _ = select.select(
-            [process.stdout, process.stderr], 
-            [], 
-            [], 
-            0.5  # 500ms timeout
-        )
-        
-        # Read from streams that have data
-        for stream in ready_to_read:
-            if stream == process.stdout:
-                data = stream.read(1024)  # non-blocking because of select
-                if data:
-                    stdout_buffer += data
-                    try:
-                        print(f"STDOUT: {data.decode('utf-8', errors='replace').strip()}")
-                    except:
-                        print(f"STDOUT: [binary data, length {len(data)}]")
-            elif stream == process.stderr:
-                data = stream.read(1024)  # non-blocking because of select
-                if data:
-                    stderr_buffer += data
-                    try:
-                        print(f"STDERR: {data.decode('utf-8', errors='replace').strip()}")
-                    except:
-                        print(f"STDERR: [binary data, length {len(data)}]")
-        
-        # Check both buffers for URL pattern
-        for buffer_name, buffer_content in [("stdout", stdout_buffer), ("stderr", stderr_buffer)]:
-            try:
-                # Convert binary buffer to string for regex matching
-                buffer_str = buffer_content.decode('utf-8', errors='replace')
-                match = pattern.search(buffer_str)
-                if match:
-                    # Extract the components
-                    protocol = match.group(1)                    
-                    hostname = match.group(2)                    
-                    port_with_colon = match.group(3) or ""       
-                    port_number = match.group(4) or "8888"       
-                    lab_path = match.group(5) or "/lab"          
-                    token_param = match.group(6) or ""           
-                    token = match.group(7) or ""                 
-                    
-                    # Construct the complete URL
-                    if token and not token_param.startswith("token="):
-                        token_param = f"token={token}"
-                    
-                    # Ensure lab_path ends with ? if we have a token
-                    if token and not lab_path.endswith("?"):
-                        lab_path = f"{lab_path}?"
-                    elif not token and lab_path.endswith("?"):
-                        lab_path = lab_path[:-1]
-                    
-                    complete_url = f"{protocol}{hostname}{port_with_colon}{lab_path}"
-                    if token:
-                        complete_url += token_param
-                    
-                    # Create URL info dictionary
-                    url_info = {
-                        'complete_url': complete_url,
-                        'base_url': f"{protocol}{hostname}",
-                        'port': int(port_number),
-                        'token': token,
-                        'lab_path': lab_path.rstrip('?')
-                    }
-                    
-                    print(f"\nFound Jupyter Lab URL:")
-                    print(f"  Complete URL: {url_info['complete_url']}")
-                    print(f"  Base URL: {url_info['base_url']}")
-                    print(f"  Port: {url_info['port']}")
-                    print(f"  Token: {url_info['token']}")
-                    
-                    return process, url_info
-            except Exception as e:
-                print(f"Error processing {buffer_name} buffer: {e}")
-        
-        # A small sleep is still needed to prevent CPU spinning
-        time.sleep(0.1)
-    
-    # If we get here, we timed out waiting for the URL
-    print("Timeout reached, terminating process...")
-    try:
-        process.terminate()
-        process.wait(timeout=5)
-    except:
-        process.kill()
-        
-    # Print any accumulated output for debugging
-    print("\nLast stdout output:")
-    print(stdout_buffer.decode('utf-8', errors='replace'))
-    print("\nLast stderr output:")
-    print(stderr_buffer.decode('utf-8', errors='replace'))
-    
-    raise TimeoutError(f"Timed out after {timeout}s waiting for Jupyter Lab URL")
-
+from lhpcdt.launch_utils import *
 
 class LocalNotebookJob(object):
     def __init__(self, name):
@@ -196,13 +44,17 @@ class LocalNotebookJob(object):
         self.url = ""
         self.port = 0
         self.pid = 0
+        self.notebook_env = ""
+        self.walltime = "00:30:00"
+        self.tasks_per_node = 1
 
     def run(self):
         self.status = "starting"
         try:
-            self.process, self.urlinfo = run_jupyter_notebook_and_wait_for_url()
+            self.process, self.urlinfo, child_pid = run_jupyter_notebook_and_wait_for_url()
             self.url = self.urlinfo['complete_url']
             self.port = self.urlinfo['port']
+            self.child_pid = child_pid
             self.pid = self.process.pid
             self.status = "running"
         except Exception as e:
@@ -219,11 +71,19 @@ class LocalNotebookJob(object):
             return "finished"
 
     def cancel(self):
+
         if self.process is not None:
-            self.process.terminate()
+            cleanup_processes(self.process, self.child_pid)
             self.status = "cancelled"
             return True
         else:
+            if self.child_pid != 0:
+                try:
+                    os.kill(self.child_pid, signal.SIGTERM)
+                    self.status = "cancelled"
+                except:
+                    pass
+
             if self.pid != 0:
                 try:
                     os.kill(self.pid, signal.SIGTERM)
@@ -231,7 +91,9 @@ class LocalNotebookJob(object):
                     return True
                 except:
                     pass
+            
             return True
+        
         
     def wait(self):
         if (self.process is not None) and (self.process.poll() is None):
@@ -290,9 +152,11 @@ class LocalQueue(object):
             print("Job ID: %d, Name: %s, Status: %s, URL: %s" % (job_id, job.name, job.status, job.url))
 
     def job_table(self):
+        print(">>>")
         for job_id in self.queue.keys():
             job = self.queue[job_id]
-            print("%d;%s;%s;%s" % (job_id, job.name, job.status, job.url))    
+            print("%d;%s;%s;%s" % (job_id, job.name, job.status, job.url))
+        print("<<<")
 
     def wait(self):
         for job_id in self.queue.keys():
@@ -309,7 +173,11 @@ class LocalQueue(object):
                 "status": job.status,
                 "url": job.url,
                 "port": job.port,
-                "pid": job.pid
+                "pid": job.pid,
+                "child_pid": job.child_pid,
+                "notebook_env": job.notebook_env,
+                "walltime": job.walltime,
+                "tasks_per_node": job.tasks_per_node
             }
         with open(filename, "w") as f:
             json.dump(state, f)
@@ -324,12 +192,16 @@ class LocalQueue(object):
                 job.url = state[job_id]['url']
                 job.port = int(state[job_id]['port'])
                 job.pid = int(state[job_id]['pid'])
+                job.child_pid = int(state[job_id]['child_pid'])
+                job.notebook_env = state[job_id]['notebook_env']
+                job.walltime = state[job_id]['walltime']
+                job.tasks_per_node = state[job_id]['tasks_per_node']
                 self.queue[int(job_id)] = job
 
         
 if __name__ == "__main__":
 
-    job = NotebookJob("Test")
+    job = LocalNotebookJob("Test")
 
     queue = LocalQueue()
 
