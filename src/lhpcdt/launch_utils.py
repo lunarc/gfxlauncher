@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import select, subprocess, re, time, psutil
+import select, subprocess, re, time, psutil, json
 
 def run_jupyter_notebook_and_wait_for_url(timeout=60, port=None, notebook_dir=None, verbose=False):
     """
@@ -153,6 +153,20 @@ def run_jupyter_notebook_and_wait_for_url(timeout=60, port=None, notebook_dir=No
                     complete_url = f"{protocol}{hostname}{port_with_colon}{lab_path}"
                     if token:
                         complete_url += token_param
+                    else:
+                        # For some reason, the token is not always present in the output. Check home
+                        # directory for the token file if we can't find it in the output.
+
+                        home_dir = os.path.expanduser("~")
+                        juputer_runtime_dir = os.path.join(home_dir, ".local", "share", "jupyter", "runtime")
+                        if os.path.exists(juputer_runtime_dir):
+                            server_info_file = os.path.join(juputer_runtime_dir, f"jpserver-{child_pid}.json")
+                            if os.path.exists(server_info_file):
+                                with open(server_info_file) as f:
+                                    server_info = json.load(f)
+                                    token = server_info.get("token", "")
+                                    if token:
+                                        complete_url += f"token={token}"
                     
                     # Create URL info dictionary
                     url_info = {
@@ -162,7 +176,6 @@ def run_jupyter_notebook_and_wait_for_url(timeout=60, port=None, notebook_dir=No
                         'token': token,
                         'lab_path': lab_path.rstrip('?')
                     }
-                    
 
                     print(f"\nFound Jupyter Lab URL:")
                     print(f"  Complete URL: {url_info['complete_url']}")
