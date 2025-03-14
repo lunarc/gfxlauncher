@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 import cmd
 import subprocess
 import json
@@ -8,6 +8,9 @@ from typing import Optional, List, Dict
 import shlex
 import sys
 from pathlib import Path
+
+from lhpcdt import local_queue
+
 
 @dataclass
 class NotebookJob:
@@ -21,8 +24,126 @@ class NotebookJob:
     runtime: Optional[str] = None
 
 
+class NotebookLocalController(cmd.Cmd):
+    intro = 'Welcome to the Notebook Controller. Type help or ? to list commands.\n'
+    prompt = 'notebook> '
+    
+    def __init__(self):
+        super().__init__()
 
-class NotebookController(cmd.Cmd):
+        self.local_queue = local_queue.LocalQueue()
+
+        # Load state from config file
+
+        self.config_file_path = Path.home() / '.notebook_controller_config'
+
+        if self.config_file_path.exists():
+            self.local_queue.load_state(self.config_file_path)
+
+
+    def do_submit(self, arg):
+        """
+        Submit a new Jupyter Lab job.
+        Usage: submit <notebook_path>
+        """
+
+        name = "noname" 
+        notebook_env = ""
+        walltime = "00:30:00"
+        tasks_per_node = 1
+
+        if arg:
+            args = arg.split()
+            if len(args) > 0:
+                name = args[0]
+            if len(args) > 1:
+                notebook_env = args[1]
+            if len(args) > 2:
+                walltime = args[2]
+            if len(args) > 3:
+                tasks_per_node = int(args[3])
+            
+
+        job = local_queue.LocalNotebookJob("Test")
+        job.name = name
+        job.notebook_env = notebook_env
+        job.walltime = walltime
+        job.tasks_per_node = tasks_per_node
+        
+        job_id = self.local_queue.submit(job)
+
+        print(">>>")
+        print(f"{job_id}")
+        print("<<<")
+
+    def do_status(self, arg):
+        """
+        Check status of notebook jobs.
+        Usage: status [job_id]
+        """
+        if not arg:
+            # Check all jobs
+            self.local_queue.print()
+        else:
+            # Check specific job
+            job_id = arg.strip()
+            if job_id not in self.local_queue.jobs:
+                print(f"No job found with ID {job_id}")
+                return
+            
+            job = self.local_queue.jobs[job_id]
+            print(f"Job {job_id}:")
+            print(f"  Status: {job.status}")
+            if job.status == 'RUNNING':
+                print(f"  URL: {job.url}")
+
+    def do_job_table(self, arg):
+        """Print a table of all active jobs."""
+        self.local_queue.job_table()
+
+    def do_cancel(self, arg):
+        """
+        Cancel a notebook job.
+        Usage: cancel <job_id>
+        """
+        if not arg:
+            print("Error: job ID required")
+            return
+        
+        try:
+            job_id = int(arg.strip())
+        except ValueError:
+            print("Error: job ID must be an integer")
+            return
+        
+        if self.local_queue.has_job(job_id):
+            self.local_queue.cancel(job_id)
+            print(f"Cancelled job {job_id}")
+        else:
+            print(f"No job found with ID {job_id}")
+
+    def do_cancel_all(self, arg):
+        """Cancel all jobs."""
+        self.local_queue.cancel_all()
+        print("Cancelled all jobs")
+    
+    def do_quit(self, arg):
+        """Exit the application."""
+        print("Goodbye!")
+        self.local_queue.save_state(self.config_file_path)
+        return True
+    
+    def do_EOF(self, arg):
+        """Exit on EOF (Ctrl+D)."""
+        print()
+        self.local_queue.save_state(self.config_file_path)
+        return self.do_quit(arg)
+    
+    def do_print(self):
+        print(arg)
+
+
+class NotebookSlurmController(cmd.Cmd):
     """Interactive shell for managing Jupyter notebooks on SLURM."""
     
     intro = 'Welcome to the Notebook Controller. Type help or ? to list commands.\n'
@@ -334,7 +455,8 @@ sleep infinity
 
 
 def main():
-    NotebookController().cmdloop()        
+    #NotebookSlurmController().cmdloop()        
+    NotebookLocalController().cmdloop()
 
 if __name__ == '__main__':
     main()
