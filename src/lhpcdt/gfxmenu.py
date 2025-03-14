@@ -58,6 +58,7 @@ def main():
     parser.add_argument("--verbose", help="Verbose logging",
                         action="store_true")
     parser.add_argument("--force", help="Force refresh menu entries", action="store_true")
+    parser.add_argument("--dryrun", help="Show version information", action="store_true")
     args = parser.parse_args()
 
     # ----- Show version information
@@ -85,7 +86,10 @@ def main():
 
     # ----- Parse script directory
 
+    cfg.script_dir = "./scripts"
+
     run_scripts = scr.RunScripts(cfg.script_dir)
+    run_scripts.dryrun = args.dryrun
     run_scripts.launcher = os.path.join(cfg.install_dir, 'gfxlaunch')
     run_scripts.parse()
 
@@ -93,7 +97,7 @@ def main():
 
     # ----- Create user menu
 
-    user_menu = it.UserMenus()
+    user_menu = it.UserMenus(dryrun=args.dryrun)
     user_menu.menu_name_prefix = cfg.menu_prefix
     user_menu.desktop_entry_prefix = cfg.desktop_entry_prefix
     user_menu.add_scripts(script_db)
