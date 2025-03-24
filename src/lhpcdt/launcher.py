@@ -287,6 +287,10 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
             if "exclusive" in self.config.part_groups_defaults[self.group]:
                 self.exclusive = self.config.part_groups_defaults[self.group]["exclusive"]
 
+        # Walltime limits
+
+        
+
         # Update controls to reflect parameters
 
         self.update_controls()
@@ -577,10 +581,47 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
     def reset_status_panel(self):
         self.status_output.setText(
             self.copyright_short_info % self.version_info)
+        
+    def check_walltime(self, walltime, max_walltime):
+        """
+        Check if a walltime exceeds a maximum walltime and return the maximum if it does.
+        
+        Args:
+            walltime (str): A time string in 'hh:mm:ss' format
+            max_walltime (str): The maximum allowed time in 'hh:mm:ss' format
+            
+        Returns:
+            str: Either the original walltime if it's within the max, or the max_walltime if exceeded
+            
+        Examples:
+            >>> check_walltime('02:30:00', '03:00:00')
+            '02:30:00'
+            >>> check_walltime('04:15:30', '03:00:00')
+            '03:00:00'
+        """
+        # Convert time strings to seconds for comparison
+        def to_seconds(time_str):
+            hours, minutes, seconds = map(int, time_str.split(':'))
+            return hours * 3600 + minutes * 60 + seconds
+        
+        # Convert both times to seconds
+        walltime_seconds = to_seconds(walltime)
+        max_walltime_seconds = to_seconds(max_walltime)
+        
+        # If walltime exceeds max, return max_walltime
+        if walltime_seconds > max_walltime_seconds:
+            return max_walltime
+        else:
+            return walltime
 
     def update_properties(self):
         """Get properties from user interface"""
         self.time = self.wallTimeEdit.currentText()
+
+        if self.selected_part in self.config.walltime_max:
+            self.time = self.check_walltime(self.time, self.config.walltime_max[self.selected_part])
+        else:
+            self.time = self.check_walltime(self.time, self.config.walltime_max["default"])
 
         if self.featureCombo.currentIndex() != -1:
             self.selected_feature = self.filtered_features[self.featureCombo.currentIndex(
@@ -703,7 +744,19 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
                 self.runningFrame.setPalette(p)
                 self.wallTimeEdit.setEnabled(True)
 
+        # Update walltime combo box
+
         self.wallTimeEdit.setEditText(str(self.time))
+
+        self.wallTimeEdit.clear()
+
+        if self.selected_part in self.config.walltime_limits:
+            for walltime in self.config.walltime_limits[self.selected_part]:
+                self.wallTimeEdit.addItem(walltime)
+        else:
+            for walltime in self.config.walltime_limits["default"]:
+                self.wallTimeEdit.addItem(walltime)
+
         # self.projectEdit.setText(str(self.account))
 
         if self.args.part_disable:
