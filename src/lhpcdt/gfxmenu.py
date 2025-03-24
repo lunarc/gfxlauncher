@@ -86,8 +86,6 @@ def main():
 
     # ----- Parse script directory
 
-    cfg.script_dir = "./scripts"
-
     run_scripts = scr.RunScripts(cfg.script_dir)
     run_scripts.dryrun = args.dryrun
     run_scripts.launcher = os.path.join(cfg.install_dir, 'gfxlaunch')
