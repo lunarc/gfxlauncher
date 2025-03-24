@@ -74,6 +74,7 @@ class GfxConfig(object):
             self.print_error("Couldn't parse configuration")
             self.is_ok = False
         else:
+            #print(self.config_filename + " parsed successfully")
             self.is_ok = True
 
     def print_error(self, msg):
@@ -155,6 +156,9 @@ class GfxConfig(object):
         self.default_memory = 3000
         self.default_exclusive = False
 
+        self.walltime_limits = {}
+        self.walltime_max = {}
+
 
     def print_config(self):
         """Print configuration"""
@@ -166,6 +170,7 @@ class GfxConfig(object):
 
         print("")
         print("General settings")
+        print("----------------")
         print("")
         print("script_dir = %s" % self.script_dir)
         print("client_script_dir = %s" % self.client_script_dir)
@@ -175,14 +180,16 @@ class GfxConfig(object):
 
         print("")
         print("SLURM settings")
+        print("--------------")
         print("")
 
         print("default_part = %s" % self.default_part)
         print("default_account = %s" % self.default_account)
-        print("grantfile = %s" % self.grantfile)
-        print("grantfile_base = %s" % self.grantfile)
-        print("grantfile_dir = %s" % self.grantfile_dir)
-        print("grantfile_suffix = %s" % self.grantfile_suffix)
+
+        #print("grantfile = %s" % self.grantfile)
+        #print("grantfile_base = %s" % self.grantfile)
+        #print("grantfile_dir = %s" % self.grantfile_dir)
+        #print("grantfile_suffix = %s" % self.grantfile_suffix)
 
         print("simple_launch_template = %s" % self.simple_launch_template)
         print("adv_launch_template = %s" % self.adv_launch_template)
@@ -191,7 +198,53 @@ class GfxConfig(object):
         print("use_sacctmgr = %s" % self.use_sacctmgr)
 
         print("")
+        print("Feature descriptions:")
+        print("")
+
+        for feature in self.feature_descriptions:
+            print("feature_%s = %s" % (feature, self.feature_descriptions[feature]))
+
+        print("")
+        print("Partition descriptions:")
+        print("")
+
+        for partition in self.partition_descriptions:
+            print("part_%s = %s" % (partition, self.partition_descriptions[partition]))
+
+        print("")
+        print("Partition groups:")
+        print("")
+
+        for group in self.part_groups:
+            print("group_%s = %s" % (group, self.part_groups[group]))
+
+        print("")
+        print("Partition group defaults:")
+        print("")
+
+        for group in self.part_groups_defaults:
+            print("group_%s = %s" % (group, self.part_groups_defaults[group]))
+
+        print("")
+        print("Walltime limits:")
+        print("")
+
+        for walltime in self.walltime_limits:
+            print("walltime_%s = %s" % (walltime, self.walltime_limits[walltime]))
+
+        print("walltime_max = %s" % self.walltime_max)
+
+        print("")
+        print("Default settings")
+        print("")
+
+        print("default_tasks = %s" % self.default_tasks)
+        print("default_memory = %s" % self.default_memory)
+        print("default_exclusive = %s" % self.default_exclusive)
+    
+        print("")
         print("Menu settings")
+        print("-------------")
         print("")
 
         print("menu_location = %s" % self.menu_location)
@@ -215,6 +268,7 @@ class GfxConfig(object):
 
         print("")
         print("VGL settings")
+        print("------------")
         print("")
 
         print("vgl_path = %s" % self.vgl_path)
@@ -223,12 +277,14 @@ class GfxConfig(object):
 
         print("")
         print("XFreeRDP settings")
+        print("-----------------")
         print("")
 
         print("xfreerdp_path = %s" % self.xfreerdp_path)
 
         print("")
         print("Jupyter/JupyterLab settings")
+        print("---------------------------")
         print("")
 
         print("notebook_module = %s" % self.notebook_module)
@@ -447,6 +503,36 @@ class GfxConfig(object):
         except configparser.Error as e:
             self.print_error(e)
             return False
+        
+        self.walltime_limits = {}
+        self.walltime_max = {}
 
+        try:
+            slurm_options = config.options("slurm")
+            for option in slurm_options:
+                if option.find("walltime_") != -1:
+                    walltime = self._config_get(config, "slurm", option)
+                    partition = option.split("_")[1]
+                    order = option.split("_")[2]
+
+                    if order == "max":
+                        self.walltime_max[partition] = walltime
+
+                    if partition not in self.walltime_limits:
+                        self.walltime_limits[partition] = []
+
+                    self.walltime_limits[partition].append(walltime)
+
+            # Set default values if not set
+
+            if not "default" in self.walltime_limits:
+                self.walltime_limits["default"] = ["00:30:00", "01:00:00", "02:00:00", "04:00:00", "08:00:00", "12:00:00", "24:00:00"]
+
+            if not "default" in self.walltime_max:
+                self.walltime_max["default"] = "48:00:00"   
+
+        except configparser.Error as e:
+            self.print_error(e)
+            return False
 
         return True

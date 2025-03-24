@@ -141,6 +141,7 @@ class RunScripts:
         self.__script_dir = script_dir
         self.__launcher = "gfxlaunch"
         self.__script_dict = {}
+        self.__dryrun = False
 
 
     def parse(self, dryrun=False):
@@ -156,8 +157,7 @@ class RunScripts:
         self.__script_dict = {}
 
         for script in os.listdir(script_dir):
-            if script.endswith('.sh') != -1:
-                #print("Found:", script)
+            if script.endswith('.sh'):
                 filename = os.path.join(script_dir, script)
 
                 if os.path.isdir(filename):
@@ -215,6 +215,14 @@ class RunScripts:
     def launcher(self, value):
         self.__launcher = value
         self.__update()
+
+    @property
+    def dryrun(self):
+        return self.__dryrun
+    
+    @dryrun.setter
+    def dryrun(self, value):
+        self.__dryrun = value
 
 
 
