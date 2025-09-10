@@ -535,4 +535,17 @@ class GfxConfig(object):
             self.print_error(e)
             return False
 
+        self.custom_menus = {}
+
+        try:
+            menu_options = config.options("menus")
+            for option in menu_options:
+                if option.find("custom_menu_") != -1:
+                    menu_number = int(option.split("_")[2])
+                    menu_filename = self._config_get(config, "menus", option)
+                    self.custom_menus[menu_number] = menu_filename.strip('"')
+        except configparser.Error as e:
+            self.print_error(e)
+            return False
+
         return True

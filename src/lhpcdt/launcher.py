@@ -910,6 +910,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         self.job.partition = str(self.selected_part)
         self.job.time = str(self.time)
         self.job.output = self.user_config.job_output_file_path
+        #self.job.error = self.user_config.job_error_file_path
         self.job.reservation = self.reservation
         if self.job_type != "vm":
             self.job.memory = int(self.memory)
@@ -1188,6 +1189,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
             job.reservation = self.reservation
             job.time = str(self.time)
             job.output = self.user_config.job_output_file_path
+            #job.error = self.user_config.job_error_file_path
             if self.job_type != "vm":
                 job.memory = int(self.memory)
                 job.nodeCount = int(self.count)

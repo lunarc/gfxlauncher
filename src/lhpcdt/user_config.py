@@ -22,6 +22,8 @@ class UserConfig:
     def __init__(self):
         self.__job_output_dir = ".lhpc"
         self.__job_output_template = "lhpcdt-%j.out"
+        self.__job_error_dir = ".lhpc"
+        self.__job_error_template = "lhpcdt-%j.err"
 
     def setup(self):
         job_dir_path = os.path.join(os.path.expanduser("~"), self.__job_output_dir)
@@ -53,4 +55,24 @@ class UserConfig:
     @property
     def job_output_file_path(self):
         return os.path.join(os.path.expanduser("~"), self.__job_output_dir, self.__job_output_template)
+    
+    @property
+    def job_error_dir(self):
+        return self.__job_error_dir
+    
+    @job_error_dir.setter
+    def job_error_dir(self, value):
+        self.__job_error_dir = value
+
+    @property
+    def job_error_template(self):
+        return self.__job_error_template
+    
+    @job_error_template.setter
+    def job_error_template(self, value):
+        self.__job_error_template = value
+
+    @property
+    def job_error_file_path(self):
+        return os.path.join(os.path.expanduser("~"), self.__job_error_dir, self.__job_error_template)
     

@@ -51,6 +51,13 @@ class XmlBase:
         self.dedent()
         self.close_tag(f, name)
 
+    def insert_from_file(self, f, filename):
+        """Insert content from file"""
+        if os.path.exists(filename):
+            with open(filename, "r") as infile:
+                for line in infile:
+                    f.write(self.__tab * self.__indent_level + line)
+
 class DesktopEntry:
     def __init__(self):
         self.__type = "Application"
@@ -218,6 +225,8 @@ class UserMenus(XmlBase):
         self.__desktop_entry_prefix = "gfx-"
         self.__menu_name_no_launch_suffix = " [Desktop]"
 
+        self.__custom_menus = {}
+
         self.__resolve_locations()
         self.__check_directories()
         self.__create_links()
@@ -365,6 +374,15 @@ class UserMenus(XmlBase):
 
             dir_entries = []
 
+            for custom_menu_number, custom_menu_filename in self.__custom_menus.items():
+                abs_custom_menu_filename = os.path.join(self.__abs_menu_location, custom_menu_filename)
+
+                if os.path.exists(abs_custom_menu_filename):
+                    logging.debug(f"Inserting custom menu {abs_custom_menu_filename}")
+                    self.insert_from_file(f, abs_custom_menu_filename)
+                else:
+                    logging.warning(f"Custom menu {abs_custom_menu_filename} does not exist")
+
             self.end_tag(f, "Menu")
 
             if self.__use_top_level_menu:
@@ -464,6 +482,14 @@ class UserMenus(XmlBase):
     @force_refresh.setter
     def force_refresh(self, value):
         self.__force_refresh = value
+
+    @property
+    def custom_menus(self):
+        return self.__custom_menus
+    
+    @custom_menus.setter
+    def custom_menus(self, value):
+        self.__custom_menus = value
         
 class Menu:
     def __init__(self, parent):

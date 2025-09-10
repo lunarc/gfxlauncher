@@ -96,12 +96,12 @@ def main():
     # ----- Create user menu
 
     user_menu = it.UserMenus(dryrun=args.dryrun)
+    user_menu.custom_menus = cfg.custom_menus
     user_menu.menu_name_prefix = cfg.menu_prefix
     user_menu.desktop_entry_prefix = cfg.desktop_entry_prefix
     user_menu.add_scripts(script_db)
     user_menu.force_refresh = args.force
     user_menu.generate()
-
 
 if __name__ == "__main__":
 

@@ -1,7 +1,7 @@
 #!/bin/env python
 #
 # LUNARC HPC Desktop On-Demand graphical launch tool
-# Copyright (C) 2017-2022 LUNARC, Lund University
+# Copyright (C) 2017-2025 LUNARC, Lund University
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -79,6 +79,7 @@ class Job(object):
         self.processing_description = ""
 
         self.output = ""
+        self.error = ""
 
         self._create_script()
 
@@ -125,6 +126,9 @@ class Job(object):
 
         if self.output != "":
             self.add_option("--output=%s" % self.output)
+
+        if self.error != "":
+            self.add_option("--error=%s" % self.error)
 
         if self.nodeCount >= 0:
             self.add_option("-N %d" % self.nodeCount)
