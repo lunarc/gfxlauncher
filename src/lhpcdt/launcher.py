@@ -746,7 +746,6 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
 
         # Update walltime combo box
 
-        self.wallTimeEdit.setEditText(str(self.time))
 
         self.wallTimeEdit.clear()
 
@@ -756,6 +755,9 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         else:
             for walltime in self.config.walltime_limits["default"]:
                 self.wallTimeEdit.addItem(walltime)
+
+        print("Updating walltime: ", self.time)
+        self.wallTimeEdit.setEditText(str(self.time))
 
         # self.projectEdit.setText(str(self.account))
 
