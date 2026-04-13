@@ -84,6 +84,23 @@ The **gfxmenu** uses the directories in the /etc/gfxlauncher.conf configuration 
     Copyright (C) 2018-2023 LUNARC, Lund University
     Using configuration file : /sw/pkg/ondemand-dt/etc/gfxlauncher.conf
 
+Interactive launch menu
+-----------------------
+
+The same run scripts can also be used to build an interactive launcher menu directly on screen. The **gfxlaunchmenu** command reads the same metadata as **gfxmenu** and presents the applications grouped by their ``##LDT category`` tags.
+
+.. code-block:: bash
+
+    $ gfxlaunchmenu
+
+For installations that already call **gfxmenu**, the interactive menu can also be opened with:
+
+.. code-block:: bash
+
+    $ gfxmenu --interactive
+
+The interactive menu shows the generated launch command for the selected application and starts the same command that would otherwise be written into the generated desktop entry.
+
 Adding menus to shared desktop setup
 ------------------------------------
 

@@ -8,7 +8,7 @@ repo_src = os.path.join(os.path.dirname(os.path.abspath(__file__)), "src")
 if os.path.isdir(repo_src) and repo_src not in sys.path:
     sys.path.insert(0, repo_src)
 
-from lhpcdt.gfxusage import main
+from lhpcdt.gfxlaunchmenu import main
 if __name__ == '__main__':
     sys.argv[0] = re.sub(r'(-script\.pyw|\.exe)?$', '', sys.argv[0])
     sys.exit(main())

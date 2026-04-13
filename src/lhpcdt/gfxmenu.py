@@ -45,6 +45,20 @@ gfxmenu_copyright_short = """LUNARC HPC Desktop On-Demand - %s"""
 gfxmenu_version = "0.9.20"
 
 
+def load_script_database(cfg, dryrun=False):
+    run_scripts = scr.RunScripts(cfg.script_dir)
+    run_scripts.dryrun = dryrun
+
+    launcher_path = "gfxlaunch"
+    if hasattr(cfg, "install_dir") and cfg.install_dir:
+        launcher_path = os.path.join(cfg.install_dir, 'gfxlaunch')
+
+    run_scripts.launcher = launcher_path
+    run_scripts.parse()
+
+    return run_scripts.database
+
+
 def main():
     # ----- Parse command line arguments
 
@@ -59,6 +73,7 @@ def main():
                         action="store_true")
     parser.add_argument("--force", help="Force refresh menu entries", action="store_true")
     parser.add_argument("--dryrun", help="Show version information", action="store_true")
+    parser.add_argument("--interactive", help="Open the interactive launch menu", action="store_true")
     args = parser.parse_args()
 
     # ----- Show version information
@@ -86,12 +101,11 @@ def main():
 
     # ----- Parse script directory
 
-    run_scripts = scr.RunScripts(cfg.script_dir)
-    run_scripts.dryrun = args.dryrun
-    run_scripts.launcher = os.path.join(cfg.install_dir, 'gfxlaunch')
-    run_scripts.parse()
+    script_db = load_script_database(cfg, dryrun=args.dryrun)
 
-    script_db = run_scripts.database
+    if args.interactive:
+        from lhpcdt import gfxlaunchmenu
+        return gfxlaunchmenu.launch_interactive_menu(cfg, script_db=script_db, dryrun=args.dryrun)
 
     # ----- Create user menu
 
