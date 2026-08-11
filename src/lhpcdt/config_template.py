@@ -92,6 +92,9 @@ vglconnect_template = %s/vglconnect %s %s/%s
 [jupyter]
 notebook_module = Anaconda3
 jupyterlab_module = Anaconda3
+#conda_source_env = /path/to/conda.sh
+#conda_use_env = myenv
+#jupyter_start_timeout = 180
 
 [xfreerdp]
 xfreerdp_path = /sw/pkg/freerdp/2.0.0-rc4/bin

@@ -75,4 +75,5 @@ class UserConfig:
     @property
     def job_error_file_path(self):
         return os.path.join(os.path.expanduser("~"), self.__job_error_dir, self.__job_error_template)
+
     

@@ -1,12 +1,17 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
+
 import os
 import re
 import sys
 
+print("Running gfxlaunchmenu from: {}".format(os.path.dirname(os.path.abspath(__file__))))
+
 repo_src = os.path.join(os.path.dirname(os.path.abspath(__file__)), "src")
 if os.path.isdir(repo_src) and repo_src not in sys.path:
     sys.path.insert(0, repo_src)
+
+print("Running gfxlaunch from: {}".format(repo_src))
 
 from lhpcdt.gfxlaunch import main
 if __name__ == '__main__':

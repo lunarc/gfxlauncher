@@ -82,6 +82,8 @@ class SubmitThread(QtCore.QThread):
     NO_ERROR = 0
     SUBMIT_FAILED = 1
 
+    status_update = QtCore.pyqtSignal(str)
+
     def __init__(self, job, cmd="xterm", opengl=False, vglrun=True, vgl_path=""):
         QtCore.QThread.__init__(self)
 
@@ -115,6 +117,12 @@ class SubmitThread(QtCore.QThread):
             print("Session %d submitted." % self.job.id)
 
         print("Waiting for session to start...")
+
+        start_time = self.slurm.query_start_time(self.job)
+        if start_time:
+            self.status_update.emit(f"Job queued — estimated start: {start_time}")
+        else:
+            self.status_update.emit("Job queued — waiting for resources...")
 
         self.slurm.wait_for_start(self.job)
         self.slurm.job_status(self.job)
@@ -511,8 +519,13 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         self.notebook_module = self.config.notebook_module
         self.jupyterlab_module = self.config.jupyterlab_module
         self.jupyter_use_localhost = self.config.jupyter_use_localhost
-        self.use_conda_env = False
-        self.conda_env = ""
+        self.conda_env = self.config.conda_use_env
+        self.use_conda_env = self.conda_env != ""
+        self.jupyter_working_dir = ""
+        self.jupyter_extra_args = ""
+        self.jupyter_start_timeout = self.config.jupyter_start_timeout
+        self.processing_started_at = 0.0
+        self.processing_timeout_warned = False
 
         self.ssh_tunnel = None
         self.autostart = False
@@ -575,7 +588,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         if self.silent:
             self.autostart = True
 
-    def update_status_panel(self, text):
+    def on_update_status_panel(self, text):
         self.status_output.setText(text)
 
     def reset_status_panel(self):
@@ -809,128 +822,124 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
     def closeEvent(self, event):
         """Handle window close event"""
 
+        if self.running:
+            reply = QtWidgets.QMessageBox.question(
+                self, self.title,
+                "Closing will stop your running session and any unsaved work will be lost.\n\nAre you sure?",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                QtWidgets.QMessageBox.No)
+            if reply != QtWidgets.QMessageBox.Yes:
+                event.ignore()
+                return
+
         if self.job is not None:
             self.slurm.cancel_job(self.job)
 
-        if self.rdp != None:
+        if self.ssh_tunnel is not None:
+            self.ssh_tunnel.terminate()
+
+        if self.rdp is not None:
             self.rdp.terminate()
 
-        event.accept()  # let the window close
+        event.accept()
 
-    def submit_job(self):
-        """Submit placeholder job"""
-
-        self.update_properties()
-
-        self.disable_extras_panel()
-
-        # Note - This should be modularised
+    def _make_job(self):
+        """Create and return the appropriate job object for the current job_type, or None on error."""
 
         if self.job_type == "":
+            return jobs.PlaceHolderJob()
+        elif self.job_type == "notebook":
+            return jobs.JupyterNotebookJob(
+                notebook_module=self.notebook_module,
+                use_localhost=self.jupyter_use_localhost,
+                conda_env=self.conda_env if self.use_conda_env else "",
+                conda_source_env=self.config.conda_source_env,
+                working_dir=self.jupyter_working_dir,
+                extra_args=self.jupyter_extra_args)
+        elif self.job_type == "jupyterlab":
+            return jobs.JupyterLabJob(
+                jupyterlab_module=self.jupyterlab_module,
+                use_localhost=self.jupyter_use_localhost,
+                conda_env=self.conda_env if self.use_conda_env else "",
+                conda_source_env=self.config.conda_source_env,
+                working_dir=self.jupyter_working_dir,
+                extra_args=self.jupyter_extra_args)
+        elif self.job_type == "vm":
+            return jobs.VMJob()
+        return None
 
-            # Create a standard placeholder job
+    def _configure_job(self, job):
+        """Apply current UI settings to a job object."""
 
-            self.job = jobs.PlaceHolderJob()
+        job.name = self.job_name
+        job.account = str(self.projectCombo.currentText())
+        job.partition = str(self.selected_part)
+        job.time = str(self.time)
+        job.output = self.user_config.job_output_file_path
+        job.reservation = self.reservation
+        if self.job_type != "vm":
+            job.memory = int(self.memory)
+            job.nodeCount = int(self.count)
+            job.exclusive = self.exclusive
+            job.tasksPerNode = int(self.tasks_per_node)
+        if self.selected_feature != "":
+            job.add_constraint(self.selected_feature)
+        job.update()
 
+    def submit_job(self):
+        """Submit job"""
+
+        self.update_properties()
+        self.disable_extras_panel()
+
+        self.job = self._make_job()
+
+        if self.job is None:
+            QtWidgets.QMessageBox.about(self, self.title, "Session start failed.")
+            return
+
+        if self.job_type == "":
             self.only_submit = False
 
         elif self.job_type == "notebook":
-
-            # Create a Jupyter notbook job
-
             self.only_submit = True
-
-            self.job = jobs.JupyterNotebookJob(
-                notebook_module=self.notebook_module, use_localhost=self.jupyter_use_localhost, conda_env=self.conda_env)
             self.job.on_notebook_url_found = self.on_notebook_url_found
-
-            # Create extra user interface controls for reconnection
-
             if self.extraControlsLayout.count() == 0:
-                self.reconnect_nb_button = QtWidgets.QPushButton(
-                    'Reconnect to notebook', self)
+                self.reconnect_nb_button = QtWidgets.QPushButton('Reconnect to notebook', self)
                 self.reconnect_nb_button.setEnabled(True)
-                self.reconnect_nb_button.clicked.connect(
-                    self.on_reconnect_notebook)
+                self.reconnect_nb_button.clicked.connect(self.on_reconnect_notebook)
                 self.extraControlsLayout.addWidget(self.reconnect_nb_button)
-
             self.launcherTabs.setCurrentIndex(2)
 
         elif self.job_type == "jupyterlab":
-
-            # Create a Jupyter lab job
-
             self.only_submit = True
-
-            self.job = jobs.JupyterLabJob(
-                jupyterlab_module=self.jupyterlab_module, use_localhost=self.jupyter_use_localhost, conda_env=self.conda_env)
             self.job.on_notebook_url_found = self.on_notebook_url_found
-
-            # Create extra user interface controls for reconnection
-
             if self.extraControlsLayout.count() == 0:
-                self.reconnect_nb_button = QtWidgets.QPushButton(
-                    'Reconnect to Lab', self)
+                self.reconnect_nb_button = QtWidgets.QPushButton('Reconnect to Lab', self)
                 self.reconnect_nb_button.setEnabled(True)
-                self.reconnect_nb_button.clicked.connect(
-                    self.on_reconnect_notebook)
+                self.reconnect_nb_button.clicked.connect(self.on_reconnect_notebook)
                 self.extraControlsLayout.addWidget(self.reconnect_nb_button)
-
             self.launcherTabs.setCurrentIndex(2)
 
         elif self.job_type == "vm":
-
-            # Create a VM job
-
             self.only_submit = True
-
-            self.job = jobs.VMJob()
             self.job.on_vm_available = self.on_vm_available
-
-            # Create extra user interface for reconnection to VM.
-
             if self.extraControlsLayout.count() == 0:
-                self.reconnect_vm_button = QtWidgets.QPushButton(
-                    'Connect to desktop', self)
+                self.reconnect_vm_button = QtWidgets.QPushButton('Connect to desktop', self)
                 self.reconnect_vm_button.setEnabled(False)
                 self.reconnect_vm_button.clicked.connect(self.on_reconnect_vm)
                 self.extraControlsLayout.addStretch(1)
                 self.extraControlsLayout.addWidget(self.reconnect_vm_button)
                 self.extraControlsLayout.addStretch(1)
-
             self.launcherTabs.setCurrentIndex(2)
 
-        else:
-            QtWidgets.QMessageBox.about(
-                self, self.title, "Session start failed.")
-            return
-
-        # Setup job parameters
-
-        self.job.name = self.job_name
-        self.job.account = str(self.projectCombo.currentText())
-        self.job.partition = str(self.selected_part)
-        self.job.time = str(self.time)
-        self.job.output = self.user_config.job_output_file_path
-        #self.job.error = self.user_config.job_error_file_path
-        self.job.reservation = self.reservation
-        if self.job_type != "vm":
-            self.job.memory = int(self.memory)
-            self.job.nodeCount = int(self.count)
-            self.job.exclusive = self.exclusive
-            self.job.tasksPerNode = int(self.tasks_per_node)
-        if self.selected_feature != "":
-            self.job.add_constraint(self.selected_feature)
-        self.job.update()
-
-        # Create a job submission thread
+        self._configure_job(self.job)
 
         self.submit_thread = SubmitThread(
             self.job, self.cmd, self.vgl, self.vglrun, self.vgl_path)
         self.submit_thread.finished.connect(self.on_submit_finished)
+        self.submit_thread.status_update.connect(self.on_update_status_panel)
         self.submit_thread.start()
-
-        # Make sure we only manage a single job ;)
 
         self.startButton.setEnabled(False)
 
@@ -940,7 +949,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         browser_path = shutil.which(self.browser_command)
 
         if browser_path is not None:
-            Popen("%s %s" % (browser_path, url), shell=True)
+            Popen([browser_path, url])
             return True
         else:
             return False
@@ -953,7 +962,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         self.update_controls()
         self.active_connection = self.submit_thread.active_connection
 
-        # Handle submibssion failure
+        # Handle submission failure
 
         if self.submit_thread.error_status == SubmitThread.SUBMIT_FAILED:
             QtWidgets.QMessageBox.about(
@@ -963,6 +972,11 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
             self.update_controls()
             self.active_connection = None
             return
+
+        self.on_update_status_panel(f"Running on node: {self.job.nodes}")
+
+        self.processing_started_at = time.time()
+        self.processing_timeout_warned = False
 
         if not self.only_submit:
 
@@ -1010,7 +1024,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
 
             # Update the job url to use the localhost port.
 
-            fixed_url = url.replace("8888", str(self.ssh_tunnel.local_port))
+            remote_port = jobs.find_remote_port(url)
+            fixed_url = url.replace(f":{remote_port}", f":{self.ssh_tunnel.local_port}", 1)
             self.job.notebook_url = fixed_url
 
             if not self.launch_browser(self.job.notebook_url):
@@ -1061,11 +1076,34 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
                 percent = 100 * timeRunning / timeLimit
                 self.usageBar.setValue(int(percent))
 
+                remaining = max(0, timeLimit - timeRunning)
+                h = remaining // 3600
+                m = (remaining % 3600) // 60
+                s = remaining % 60
+                self.usageBar.setFormat(f"{h}:{m:02d}:{s:02d} remaining (%p%)")
+
                 if self.only_submit:
 
                     # Update status panel
 
-                    self.update_status_panel(self.job.processing_description)
+                    still_waiting = self.job.process_output or self.job.update_processing
+
+                    if still_waiting:
+                        elapsed = int(time.time() - self.processing_started_at)
+                        self.on_update_status_panel(
+                            "%s (%ds)" % (self.job.processing_description, elapsed))
+
+                        if elapsed > self.jupyter_start_timeout and not self.processing_timeout_warned:
+                            self.processing_timeout_warned = True
+                            QtWidgets.QMessageBox.warning(
+                                self, self.title,
+                                "%s hasn't responded after %d seconds.\n\n"
+                                "This can happen if the selected module or environment failed to load. "
+                                "Check the status log below for details, or press Cancel to stop the session.\n\n"
+                                "gfxlaunch will keep waiting in the background." % (
+                                    self.job.processing_description.rstrip("."), self.jupyter_start_timeout))
+                    else:
+                        self.on_update_status_panel(self.job.processing_description)
 
                     # Handle job processing, if any
 
@@ -1099,6 +1137,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
                         print("Terminating job...")
 
                         self.usageBar.setValue(0)
+                        self.usageBar.setFormat("Usage %p%")
+                        self.reset_status_panel()
                         self.update_controls()
                         if self.job is not None:
                             self.slurm.cancel_job(self.job)
@@ -1114,6 +1154,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
                 self.running = False
                 self.status_timer.stop()
                 self.usageBar.setValue(0)
+                self.usageBar.setFormat("Usage %p%")
+                self.reset_status_panel()
                 self.update_controls()
                 self.disable_extras_panel()
 
@@ -1156,51 +1198,10 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
     def on_launcherTabs_currentChanged(self, idx):
         if idx == 1:
             self.update_properties()
-
-            # Note - This should be modularised
-
-            if self.job_type == "":
-
-                # Create a standard placeholder job
-
-                job = jobs.PlaceHolderJob()
-
-            elif self.job_type == "notebook":
-
-                # Create a Jupyter notbook job
-
-                job = jobs.JupyterNotebookJob(notebook_module = self.notebook_module, use_localhost=self.jupyter_use_localhost, conda_env=self.conda_env)
-
-            elif self.job_type == "jupyterlab":
-
-                # Create a Jupyter notbook job
-
-                job = jobs.JupyterLabJob(jupyterlab_module = self.jupyterlab_module, use_localhost=self.jupyter_use_localhost, conda_env=self.conda_env)
-
-            elif self.job_type == "vm":
-
-                # Create a VM job
-
-                job = jobs.VMJob()
-
-            # Setup job parameters
-
-            job.name = self.job_name
-            job.account = str(self.projectCombo.currentText())
-            job.partition = str(self.selected_part)
-            job.reservation = self.reservation
-            job.time = str(self.time)
-            job.output = self.user_config.job_output_file_path
-            #job.error = self.user_config.job_error_file_path
-            if self.job_type != "vm":
-                job.memory = int(self.memory)
-                job.nodeCount = int(self.count)
-                job.exclusive = self.exclusive
-                job.tasksPerNode = int(self.tasks_per_node)
-            if self.selected_feature != "":
-                job.add_constraint(self.selected_feature)
-            job.update()
-
+            job = self._make_job()
+            if job is None:
+                return
+            self._configure_job(job)
             self.batchScriptText.clear()
             self.batchScriptText.insertPlainText(str(job))
 
@@ -1223,12 +1224,6 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
     def on_closeButton_clicked(self):
         """User asked to close window"""
 
-        if self.job is not None:
-            self.slurm.cancel_job(self.job)
-
-        if self.rdp != None:
-            self.rdp.terminate()
-
         if self.ssh_tunnel is not None:
             self.ssh_tunnel.terminate()
 
@@ -1237,6 +1232,15 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
     @QtCore.pyqtSlot()
     def on_cancelButton_clicked(self):
         """Cancel running job"""
+
+        if self.running:
+            reply = QtWidgets.QMessageBox.question(
+                self, self.title,
+                "Stopping the session will close your running application and any unsaved work will be lost.\n\nAre you sure?",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                QtWidgets.QMessageBox.No)
+            if reply != QtWidgets.QMessageBox.Yes:
+                return
 
         if self.job is not None:
             self.slurm.cancel_job(self.job)
@@ -1251,6 +1255,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         self.running = False
         self.job = None
         self.status_timer.stop()
+        self.usageBar.setFormat("Usage %p%")
+        self.reset_status_panel()
         self.update_controls()
 
         self.disable_extras_panel()
@@ -1307,6 +1313,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         self.job_ui_window.python_module = self.jupyterlab_module
         self.job_ui_window.use_custom_anaconda_env = self.use_conda_env
         self.job_ui_window.custom_anaconda_env = self.conda_env
+        self.job_ui_window.working_dir = self.jupyter_working_dir
+        self.job_ui_window.extra_args = self.jupyter_extra_args
 
         self.job_ui_window.setGeometry(self.x(
         )+self.width(), self.y(), self.job_ui_window.width(), self.job_ui_window.height())
@@ -1317,6 +1325,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         self.notebook_module = self.job_ui_window.python_module
         self.use_conda_env = self.job_ui_window.use_custom_anaconda_env
         self.conda_env = self.job_ui_window.custom_anaconda_env
+        self.jupyter_working_dir = self.job_ui_window.working_dir
+        self.jupyter_extra_args = self.job_ui_window.extra_args
 
         print(self.jupyterlab_module)
         print(self.notebook_module)

@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>428</width>
-    <height>262</height>
+    <height>326</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -100,10 +100,54 @@
           </property>
          </widget>
         </item>
+        <item row="9" column="0">
+         <widget class="QLabel" name="working_dir_label">
+          <property name="text">
+           <string>Working directory</string>
+          </property>
+         </widget>
+        </item>
+        <item row="9" column="1">
+         <layout class="QHBoxLayout" name="working_dir_layout">
+          <item>
+           <widget class="QLineEdit" name="working_dir_edit"/>
+          </item>
+          <item>
+           <widget class="QPushButton" name="browse_dir_button">
+            <property name="text">
+             <string>Browse...</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item row="10" column="0">
+         <widget class="QLabel" name="extra_args_label">
+          <property name="text">
+           <string>Extra Jupyter arguments</string>
+          </property>
+         </widget>
+        </item>
+        <item row="10" column="1">
+         <widget class="QLineEdit" name="extra_args_edit"/>
+        </item>
        </layout>
       </item>
      </layout>
     </widget>
+   </item>
+   <item>
+    <spacer name="controlsButtonsSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>16</height>
+      </size>
+     </property>
+    </spacer>
    </item>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout">

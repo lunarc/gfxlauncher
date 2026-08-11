@@ -236,27 +236,33 @@ unset __conda_setup
 # <<< conda initialize <<<
 """
 
-class JupyterNotebookJob(Job):
-    """Jupyter notebook job"""
+class JupyterJob(Job):
+    """Shared implementation for Jupyter Notebook and JupyterLab jobs"""
 
-    def __init__(self, account="", partition="", time="00:30:00", notebook_module="Anaconda3", use_localhost=False, conda_env=""):
+    KIND_NOTEBOOK = "notebook"
+    KIND_LAB = "lab"
+
+    def __init__(self, kind, account="", partition="", time="00:30:00", module="Anaconda3", use_localhost=False, conda_env="", conda_source_env="", working_dir="", extra_args=""):
         Job.__init__(self, account, partition, time)
 
+        self.kind = kind
         self.use_localhost = use_localhost
         self.notebook_url = ""
         self.process_output = True
         self.processing_description = "Waiting for notebook instance to start."
-        self.notebook_module = notebook_module
- 
-        self.conda_source_env = ""
-        self.conda_env = conda_env
+        self.module = module
 
-        if ',' in self.notebook_module:
-            modules = self.notebook_module.split(",")
+        self.conda_source_env = conda_source_env
+        self.conda_env = conda_env
+        self.working_dir = working_dir
+        self.extra_args = extra_args
+
+        if ',' in self.module:
+            modules = self.module.split(",")
             for module in modules:
                 self.add_module(module.strip())
         else:
-            self.add_module(self.notebook_module)
+            self.add_module(self.module)
 
         self.add_custom_script("unset XDG_RUNTIME_DIR")
 
@@ -266,17 +272,28 @@ class JupyterNotebookJob(Job):
         if self.conda_env != "":
             self.add_custom_script("conda activate %s" % self.conda_env)
 
+        if self.working_dir != "":
+            self.add_custom_script('cd "%s"' % self.working_dir)
+
+        command = 'jupyter-lab' if self.kind == self.KIND_LAB else 'jupyter-notebook'
+
         if self.use_localhost:
-            self.add_custom_script('jupyter-notebook --no-browser')
-        else:    
-            self.add_custom_script('jupyter-notebook --no-browser --ip=$HOSTNAME')
+            command += ' --no-browser'
+        else:
+            command += ' --no-browser --ip=$HOSTNAME'
+
+        if self.extra_args != "":
+            command += ' %s' % self.extra_args
+
+        self.add_custom_script(command)
 
         self.add_custom_script("module list")
         self.add_custom_script("which python")
 
     def on_notebook_url_found(self, url):
         """Event method called when notebook has been found"""
-        print("Notebook found: "+url)
+        label = "Lab" if self.kind == self.KIND_LAB else "Notebook"
+        print("%s found: %s" % (label, url))
 
     def do_process_output(self, output_lines):
         """Process job output"""
@@ -287,78 +304,31 @@ class JupyterNotebookJob(Job):
             for line in output_lines:
                 if line.find("?token=") != -1:
                     if line.find("127.0.0.1") == -1:
-                        if self.process_output:
-                            url = line[line.find("http:"):].strip()
-                            port = find_remote_port(url)
-                            if port!=-1:
-                                self.notebook_port = port
-                            else:
-                                self.notebook_port = 8888
-                            self.notebook_url = url
-                            self.process_output = False
-                            self.on_notebook_url_found(self.notebook_url)
+                        url = line[line.find("http:"):].strip()
+                        port = find_remote_port(url)
+                        if port != -1:
+                            self.notebook_port = port
+                        else:
+                            self.notebook_port = 8888
+                        self.notebook_url = url
+                        self.process_output = False
+                        self.on_notebook_url_found(self.notebook_url)
 
 
-class JupyterLabJob(Job):
+class JupyterNotebookJob(JupyterJob):
+    """Jupyter notebook job"""
+
+    def __init__(self, account="", partition="", time="00:30:00", notebook_module="Anaconda3", use_localhost=False, conda_env="", conda_source_env="", working_dir="", extra_args=""):
+        JupyterJob.__init__(self, JupyterJob.KIND_NOTEBOOK, account, partition, time,
+                             notebook_module, use_localhost, conda_env, conda_source_env, working_dir, extra_args)
+
+
+class JupyterLabJob(JupyterJob):
     """Jupyter lab job"""
 
-    def __init__(self, account="", partition="", time="00:30:00", jupyterlab_module="Anaconda3", use_localhost=False, conda_env=""):
-        Job.__init__(self, account, partition, time)
-        self.use_localhost = use_localhost
-        self.notebook_url = ""
-        self.process_output = True
-        self.processing_description = "Waiting for notebook instance to start."
-        self.jupyterlab_module = jupyterlab_module
-
-        self.init_conda = False
-        self.conda_env = conda_env
-
-        if ',' in self.jupyterlab_module:
-            modules = self.jupyterlab_module.split(",")
-            for module in modules:
-                self.add_module(module.strip())
-        else:
-            self.add_module(self.jupyterlab_module)
-
-        self.add_custom_script("unset XDG_RUNTIME_DIR")
-
-        if self.init_conda:
-            self.add_custom_script(conda_initialise_script)
-
-        if self.conda_env != "":
-            self.add_custom_script("conda activate %s" % self.conda_env)
-
-        if self.use_localhost:
-            self.add_custom_script('jupyter-lab --no-browser')
-        else:
-            self.add_custom_script('jupyter-lab --no-browser --ip=$HOSTNAME')
-
-        self.add_custom_script("module list")
-        self.add_custom_script("which python")
-
-    def on_notebook_url_found(self, url):
-        """Event method called when notebook has been found"""
-        print("Lab found: "+url)
-
-    def do_process_output(self, output_lines):
-        """Process job output"""
-
-        Job.do_process_output(self, output_lines)
-
-        if self.process_output:
-            for line in output_lines:
-                if line.find("?token=") != -1:
-                    if line.find("127.0.0.1") == -1:
-                        if self.process_output:
-                            url = line[line.find("http:"):].strip()
-                            port = find_remote_port(url)
-                            if port!=-1:
-                                self.notebook_port = port
-                            else:
-                                self.notebook_port = 8888
-                            self.notebook_url = url
-                            self.process_output = False
-                            self.on_notebook_url_found(self.notebook_url)
+    def __init__(self, account="", partition="", time="00:30:00", jupyterlab_module="Anaconda3", use_localhost=False, conda_env="", conda_source_env="", working_dir="", extra_args=""):
+        JupyterJob.__init__(self, JupyterJob.KIND_LAB, account, partition, time,
+                             jupyterlab_module, use_localhost, conda_env, conda_source_env, working_dir, extra_args)
 
 
 class VMJob(Job):

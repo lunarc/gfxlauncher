@@ -66,6 +66,8 @@ class JupyterNotebookJobPropWindow(QtWidgets.QDialog, ui.Ui_notebook_prop_form):
         self.__python_module = "Anaconda3"
         self.__use_custom_anaconda_env = False
         self.__custom_anaconda_env = ""
+        self.__working_dir = ""
+        self.__extra_args = ""
         self.__conda_install = cu.CondaInstall()
         self.__conda_install.query_packages = False
         self.__conda_install.on_query_env = self.on_query_env
@@ -128,6 +130,9 @@ class JupyterNotebookJobPropWindow(QtWidgets.QDialog, ui.Ui_notebook_prop_form):
         if not self.__use_custom_anaconda_env:
             self.conda_env_list.setCurrentIndex(-1)
 
+        self.working_dir_edit.setText(self.__working_dir)
+        self.extra_args_edit.setText(self.__extra_args)
+
 
     def update_list(self):
         """Update list box"""
@@ -153,6 +158,8 @@ class JupyterNotebookJobPropWindow(QtWidgets.QDialog, ui.Ui_notebook_prop_form):
         self.__custom_anaconda_env = self.conda_env_list.currentText()
         self.__python_module = self.conda_module_text.toPlainText()
         self.__use_custom_anaconda_env = self.use_custom_env_check.isChecked()
+        self.__working_dir = self.working_dir_edit.text().strip()
+        self.__extra_args = self.extra_args_edit.text().strip()
 
     @property
     def python_module(self):
@@ -190,6 +197,24 @@ class JupyterNotebookJobPropWindow(QtWidgets.QDialog, ui.Ui_notebook_prop_form):
         self.__custom_anaconda_env = value
         self.set_data()
 
+    @property
+    def working_dir(self):
+        return self.__working_dir
+
+    @working_dir.setter
+    def working_dir(self, value):
+        self.__working_dir = value
+        self.set_data()
+
+    @property
+    def extra_args(self):
+        return self.__extra_args
+
+    @extra_args.setter
+    def extra_args(self, value):
+        self.__extra_args = value
+        self.set_data()
+
 
     @QtCore.pyqtSlot()
     def on_ok_button_clicked(self):
@@ -206,6 +231,15 @@ class JupyterNotebookJobPropWindow(QtWidgets.QDialog, ui.Ui_notebook_prop_form):
     def on_use_custom_env_check_clicked(self):
         self.__use_custom_anaconda_env = self.use_custom_env_check.isChecked()
         self.set_data()
+
+    @QtCore.pyqtSlot()
+    def on_browse_dir_button_clicked(self):
+        """Browse for a working directory"""
+        start_dir = self.working_dir_edit.text().strip() or os.path.expanduser("~")
+        selected_dir = QtWidgets.QFileDialog.getExistingDirectory(
+            self, "Select working directory", start_dir)
+        if selected_dir:
+            self.working_dir_edit.setText(selected_dir)
 
     @QtCore.pyqtSlot()
     def on_browse_modules_button_clicked(self):

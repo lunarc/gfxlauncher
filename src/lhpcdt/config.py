@@ -148,6 +148,7 @@ class GfxConfig(object):
         self.jupyter_use_localhost = False
         self.conda_source_env = ""
         self.conda_use_env = ""
+        self.jupyter_start_timeout = 180
 
         self.part_groups = {}
         self.part_groups_defaults = {}
@@ -293,6 +294,7 @@ class GfxConfig(object):
         print("jupyter_use_localhost = %s" % self.jupyter_use_localhost)
         print("conda_source_env = %s" % self.conda_source_env)
         print("conda_use_env = %s" % self.conda_use_env)
+        print("jupyter_start_timeout = %s" % self.jupyter_start_timeout)
 
     def _config_get(self, config, section, option, default_value=""):
         """Safe config retrieval"""
@@ -408,6 +410,8 @@ class GfxConfig(object):
                 config, "jupyter", "conda_source_env")
             self.conda_use_env = self._config_get(
                 config, "jupyter", "conda_use_env")
+            self.jupyter_start_timeout = int(self._config_get(
+                config, "jupyter", "jupyter_start_timeout", str(self.jupyter_start_timeout)))
 
             self.jupyter_use_localhost = self._config_getboolean(config, "jupyter", "jupyter_use_localhost", False)
 

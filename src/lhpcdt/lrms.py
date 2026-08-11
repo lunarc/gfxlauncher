@@ -508,6 +508,16 @@ class Slurm(object):
         else:
             return []
 
+    def query_start_time(self, job):
+        """Return the estimated start time for a pending job, or empty string if unavailable."""
+        p = Popen(
+            ["squeue", "--start", "-j", str(job.id), "-h", "-o", "%S"],
+            stdout=PIPE, stderr=PIPE, universal_newlines=True)
+        output = p.communicate()[0].strip()
+        if output and output != "N/A":
+            return output
+        return ""
+
     def wait_for_start(self, job):
         """Wait for job to start"""
         self.job_status(job)
