@@ -331,6 +331,93 @@ class JupyterLabJob(JupyterJob):
                              jupyterlab_module, use_localhost, conda_env, conda_source_env, working_dir, extra_args)
 
 
+class RStudioJob(Job):
+    """RStudio Server job"""
+
+    def __init__(self, account="", partition="", time="00:30:00", rstudio_module="rserver/4.4.2", conda_env="", conda_source_env="", working_dir="", extra_args=""):
+        Job.__init__(self, account, partition, time)
+
+        # Always tunnel-only, not configurable: the command below runs
+        # with --auth-none=1 (no login at all), so this must never be
+        # reachable directly on the node's network interface - only via
+        # the SSH tunnel launcher.py sets up when it sees
+        # use_localhost=True on the job.
+        self.use_localhost = True
+        self.notebook_url = ""
+        self.process_output = True
+        self.processing_description = "Waiting for RStudio Server instance to start."
+        self.rstudio_module = rstudio_module
+
+        self.conda_source_env = conda_source_env
+        self.conda_env = conda_env
+        self.working_dir = working_dir
+        self.extra_args = extra_args
+
+        if ',' in self.rstudio_module:
+            modules = self.rstudio_module.split(",")
+            for module in modules:
+                self.add_module(module.strip())
+        else:
+            self.add_module(self.rstudio_module)
+
+        self.add_custom_script("unset XDG_RUNTIME_DIR")
+
+        if self.conda_source_env != "":
+            self.add_custom_script("source %s" % self.conda_source_env)
+
+        if self.conda_env != "":
+            self.add_custom_script("conda activate %s" % self.conda_env)
+
+        if self.working_dir != "":
+            self.add_custom_script('cd "%s"' % self.working_dir)
+
+        self.add_custom_script('RSTUDIO_PORT=$(python3 -c \'import socket; s=socket.socket(); s.bind(("",0)); print(s.getsockname()[1]); s.close()\')')
+
+        bind_address = "127.0.0.1"
+
+        command = 'rserver --www-address=%s --www-port=$RSTUDIO_PORT --auth-none=1' % bind_address
+
+        if self.extra_args != "":
+            command += ' %s' % self.extra_args
+
+        self.add_custom_script(command + ' &')
+        self.add_custom_script('RSERVER_PID=$!')
+        self.add_custom_script('while ! (echo > /dev/tcp/%s/$RSTUDIO_PORT) 2>/dev/null; do sleep 1; done' % bind_address)
+        # "localhost", not $HOSTNAME: launcher.py's tunnel setup only
+        # rewrites the *port* in this URL to the local tunnel port - it
+        # relies on the hostname already being "localhost", the same
+        # convention Jupyter follows by reporting its own bind address
+        # rather than the node's real hostname. Reporting the real
+        # hostname here instead would silently point the browser at the
+        # node directly, bypassing the tunnel it just set up.
+        self.add_custom_script('echo "RSTUDIO_URL: http://localhost:$RSTUDIO_PORT/"')
+
+        self.add_custom_script("module list")
+        self.add_custom_script('wait $RSERVER_PID')
+
+    def on_notebook_url_found(self, url):
+        """Event method called when the RStudio Server URL has been found"""
+        print("RStudio Server found: %s" % url)
+
+    def do_process_output(self, output_lines):
+        """Process job output"""
+
+        Job.do_process_output(self, output_lines)
+
+        if self.process_output:
+            for line in output_lines:
+                if line.find("RSTUDIO_URL:") != -1:
+                    url = line[line.find("http:"):].strip()
+                    port = find_remote_port(url)
+                    if port != -1:
+                        self.notebook_port = port
+                    else:
+                        self.notebook_port = 8787
+                    self.notebook_url = url
+                    self.process_output = False
+                    self.on_notebook_url_found(self.notebook_url)
+
+
 class VMJob(Job):
     """Special Job for starting VM:s"""
 

@@ -524,6 +524,10 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         self.jupyter_working_dir = ""
         self.jupyter_extra_args = ""
         self.jupyter_start_timeout = self.config.jupyter_start_timeout
+
+        self.rstudio_module = self.config.rstudio_module
+        self.rstudio_working_dir = ""
+        self.rstudio_extra_args = ""
         self.processing_started_at = 0.0
         self.processing_timeout_warned = False
 
@@ -579,6 +583,11 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
             self.jupyterlab_module = self.args.jupyterlab_module
         else:
             self.jupyterlab_module = self.config.jupyterlab_module
+
+        if self.args.rstudio_module!="":
+            self.rstudio_module = self.args.rstudio_module
+        else:
+            self.rstudio_module = self.config.rstudio_module
 
         self.autostart = self.args.autostart
         self.locked = self.args.locked
@@ -676,7 +685,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         if self.job_type == "":
             self.launcherTabs.removeTab(2)
 
-        if self.job_type != "notebook" and self.job_type!="jupyterlab":
+        if self.job_type not in ("notebook", "jupyterlab", "rstudio"):
             self.show_job_settings_button.setVisible(False)
 
         self.slurm.query_partitions(exclude_set=self.part_exclude_set)
@@ -864,6 +873,13 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
                 conda_source_env=self.config.conda_source_env,
                 working_dir=self.jupyter_working_dir,
                 extra_args=self.jupyter_extra_args)
+        elif self.job_type == "rstudio":
+            return jobs.RStudioJob(
+                rstudio_module=self.rstudio_module,
+                conda_env=self.conda_env if self.use_conda_env else "",
+                conda_source_env=self.config.conda_source_env,
+                working_dir=self.rstudio_working_dir,
+                extra_args=self.rstudio_extra_args)
         elif self.job_type == "vm":
             return jobs.VMJob()
         return None
@@ -916,6 +932,16 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
             self.job.on_notebook_url_found = self.on_notebook_url_found
             if self.extraControlsLayout.count() == 0:
                 self.reconnect_nb_button = QtWidgets.QPushButton('Reconnect to Lab', self)
+                self.reconnect_nb_button.setEnabled(True)
+                self.reconnect_nb_button.clicked.connect(self.on_reconnect_notebook)
+                self.extraControlsLayout.addWidget(self.reconnect_nb_button)
+            self.launcherTabs.setCurrentIndex(2)
+
+        elif self.job_type == "rstudio":
+            self.only_submit = True
+            self.job.on_notebook_url_found = self.on_notebook_url_found
+            if self.extraControlsLayout.count() == 0:
+                self.reconnect_nb_button = QtWidgets.QPushButton('Reconnect to RStudio', self)
                 self.reconnect_nb_button.setEnabled(True)
                 self.reconnect_nb_button.clicked.connect(self.on_reconnect_notebook)
                 self.extraControlsLayout.addWidget(self.reconnect_nb_button)
@@ -1012,7 +1038,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
 
         self.reset_status_panel()
 
-        if self.jupyter_use_localhost:
+        if self.job.use_localhost:
 
             # Setup a tunnel to notebook server running on localhost on the node.
 
@@ -1308,7 +1334,31 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
     @QtCore.pyqtSlot()
     def on_show_job_settings_button_clicked(self):
         """Open help page if set"""
-        
+
+        if self.job_type == "rstudio":
+            self.job_ui_window = job_ui.RStudioJobPropWindow(self)
+            self.job_ui_window.module = self.rstudio_module
+            self.job_ui_window.use_custom_anaconda_env = self.use_conda_env
+            self.job_ui_window.custom_anaconda_env = self.conda_env
+            self.job_ui_window.working_dir = self.rstudio_working_dir
+            self.job_ui_window.extra_args = self.rstudio_extra_args
+
+            self.job_ui_window.setGeometry(self.x(
+            )+self.width(), self.y(), self.job_ui_window.width(), self.job_ui_window.height())
+
+            self.job_ui_window.exec()
+
+            self.rstudio_module = self.job_ui_window.module
+            self.use_conda_env = self.job_ui_window.use_custom_anaconda_env
+            self.conda_env = self.job_ui_window.custom_anaconda_env
+            self.rstudio_working_dir = self.job_ui_window.working_dir
+            self.rstudio_extra_args = self.job_ui_window.extra_args
+
+            print(self.rstudio_module)
+            print(self.use_conda_env)
+            print(self.conda_env)
+            return
+
         self.job_ui_window = job_ui.JupyterNotebookJobPropWindow(self)
         self.job_ui_window.python_module = self.jupyterlab_module
         self.job_ui_window.use_custom_anaconda_env = self.use_conda_env

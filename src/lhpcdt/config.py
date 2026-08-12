@@ -150,6 +150,8 @@ class GfxConfig(object):
         self.conda_use_env = ""
         self.jupyter_start_timeout = 180
 
+        self.rstudio_module = "rserver/4.4.2"
+
         self.part_groups = {}
         self.part_groups_defaults = {}
 
@@ -296,6 +298,13 @@ class GfxConfig(object):
         print("conda_use_env = %s" % self.conda_use_env)
         print("jupyter_start_timeout = %s" % self.jupyter_start_timeout)
 
+        print("")
+        print("RStudio settings")
+        print("----------------")
+        print("")
+
+        print("rstudio_module = %s" % self.rstudio_module)
+
     def _config_get(self, config, section, option, default_value=""):
         """Safe config retrieval"""
 
@@ -412,6 +421,9 @@ class GfxConfig(object):
                 config, "jupyter", "conda_use_env")
             self.jupyter_start_timeout = int(self._config_get(
                 config, "jupyter", "jupyter_start_timeout", str(self.jupyter_start_timeout)))
+
+            self.rstudio_module = self._config_get(
+                config, "rstudio", "rstudio_module", self.rstudio_module)
 
             self.jupyter_use_localhost = self._config_getboolean(config, "jupyter", "jupyter_use_localhost", False)
 

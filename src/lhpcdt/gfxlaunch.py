@@ -117,6 +117,9 @@ def main():
     parser.add_argument("--notebook-module", dest="notebook_module", action="store",
                         default="", help="Specify module to load for Jupyter Notebook jobs.")
 
+    parser.add_argument("--rstudio-module", dest="rstudio_module", action="store",
+                        default="", help="Specify module to load for RStudio Server jobs.")
+
     parser.add_argument("--autostart", dest="autostart",
                         action="store_true", default=False)
 

@@ -96,6 +96,9 @@ jupyterlab_module = Anaconda3
 #conda_use_env = myenv
 #jupyter_start_timeout = 180
 
+[rstudio]
+rstudio_module = rserver/4.4.2
+
 [xfreerdp]
 xfreerdp_path = /sw/pkg/freerdp/2.0.0-rc4/bin
 xfreerdp_cmdline = %s /v:%s /u:$USER /d:ad.lunarc /sec:tls /cert-ignore /audio-mode:1 /gfx +gfx-progressive -bitmap-cache -offscreen-cache -glyph-cache +clipboard /size:1280x1024 /dynamic-resolution /t:"LUNARC HPC Desktop Windows 10 (NVIDA V100)"
