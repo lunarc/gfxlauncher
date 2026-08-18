@@ -43,7 +43,8 @@ The following attributes are supported by **gfxmenu**:
 +------------------------+-------------------------------------------------------------------+
 | ##LDT part             | Default partition used when submitting the job                    |
 +------------------------+-------------------------------------------------------------------+
-| ##LDT job              | Job type. Currently one of vm, notebook and jupyterlab            |
+| ##LDT job              | Job type. Currently one of vm, notebook, jupyterlab, rstudio      |
+|                        | and ollama                                                        |
 +------------------------+-------------------------------------------------------------------+
 | ##LDT group            | Partition group to display in user interface (--group)            |
 +------------------------+-------------------------------------------------------------------+
@@ -66,6 +67,18 @@ A script for a Jupyter Lab session is shown below:
     ##LDT title = "Jupyter Lab"
     ##LDT part = "lu"
     ##LDT job = "jupyterlab"
+
+An Ollama chat session is set up the same way, using a GPU partition group since Ollama needs a GPU to serve models efficiently:
+
+.. code-block:: bash
+
+    #!/bin/sh
+
+    ##LDT category = "Development"
+    ##LDT title = "AI Chat (Ollama)"
+    ##LDT part = "gpu"
+    ##LDT job = "ollama"
+    ##LDT group = "gpu"
 
 .. note::
 
