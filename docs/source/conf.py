@@ -21,13 +21,13 @@ sys.path.insert(0, os.path.abspath('../..'))
 # -- Project information -----------------------------------------------------
 
 project = 'GFX Launcher - An application launcher framework for Slurm'
-copyright = '2017-2024, Jonas Lindemann'
+copyright = '2017-2026, Jonas Lindemann'
 author = 'Jonas Lindemann'
 
 # The short X.Y version
 version = '0.9'
 # The full version, including alpha/beta/rc tags
-release = '0.9.13'
+release = '0.9.3'
 
 
 # -- General configuration ---------------------------------------------------
