@@ -1,0 +1,7 @@
+/* Light/dark variants of in-page images.
+   Shibuya puts class="light" or class="dark" on <html> (see base.html), so
+   images tagged :class: only-light / only-dark follow the color mode toggle. */
+html.dark .only-light,
+html.light .only-dark {
+    display: none;
+}

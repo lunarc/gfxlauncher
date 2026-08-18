@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.abspath('../..'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'GFX Launcher - An application launcher framework for Slurm'
+project = 'GFX Launcher'
 copyright = '2017-2026, Jonas Lindemann'
 author = 'Jonas Lindemann'
 
@@ -101,6 +101,12 @@ html_theme_options = {
 # Only the landing page (index.rst) opts into the wide hero layout via its
 # own ":layout: landing" field; every other page keeps the default docs
 # layout with sidebar navigation.
+
+# Add any paths that contain custom static files (such as style sheets) here,
+# relative to this directory.
+html_static_path = ['_static']
+
+html_css_files = ['custom.css']
 
 
 # -- Options for HTMLHelp output ---------------------------------------------
