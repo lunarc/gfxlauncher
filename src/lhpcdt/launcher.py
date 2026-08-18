@@ -528,6 +528,13 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         self.rstudio_module = self.config.rstudio_module
         self.rstudio_working_dir = ""
         self.rstudio_extra_args = ""
+
+        self.ollama_module = self.config.ollama_module
+        self.ollama_model = self.config.ollama_model
+        self.ollama_models_dir = self.config.ollama_models_dir
+        self.ollama_extra_args = ""
+        self.pull_progress_bar = None
+
         self.processing_started_at = 0.0
         self.processing_timeout_warned = False
 
@@ -588,6 +595,21 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
             self.rstudio_module = self.args.rstudio_module
         else:
             self.rstudio_module = self.config.rstudio_module
+
+        if self.args.ollama_module!="":
+            self.ollama_module = self.args.ollama_module
+        else:
+            self.ollama_module = self.config.ollama_module
+
+        if self.args.ollama_model!="":
+            self.ollama_model = self.args.ollama_model
+        else:
+            self.ollama_model = self.config.ollama_model
+
+        if self.args.ollama_models_dir!="":
+            self.ollama_models_dir = self.args.ollama_models_dir
+        else:
+            self.ollama_models_dir = self.config.ollama_models_dir
 
         self.autostart = self.args.autostart
         self.locked = self.args.locked
@@ -685,8 +707,10 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         if self.job_type == "":
             self.launcherTabs.removeTab(2)
 
-        if self.job_type not in ("notebook", "jupyterlab", "rstudio"):
+        if self.job_type not in ("notebook", "jupyterlab", "rstudio", "ollama"):
             self.show_job_settings_button.setVisible(False)
+
+        self.update_model_info_label()
 
         self.slurm.query_partitions(exclude_set=self.part_exclude_set)
 
@@ -807,8 +831,16 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
 
         self.node_usage_label.setText(plain_text_usage)
 
+    def update_model_info_label(self):
+        """Show which model an Ollama chat job will use, since it's
+        otherwise only visible after opening the job settings dialog."""
 
-    def enable_extras_panel(self): 
+        if self.job_type == "ollama":
+            self.model_info_label.setText("Model: %s" % self.ollama_model)
+        else:
+            self.model_info_label.setText("")
+
+    def enable_extras_panel(self):
         """Clear user interface components in extras panel"""
 
         self.extraControlsLayout.setEnabled(True)
@@ -880,6 +912,12 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
                 conda_source_env=self.config.conda_source_env,
                 working_dir=self.rstudio_working_dir,
                 extra_args=self.rstudio_extra_args)
+        elif self.job_type == "ollama":
+            return jobs.OllamaChatJob(
+                ollama_module=self.ollama_module,
+                model=self.ollama_model,
+                models_dir=self.ollama_models_dir,
+                extra_args=self.ollama_extra_args)
         elif self.job_type == "vm":
             return jobs.VMJob()
         return None
@@ -942,6 +980,22 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
             self.job.on_notebook_url_found = self.on_notebook_url_found
             if self.extraControlsLayout.count() == 0:
                 self.reconnect_nb_button = QtWidgets.QPushButton('Reconnect to RStudio', self)
+                self.reconnect_nb_button.setEnabled(True)
+                self.reconnect_nb_button.clicked.connect(self.on_reconnect_notebook)
+                self.extraControlsLayout.addWidget(self.reconnect_nb_button)
+            self.launcherTabs.setCurrentIndex(2)
+
+        elif self.job_type == "ollama":
+            self.only_submit = True
+            self.job.on_notebook_url_found = self.on_notebook_url_found
+            self.job.on_pull_progress = self.on_pull_progress
+            if self.extraControlsLayout.count() == 0:
+                self.pull_progress_bar = QtWidgets.QProgressBar(self)
+                self.pull_progress_bar.setRange(0, 100)
+                self.pull_progress_bar.setFormat("Downloading model: %p%")
+                self.extraControlsLayout.addWidget(self.pull_progress_bar)
+
+                self.reconnect_nb_button = QtWidgets.QPushButton('Reconnect to Chat', self)
                 self.reconnect_nb_button.setEnabled(True)
                 self.reconnect_nb_button.clicked.connect(self.on_reconnect_notebook)
                 self.extraControlsLayout.addWidget(self.reconnect_nb_button)
@@ -1033,10 +1087,20 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
                 print("Command completed...")
 
 
+    def on_pull_progress(self, percent):
+        """Callback while a chat job's model is downloading."""
+
+        if self.pull_progress_bar is not None:
+            self.pull_progress_bar.setValue(percent)
+
     def on_notebook_url_found(self, url):
         """Callback when notebook url has been found."""
 
         self.reset_status_panel()
+
+        if self.job_type == "ollama" and self.pull_progress_bar is not None:
+            self.pull_progress_bar.setValue(100)
+            self.pull_progress_bar.setVisible(False)
 
         if self.job.use_localhost:
 
@@ -1357,6 +1421,29 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
             print(self.rstudio_module)
             print(self.use_conda_env)
             print(self.conda_env)
+            return
+
+        if self.job_type == "ollama":
+            self.job_ui_window = job_ui.OllamaJobPropWindow(self)
+            self.job_ui_window.popular_models = self.config.ollama_popular_models
+            self.job_ui_window.model = self.ollama_model
+            # $HOME (and any other shell vars) in the config/CLI value are
+            # meant to be expanded by bash inside the SLURM job (jobs.py
+            # exports this as a literal job-script line) - expand them here
+            # too just for display, so the field shows a real path rather
+            # than a literal "$HOME/...".
+            self.job_ui_window.models_dir = os.path.expandvars(self.ollama_models_dir)
+            self.job_ui_window.extra_args = self.ollama_extra_args
+
+            self.job_ui_window.setGeometry(self.x(
+            )+self.width(), self.y(), self.job_ui_window.width(), self.job_ui_window.height())
+
+            self.job_ui_window.exec()
+
+            self.ollama_model = self.job_ui_window.model
+            self.ollama_models_dir = self.job_ui_window.models_dir
+            self.ollama_extra_args = self.job_ui_window.extra_args
+            self.update_model_info_label()
             return
 
         self.job_ui_window = job_ui.JupyterNotebookJobPropWindow(self)

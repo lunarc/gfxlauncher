@@ -99,6 +99,12 @@ jupyterlab_module = Anaconda3
 [rstudio]
 rstudio_module = rserver/4.4.2
 
+[ollama]
+ollama_module = ollama/0.32.14
+ollama_model = llama3.1:8b
+ollama_models_dir = $HOME/.lhpc/ollama-models
+ollama_popular_models = llama3.1:8b, qwen2.5:7b, gemma2:9b, mistral:7b, phi3:mini
+
 [xfreerdp]
 xfreerdp_path = /sw/pkg/freerdp/2.0.0-rc4/bin
 xfreerdp_cmdline = %s /v:%s /u:$USER /d:ad.lunarc /sec:tls /cert-ignore /audio-mode:1 /gfx +gfx-progressive -bitmap-cache -offscreen-cache -glyph-cache +clipboard /size:1280x1024 /dynamic-resolution /t:"LUNARC HPC Desktop Windows 10 (NVIDA V100)"

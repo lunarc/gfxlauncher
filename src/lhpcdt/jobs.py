@@ -418,6 +418,80 @@ class RStudioJob(Job):
                     self.on_notebook_url_found(self.notebook_url)
 
 
+class OllamaChatJob(Job):
+    """Ollama + Open WebUI chat job"""
+
+    def __init__(self, account="", partition="", time="01:00:00",
+                 ollama_module="ollama/0.32.14", model="llama3.1:8b",
+                 models_dir="", extra_args=""):
+        Job.__init__(self, account, partition, time)
+
+        # Tunnel-only, unconditionally - same rationale as RStudioJob
+        # above: Open WebUI also runs with its own auth disabled
+        # (WEBUI_AUTH=False), so the SSH tunnel is the only access gate.
+        self.use_localhost = True
+        self.notebook_url = ""
+        self.process_output = True
+        self.processing_description = ("Waiting for chat interface to start. "
+            "First launch of a new model can take a while to download.")
+        self.ollama_module = ollama_module
+        self.model = model
+        self.models_dir = models_dir
+        self.extra_args = extra_args
+        self.pull_progress = 0
+
+        self.add_module(self.ollama_module)
+        self.add_custom_script("unset XDG_RUNTIME_DIR")
+
+        if self.models_dir != "":
+            self.add_custom_script('export OLLAMA_MODELS_DIR="%s"' % self.models_dir)
+
+        self.add_custom_script('OLLAMA_PORT=$(python3 -c \'import socket; s=socket.socket(); s.bind(("",0)); print(s.getsockname()[1]); s.close()\')')
+        self.add_custom_script('WEBUI_PORT=$(python3 -c \'import socket; s=socket.socket(); s.bind(("",0)); print(s.getsockname()[1]); s.close()\')')
+
+        command = 'ollama-chat --ollama-port=$OLLAMA_PORT --webui-port=$WEBUI_PORT --model "%s"' % self.model
+
+        if self.extra_args != "":
+            command += ' %s' % self.extra_args
+
+        self.add_custom_script(command)
+        self.add_custom_script("module list")
+
+    def on_notebook_url_found(self, url):
+        """Event method called when the chat interface URL has been found"""
+        print("Chat interface found: %s" % url)
+
+    def on_pull_progress(self, percent):
+        """Event method called as the model download progresses (0-100)"""
+        print("Model download: %d%%" % percent)
+
+    def do_process_output(self, output_lines):
+        """Process job output"""
+
+        Job.do_process_output(self, output_lines)
+
+        if self.process_output:
+            for line in output_lines:
+                if line.find("OLLAMA_PULL_PROGRESS:") != -1:
+                    try:
+                        pct = int(line.split("OLLAMA_PULL_PROGRESS:")[1].strip())
+                    except ValueError:
+                        continue
+                    if pct != self.pull_progress:
+                        self.pull_progress = pct
+                        self.on_pull_progress(pct)
+                elif line.find("OLLAMA_CHAT_URL:") != -1:
+                    url = line[line.find("http:"):].strip()
+                    port = find_remote_port(url)
+                    if port != -1:
+                        self.notebook_port = port
+                    else:
+                        self.notebook_port = 8080
+                    self.notebook_url = url
+                    self.process_output = False
+                    self.on_notebook_url_found(self.notebook_url)
+
+
 class VMJob(Job):
     """Special Job for starting VM:s"""
 

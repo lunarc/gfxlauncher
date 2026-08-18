@@ -459,6 +459,13 @@
     <item>
      <layout class="QHBoxLayout" name="job_settings_layout">
       <item>
+       <widget class="QLabel" name="model_info_label">
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item>
        <spacer name="show_job_settings_spacer">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>

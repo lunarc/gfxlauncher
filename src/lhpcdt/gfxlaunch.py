@@ -120,6 +120,15 @@ def main():
     parser.add_argument("--rstudio-module", dest="rstudio_module", action="store",
                         default="", help="Specify module to load for RStudio Server jobs.")
 
+    parser.add_argument("--ollama-module", dest="ollama_module", action="store",
+                        default="", help="Specify module to load for Ollama chat jobs.")
+
+    parser.add_argument("--ollama-model", dest="ollama_model", action="store",
+                        default="", help="Specify the Ollama model tag to pull and serve.")
+
+    parser.add_argument("--ollama-models-dir", dest="ollama_models_dir", action="store",
+                        default="", help="Specify the directory Ollama caches downloaded models in.")
+
     parser.add_argument("--autostart", dest="autostart",
                         action="store_true", default=False)
 

@@ -152,6 +152,11 @@ class GfxConfig(object):
 
         self.rstudio_module = "rserver/4.4.2"
 
+        self.ollama_module = "ollama/0.32.14"
+        self.ollama_model = "llama3.1:8b"
+        self.ollama_models_dir = "$HOME/.lhpc/ollama-models"
+        self.ollama_popular_models = ["llama3.1:8b", "qwen2.5:7b", "gemma2:9b", "mistral:7b", "phi3:mini"]
+
         self.part_groups = {}
         self.part_groups_defaults = {}
 
@@ -305,6 +310,16 @@ class GfxConfig(object):
 
         print("rstudio_module = %s" % self.rstudio_module)
 
+        print("")
+        print("Ollama chat settings")
+        print("---------------------")
+        print("")
+
+        print("ollama_module = %s" % self.ollama_module)
+        print("ollama_model = %s" % self.ollama_model)
+        print("ollama_models_dir = %s" % self.ollama_models_dir)
+        print("ollama_popular_models = %s" % ", ".join(self.ollama_popular_models))
+
     def _config_get(self, config, section, option, default_value=""):
         """Safe config retrieval"""
 
@@ -424,6 +439,17 @@ class GfxConfig(object):
 
             self.rstudio_module = self._config_get(
                 config, "rstudio", "rstudio_module", self.rstudio_module)
+
+            self.ollama_module = self._config_get(
+                config, "ollama", "ollama_module", self.ollama_module)
+            self.ollama_model = self._config_get(
+                config, "ollama", "ollama_model", self.ollama_model)
+            self.ollama_models_dir = self._config_get(
+                config, "ollama", "ollama_models_dir", self.ollama_models_dir)
+
+            if config.has_option("ollama", "ollama_popular_models"):
+                self.ollama_popular_models = [
+                    m.strip() for m in config.get("ollama", "ollama_popular_models").split(",") if m.strip() != ""]
 
             self.jupyter_use_localhost = self._config_getboolean(config, "jupyter", "jupyter_use_localhost", False)
 

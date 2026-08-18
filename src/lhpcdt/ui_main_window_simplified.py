@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file '/home/bmjl/Development/gfxlauncher/ui/mainwindow_simplified.ui'
+# Form implementation generated from reading ui file 'ui/mainwindow_simplified.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.9
 #
@@ -174,6 +174,10 @@ class Ui_MainWindow(object):
         self.verticalLayout.addWidget(self.project_group)
         self.job_settings_layout = QtWidgets.QHBoxLayout()
         self.job_settings_layout.setObjectName("job_settings_layout")
+        self.model_info_label = QtWidgets.QLabel(self.centralwidget)
+        self.model_info_label.setText("")
+        self.model_info_label.setObjectName("model_info_label")
+        self.job_settings_layout.addWidget(self.model_info_label)
         spacerItem1 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.job_settings_layout.addItem(spacerItem1)
         self.show_job_settings_button = QtWidgets.QToolButton(self.centralwidget)
