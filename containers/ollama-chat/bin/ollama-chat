@@ -1,0 +1,206 @@
+#!/bin/bash
+#
+# Wrapper for an Ollama backend + Open WebUI chat frontend, run under a
+# single SLURM job.
+#
+# Ollama is a native, module-installed binary (module ollama/0.32.14, see
+# /sw/pkg/ollama/0.32.14 - this wrapper is installed alongside it in the
+# same module's bin/) rather than a container, so it's invoked directly
+# here and gets GPU access straight from the host driver, no --nv/container
+# passthrough needed. Open WebUI has no equivalent native package, so it
+# still runs as an unprivileged Apptainer/Singularity container, following
+# the same bind-mount pattern as containers/rstudio-server/bin/rserver.
+#
+# Both services are bound to 127.0.0.1 only, and Open WebUI's own auth is
+# disabled (WEBUI_AUTH=False) - gfxlauncher's SSH tunnel is the only access
+# gate, the same trust model RStudioJob uses (see
+# containers/rstudio-server/README.md's "Security: always tunnel-only"
+# section). Getting the bind address wrong here is the exact mistake that
+# was found and fixed for RStudio's --www-address - Open WebUI's own
+# default (HOST=0.0.0.0) is if anything worse, since WEBUI_AUTH=False means
+# an unauthenticated chat UI would be reachable from anywhere that can
+# route to the compute node.
+#
+# Invoked by OllamaChatJob (src/lhpcdt/jobs.py) as:
+#   ollama-chat --ollama-port=<port> --webui-port=<port> --model "<tag>" [extra open-webui args]
+
+set -e
+set -o pipefail
+
+# TODO: confirm against the actual deployed open-webui module path.
+WEBUI_IMAGE=/sw/pkg/open-webui/open-webui_main.sif
+
+OLLAMA_PORT=""
+WEBUI_PORT=""
+MODEL=""
+EXTRA_ARGS=()
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --ollama-port=*) OLLAMA_PORT="${1#*=}"; shift ;;
+        --webui-port=*)  WEBUI_PORT="${1#*=}"; shift ;;
+        --model=*)       MODEL="${1#*=}"; shift ;;
+        --model)         MODEL="$2"; shift 2 ;;
+        *)                EXTRA_ARGS+=("$1"); shift ;;
+    esac
+done
+
+if [[ -z "$OLLAMA_PORT" || -z "$WEBUI_PORT" || -z "$MODEL" ]]; then
+    echo "Usage: ollama-chat --ollama-port=<port> --webui-port=<port> --model <tag> [extra open-webui args]" >&2
+    exit 1
+fi
+
+WORKDIR=$(mktemp -d "${TMPDIR:-/tmp}/ollama-chat.XXXXXX")
+mkdir -p -m 700 "$WORKDIR/webui-data"
+
+# OLLAMA_MODELS_DIR is exported by OllamaChatJob from etc/gfxlauncher.conf's
+# [ollama] ollama_models_dir - defaults to "$HOME/.lhpc/ollama-models" (a
+# literal $HOME in that config value, expanded here at job runtime, so each
+# user gets their own cache under their own home directory with no site-wide
+# path needing to exist or be pre-provisioned). A site admin can instead
+# point it at a real shared, group-writable location so different users'
+# launches reuse each other's already-pulled models - just requires that
+# directory to actually exist with the right permissions first.
+if [[ -n "${OLLAMA_MODELS_DIR:-}" ]]; then
+    mkdir -p "$OLLAMA_MODELS_DIR"
+    export OLLAMA_MODELS="$OLLAMA_MODELS_DIR"
+fi
+
+# Second line of defense for logs, same reasoning as bin/rserver: copy them
+# out to a persistent, inspectable location before the scratch dir is
+# removed on exit, since it would otherwise vanish the moment the job is
+# cancelled - exactly when you go looking for it.
+LOG_ARCHIVE="$HOME/.lhpc/ollama-chat-logs/${SLURM_JOB_ID:-$$}"
+
+cleanup() {
+    mkdir -p "$LOG_ARCHIVE"
+    cp "$WORKDIR"/*.log "$LOG_ARCHIVE/" 2>/dev/null || true
+    [[ -n "${OLLAMA_PID:-}" ]] && kill "$OLLAMA_PID" 2>/dev/null || true
+    [[ -n "${WEBUI_PID:-}" ]] && kill "$WEBUI_PID" 2>/dev/null || true
+    rm -rf "$WORKDIR"
+}
+trap cleanup EXIT
+
+echo "ollama-chat logs also being preserved to: $LOG_ARCHIVE"
+
+# Waits for a background service to open its port, bailing out with the
+# tail of its log instead of looping forever if it dies or never comes up.
+# Necessary because a backgrounded ("&") command's failure doesn't trip
+# `set -e` - if singularity/ollama fails to even start, the plain
+# /dev/tcp poll this replaced would otherwise spin silently until the
+# job's walltime runs out, with no clue why.
+wait_for_port() {
+    local port="$1" pid="$2" logfile="$3" name="$4" timeout="$5"
+    local waited=0
+    while ! (echo > "/dev/tcp/127.0.0.1/$port") 2>/dev/null; do
+        if ! kill -0 "$pid" 2>/dev/null; then
+            echo "$name exited before it started listening on port $port. Last output:" >&2
+            tail -n 40 "$logfile" >&2
+            exit 1
+        fi
+        waited=$((waited + 1))
+        if [[ $waited -ge $timeout ]]; then
+            echo "$name did not start listening on port $port within ${timeout}s. Last output:" >&2
+            tail -n 40 "$logfile" >&2
+            exit 1
+        fi
+        sleep 1
+    done
+}
+
+# Native module install - OLLAMA_HOST binds loopback only, never the node's
+# real hostname (see file header). OLLAMA_KEEP_ALIVE=-1 disables Ollama's
+# default 5-minute idle unload: unlike a shared multi-tenant Ollama
+# deployment, this job has the GPU exclusively for its whole walltime, so
+# there's no cost to keeping the model resident - only the alternative of
+# silently re-paying the load cost (see warm-up below) after every gap in
+# chatting.
+OLLAMA_HOST="127.0.0.1:$OLLAMA_PORT" OLLAMA_KEEP_ALIVE=-1 ollama serve > "$WORKDIR/ollama.log" 2>&1 &
+OLLAMA_PID=$!
+
+echo "Waiting for Ollama backend on 127.0.0.1:$OLLAMA_PORT..."
+wait_for_port "$OLLAMA_PORT" "$OLLAMA_PID" "$WORKDIR/ollama.log" "Ollama" 120
+
+echo "Pulling model: $MODEL"
+
+# Stream /api/pull's newline-delimited JSON progress instead of running
+# `ollama pull` directly - its \r-updating CLI output doesn't produce clean
+# lines in the SLURM .out file gfxlauncher polls. Throttled to whole-percent
+# changes so a multi-GB pull doesn't spam the log file the launcher re-reads
+# on every poll tick. OllamaChatJob.do_process_output (src/lhpcdt/jobs.py)
+# scans for this marker to drive the download progress bar.
+curl -s -N -X POST "http://127.0.0.1:$OLLAMA_PORT/api/pull" \
+    -d "{\"model\":\"$MODEL\"}" | \
+python3 -c '
+import sys, json
+last_pct = -1
+for line in sys.stdin:
+    line = line.strip()
+    if not line:
+        continue
+    try:
+        obj = json.loads(line)
+    except ValueError:
+        continue
+    total, completed = obj.get("total"), obj.get("completed")
+    if total and completed:
+        pct = int(100 * completed / total)
+        if pct != last_pct:
+            last_pct = pct
+            print("OLLAMA_PULL_PROGRESS: %d" % pct, flush=True)
+    if obj.get("status") == "success":
+        print("OLLAMA_PULL_PROGRESS: 100", flush=True)
+'
+
+echo "Model pull complete: $MODEL"
+
+echo "Loading model into memory..."
+
+# `ollama pull` only downloads the weights - the model doesn't actually load
+# into GPU memory until the first real inference request, which for a
+# multi-GB model is slow enough to be confusing if it happens silently on
+# the user's first chat message instead of here, while the launcher's
+# status panel is still showing "waiting for chat interface to start".
+# An empty-prompt /api/generate call forces the load with no output to wait
+# on; keep_alive matches the -1 (never unload) set on `ollama serve` above.
+curl -s -X POST "http://127.0.0.1:$OLLAMA_PORT/api/generate" \
+    -d "{\"model\":\"$MODEL\",\"prompt\":\"\",\"keep_alive\":-1}" > /dev/null
+
+echo "Model loaded."
+
+# Open WebUI's rootfs is read-only (bind-mounted writable data dir, same
+# reasoning as bin/rserver's /var/lib bind), its own auth is disabled
+# (SSH tunnel is the real gate), and HOST is pinned to loopback - see file
+# header for why that last one is not optional.
+#
+# There's no "open-webui" binary on PATH inside this image - confirmed
+# against the actual deployed .sif, `singularity exec` bypasses whatever
+# environment setup the image's normal Docker ENTRYPOINT would have done.
+# The real entrypoint is /app/backend/start.sh (confirmed by reading it),
+# which does honor HOST/PORT/WEBUI_SECRET_KEY as set below. One thing to
+# know if EXTRA_ARGS is ever used: start.sh passes any args it's given
+# straight through to `uvicorn ... "$@"`, REPLACING its own default
+# `--workers 1` rather than adding to it - so EXTRA_ARGS here means raw
+# uvicorn flags, not "open-webui"-style ones.
+singularity exec \
+    --bind "$WORKDIR/webui-data:/app/backend/data" \
+    --env OLLAMA_BASE_URL="http://127.0.0.1:$OLLAMA_PORT" \
+    --env WEBUI_AUTH=False \
+    --env HOST=127.0.0.1 \
+    --env PORT="$WEBUI_PORT" \
+    --env WEBUI_SECRET_KEY="$(openssl rand -hex 32)" \
+    --env ANONYMIZED_TELEMETRY=False \
+    --env DO_NOT_TRACK=True \
+    "$WEBUI_IMAGE" \
+    bash /app/backend/start.sh "${EXTRA_ARGS[@]}" > "$WORKDIR/webui.log" 2>&1 &
+WEBUI_PID=$!
+
+echo "Waiting for Open WebUI on 127.0.0.1:$WEBUI_PORT..."
+wait_for_port "$WEBUI_PORT" "$WEBUI_PID" "$WORKDIR/webui.log" "Open WebUI" 300
+
+# "localhost", not $HOSTNAME - launcher.py's tunnel setup only rewrites the
+# *port* in this URL, relying on the hostname already being "localhost",
+# the same convention Jupyter/RStudio use (see jobs.py:386-392).
+echo "OLLAMA_CHAT_URL: http://localhost:$WEBUI_PORT/"
+
+wait "$WEBUI_PID"

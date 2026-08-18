@@ -1,0 +1,81 @@
+#!/bin/bash
+#
+# Wrapper for RStudio Server running inside an unprivileged Apptainer/
+# Singularity container, following the same host-based bind-mount pattern
+# as /sw/pkg/rstudio/*/bin/rstudio (the desktop wrapper).
+#
+# rserver normally runs as root so it can spawn per-user rsession
+# processes via PAM/setuid. Under an unprivileged `singularity exec` it
+# runs as the invoking user instead, so it is told --server-user="$USER"
+# to skip that user switch, and it needs its own writable state dirs
+# (/var/run, /var/lib, /var/log, /tmp) since the image's rootfs is
+# read-only - those are bind-mounted from a per-job scratch directory
+# below. --server-daemonize=0 keeps it in the foreground: gfxlauncher's
+# generated job script backgrounds this wrapper itself and later `wait`s
+# on it, so rserver must not detach on its own.
+#
+# All arguments (--www-address, --www-port, --auth-none, and any site
+# extra_args from the gfxlauncher job settings dialog) are forwarded
+# through untouched.
+
+set -e
+
+IMAGE=/sw/pkg/rserver/4.4.2/rstudio_4.4.2.sif
+
+host=$(hostname)
+
+WORKDIR=$(mktemp -d "${TMPDIR:-/tmp}/rstudio-server.XXXXXX")
+mkdir -p -m 700 "$WORKDIR/run" "$WORKDIR/var-lib" "$WORKDIR/var-log" "$WORKDIR/tmp"
+
+# The image's default /etc/rstudio/logging.conf sends log messages to
+# syslog, which nothing is listening for inside an unprivileged job -
+# they just vanish, including whatever rserver logs when the rsession
+# launch step fails (the usual cause of "connects fine, then spins
+# forever"). There's no CLI flag for this (checked --help - only a
+# config file controls it), so override logging.conf to log to stderr
+# instead, where it lands directly in the SLURM job's .out file.
+# log-level=warn keeps real errors visible (still shows up if rsession
+# fails to launch again) without the debug-level chatter used to
+# originally track that down.
+cat > "$WORKDIR/logging.conf" <<'EOF'
+[*]
+log-level=warn
+logger-type=stderr
+EOF
+
+# As a second line of defense - in case something only logs to the
+# file-based log and not stderr - copy the log dir out to a persistent,
+# inspectable location before the scratch dir is removed on exit, since
+# it would otherwise vanish the moment the job is cancelled, which is
+# exactly when you go looking for it.
+LOG_ARCHIVE="$HOME/.lhpc/rserver-logs/${SLURM_JOB_ID:-$$}"
+
+cleanup() {
+    mkdir -p "$LOG_ARCHIVE"
+    cp -r "$WORKDIR/var-log/." "$LOG_ARCHIVE/" 2>/dev/null || true
+    rm -rf "$WORKDIR"
+}
+trap cleanup EXIT
+
+if [[ "$host" == c* ]]
+then
+    BINDS="--bind /lunarc:/lunarc,/projects:/projects"
+else
+    BINDS="--bind /scale:/scale"
+fi
+
+echo "rserver logs also being preserved to: $LOG_ARCHIVE"
+
+# rsession refuses to launch for any uid below --auth-minimum-user-id
+# (default "auto", which resolves to 1000 here) - LUNARC accounts can
+# have lower uids than that. Safe to disable entirely: this container
+# only ever serves the single user whose SLURM job it's running under,
+# enforced by the OS via singularity exec's own uid, not by this check.
+singularity exec $BINDS \
+    --bind "$WORKDIR/run:/var/run/rstudio-server" \
+    --bind "$WORKDIR/var-lib:/var/lib/rstudio-server" \
+    --bind "$WORKDIR/var-log:/var/log/rstudio-server" \
+    --bind "$WORKDIR/tmp:/tmp" \
+    --bind "$WORKDIR/logging.conf:/etc/rstudio/logging.conf" \
+    "$IMAGE" \
+    rserver --server-daemonize=0 --server-user="$USER" --auth-minimum-user-id=0 "$@"
