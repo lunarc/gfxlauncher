@@ -65,6 +65,7 @@ group_all = lu48,lu32,gpua100,gpua40
 group_cpuintel = lu32
 group_cpuamd = lu48
 group_cpuall = lu48, lu32
+group_ollama = gpua40, gpua40i
 
 group_ondemand_tasks = 4
 group_ondemand_memory = -1
@@ -72,6 +73,7 @@ group_ondemand_exclusive = no
 
 group_mathem_tasks = 4
 group_cpuall_tasks = 1
+group_ollama_exclusive = yes
 
 default_tasks = 1
 default_memory = 5300

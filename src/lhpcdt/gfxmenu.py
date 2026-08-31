@@ -1,7 +1,7 @@
 #!/bin/env python
 #
 # LUNARC HPC Desktop On-Demand graphical launch tool
-# Copyright (C) 2017-2025 LUNARC, Lund University
+# Copyright (C) 2017-2026 LUNARC, Lund University
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -42,7 +42,7 @@ This is free software, and you are welcome to redistribute it
 under certain conditions; see LICENSE for details.
 """
 gfxmenu_copyright_short = """LUNARC HPC Desktop On-Demand - %s"""
-gfxmenu_version = "0.9.20"
+gfxmenu_version = "0.9.30"
 
 
 def load_script_database(cfg, dryrun=False):

@@ -4,4 +4,4 @@
 ##LDT title = "AI Chat (Ollama)"
 ##LDT part = "gpu"
 ##LDT job = "ollama"
-##LDT group = "gpu"
+##LDT group = "ollama"
