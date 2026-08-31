@@ -517,6 +517,13 @@
      </spacer>
     </item>
     <item>
+     <layout class="QHBoxLayout" name="extraControlsLayout">
+      <property name="spacing">
+       <number>6</number>
+      </property>
+     </layout>
+    </item>
+    <item>
      <widget class="Line" name="sep_before_buttons">
       <property name="orientation">
        <enum>Qt::Horizontal</enum>
@@ -641,13 +648,6 @@
         </property>
        </widget>
       </item>
-      <item>
-       <layout class="QHBoxLayout" name="extraControlsLayout">
-        <property name="spacing">
-         <number>6</number>
-        </property>
-       </layout>
-      </item>
      </layout>
     </item>
     <item>
@@ -735,6 +735,12 @@
       </item>
       <item>
        <widget class="QProgressBar" name="usageBar">
+        <property name="minimumSize">
+         <size>
+          <width>220</width>
+          <height>0</height>
+         </size>
+        </property>
         <property name="toolTip">
          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This shows how much of the requested wall time has been used in percent. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
@@ -769,6 +775,12 @@
     </item>
     <item>
      <widget class="QLabel" name="status_output">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Ignored" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
       <property name="minimumSize">
        <size>
         <width>0</width>

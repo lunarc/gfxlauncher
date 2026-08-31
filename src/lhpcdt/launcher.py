@@ -960,6 +960,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
             self.job.on_notebook_url_found = self.on_notebook_url_found
             if self.extraControlsLayout.count() == 0:
                 self.reconnect_nb_button = QtWidgets.QPushButton('Reconnect to notebook', self)
+                self.reconnect_nb_button.setMinimumSize(200, 25)
                 self.reconnect_nb_button.setEnabled(True)
                 self.reconnect_nb_button.clicked.connect(self.on_reconnect_notebook)
                 self.extraControlsLayout.addWidget(self.reconnect_nb_button)
@@ -970,6 +971,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
             self.job.on_notebook_url_found = self.on_notebook_url_found
             if self.extraControlsLayout.count() == 0:
                 self.reconnect_nb_button = QtWidgets.QPushButton('Reconnect to Lab', self)
+                self.reconnect_nb_button.setMinimumSize(200, 25)
                 self.reconnect_nb_button.setEnabled(True)
                 self.reconnect_nb_button.clicked.connect(self.on_reconnect_notebook)
                 self.extraControlsLayout.addWidget(self.reconnect_nb_button)
@@ -980,6 +982,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
             self.job.on_notebook_url_found = self.on_notebook_url_found
             if self.extraControlsLayout.count() == 0:
                 self.reconnect_nb_button = QtWidgets.QPushButton('Reconnect to RStudio', self)
+                self.reconnect_nb_button.setMinimumSize(200, 25)
                 self.reconnect_nb_button.setEnabled(True)
                 self.reconnect_nb_button.clicked.connect(self.on_reconnect_notebook)
                 self.extraControlsLayout.addWidget(self.reconnect_nb_button)
@@ -993,9 +996,17 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
                 self.pull_progress_bar = QtWidgets.QProgressBar(self)
                 self.pull_progress_bar.setRange(0, 100)
                 self.pull_progress_bar.setFormat("Downloading model: %p%")
-                self.extraControlsLayout.addWidget(self.pull_progress_bar)
+                # Without a minimum width and a stretch factor, this ends up
+                # squeezed to roughly button-sized by the QHBoxLayout it
+                # shares with reconnect_nb_button below, and the format text
+                # gets clipped. The stretch factor also means this - not the
+                # button - claims any extra space in the row as the window
+                # is resized.
+                self.pull_progress_bar.setMinimumWidth(220)
+                self.extraControlsLayout.addWidget(self.pull_progress_bar, 1)
 
                 self.reconnect_nb_button = QtWidgets.QPushButton('Reconnect to Chat', self)
+                self.reconnect_nb_button.setMinimumSize(200, 25)
                 self.reconnect_nb_button.setEnabled(True)
                 self.reconnect_nb_button.clicked.connect(self.on_reconnect_notebook)
                 self.extraControlsLayout.addWidget(self.reconnect_nb_button)
@@ -1099,8 +1110,20 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         self.reset_status_panel()
 
         if self.job_type == "ollama" and self.pull_progress_bar is not None:
-            self.pull_progress_bar.setValue(100)
-            self.pull_progress_bar.setVisible(False)
+            # Just hiding it isn't enough: a hidden widget contributes zero
+            # size to its QHBoxLayout, so its stretch=1 slot (jobs.py's
+            # addWidget(self.pull_progress_bar, 1) call) would vanish along
+            # with it, and reconnect_nb_button - which was only sitting at
+            # the row's right edge because that stretch was pushing it
+            # there - would snap left instead. Swapping in a plain stretch
+            # of the same weight at the same layout position keeps the
+            # button's position stable regardless of whether the bar was
+            # ever there.
+            index = self.extraControlsLayout.indexOf(self.pull_progress_bar)
+            self.extraControlsLayout.removeWidget(self.pull_progress_bar)
+            self.pull_progress_bar.setParent(None)
+            self.extraControlsLayout.insertStretch(index, 1)
+            self.pull_progress_bar = None
 
         if self.job.use_localhost:
 

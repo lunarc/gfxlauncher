@@ -432,8 +432,12 @@ class OllamaChatJob(Job):
         self.use_localhost = True
         self.notebook_url = ""
         self.process_output = True
-        self.processing_description = ("Waiting for chat interface to start. "
-            "First launch of a new model can take a while to download.")
+        # Kept short (unlike a fuller explanation) so it fits the fixed-width
+        # status bar at the bottom of the launcher window alongside the
+        # elapsed-seconds suffix launcher.py appends to it - the download
+        # progress bar carries the fuller "why is this slow" explanation
+        # during the actual pull.
+        self.processing_description = "Waiting for chat interface to start (first launch may be slow)."
         self.ollama_module = ollama_module
         self.model = model
         self.models_dir = models_dir
