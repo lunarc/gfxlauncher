@@ -1,0 +1,149 @@
+#!/bin/bash
+#
+# Wrapper for a bare Ollama backend, run under a single SLURM job, exposing
+# its native API for IDE plugins (e.g. VS Code's Continue extension) instead
+# of a browser-facing chat UI.
+#
+# Ollama is a native, module-installed binary (module ollama/0.32.14, see
+# /sw/pkg/ollama/0.32.14 - this wrapper is installed alongside it in the
+# same module's bin/) rather than a container, so it's invoked directly here
+# and gets GPU access straight from the host driver, no --nv/container
+# passthrough needed. Unlike containers/ollama-chat/bin/ollama-chat, there is
+# no second frontend service to start - Continue talks to Ollama's own API
+# directly, so this wrapper only ever manages the one process.
+#
+# Ollama is bound to 127.0.0.1 only. It has no authentication of its own -
+# gfxlauncher's SSH tunnel is the only access gate, the same trust model
+# OllamaChatJob/RStudioJob use (see containers/ollama-chat/README.md's
+# "Security: always tunnel-only" section).
+#
+# Invoked by CodeModelJob (src/lhpcdt/jobs.py) as:
+#   ollama-code-api --ollama-port=<port> --model "<tag>" [extra ollama serve args]
+
+set -e
+set -o pipefail
+
+OLLAMA_PORT=""
+MODEL=""
+EXTRA_ARGS=()
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --ollama-port=*) OLLAMA_PORT="${1#*=}"; shift ;;
+        --model=*)       MODEL="${1#*=}"; shift ;;
+        --model)         MODEL="$2"; shift 2 ;;
+        *)                EXTRA_ARGS+=("$1"); shift ;;
+    esac
+done
+
+if [[ -z "$OLLAMA_PORT" || -z "$MODEL" ]]; then
+    echo "Usage: ollama-code-api --ollama-port=<port> --model <tag> [extra ollama serve args]" >&2
+    exit 1
+fi
+
+WORKDIR=$(mktemp -d "${TMPDIR:-/tmp}/ollama-code-api.XXXXXX")
+
+# OLLAMA_MODELS_DIR is exported by CodeModelJob from etc/gfxlauncher.conf's
+# [codemodel] codemodel_models_dir - see containers/ollama-chat/bin/ollama-chat
+# for the reasoning on the $HOME default and why it's left unexpanded until
+# job runtime.
+if [[ -n "${OLLAMA_MODELS_DIR:-}" ]]; then
+    mkdir -p "$OLLAMA_MODELS_DIR"
+    export OLLAMA_MODELS="$OLLAMA_MODELS_DIR"
+fi
+
+# Same second-line-of-defense log archiving as bin/rserver and bin/ollama-chat:
+# copy logs out before the scratch dir vanishes on exit, since that happens
+# right when a job is cancelled - exactly when you'd want to inspect them.
+LOG_ARCHIVE="$HOME/.lhpc/ollama-code-logs/${SLURM_JOB_ID:-$$}"
+
+cleanup() {
+    mkdir -p "$LOG_ARCHIVE"
+    cp "$WORKDIR"/*.log "$LOG_ARCHIVE/" 2>/dev/null || true
+    [[ -n "${OLLAMA_PID:-}" ]] && kill "$OLLAMA_PID" 2>/dev/null || true
+    rm -rf "$WORKDIR"
+}
+trap cleanup EXIT
+
+echo "ollama-code-api logs also being preserved to: $LOG_ARCHIVE"
+
+# See containers/ollama-chat/bin/ollama-chat for why this exists: a
+# backgrounded ("&") command's failure doesn't trip `set -e`, so without this
+# a dead/never-started Ollama process would otherwise be waited on silently
+# until the job's walltime ran out.
+wait_for_port() {
+    local port="$1" pid="$2" logfile="$3" name="$4" timeout="$5"
+    local waited=0
+    while ! (echo > "/dev/tcp/127.0.0.1/$port") 2>/dev/null; do
+        if ! kill -0 "$pid" 2>/dev/null; then
+            echo "$name exited before it started listening on port $port. Last output:" >&2
+            tail -n 40 "$logfile" >&2
+            exit 1
+        fi
+        waited=$((waited + 1))
+        if [[ $waited -ge $timeout ]]; then
+            echo "$name did not start listening on port $port within ${timeout}s. Last output:" >&2
+            tail -n 40 "$logfile" >&2
+            exit 1
+        fi
+        sleep 1
+    done
+}
+
+# OLLAMA_HOST binds loopback only - never the node's real hostname (see file
+# header). OLLAMA_KEEP_ALIVE=-1 disables Ollama's default 5-minute idle
+# unload: this job has the GPU exclusively for its whole walltime, so there's
+# no cost to keeping the model resident, only the alternative of silently
+# re-paying the load cost after every gap between IDE requests.
+OLLAMA_HOST="127.0.0.1:$OLLAMA_PORT" OLLAMA_KEEP_ALIVE=-1 ollama serve > "$WORKDIR/ollama.log" 2>&1 &
+OLLAMA_PID=$!
+
+echo "Waiting for Ollama backend on 127.0.0.1:$OLLAMA_PORT..."
+wait_for_port "$OLLAMA_PORT" "$OLLAMA_PID" "$WORKDIR/ollama.log" "Ollama" 120
+
+echo "Pulling model: $MODEL"
+
+# Same streamed-progress approach as bin/ollama-chat: CodeModelJob.do_process_output
+# (src/lhpcdt/jobs.py) scans for this marker to drive the download progress bar.
+curl -s -N -X POST "http://127.0.0.1:$OLLAMA_PORT/api/pull" \
+    -d "{\"model\":\"$MODEL\"}" | \
+python3 -c '
+import sys, json
+last_pct = -1
+for line in sys.stdin:
+    line = line.strip()
+    if not line:
+        continue
+    try:
+        obj = json.loads(line)
+    except ValueError:
+        continue
+    total, completed = obj.get("total"), obj.get("completed")
+    if total and completed:
+        pct = int(100 * completed / total)
+        if pct != last_pct:
+            last_pct = pct
+            print("OLLAMA_PULL_PROGRESS: %d" % pct, flush=True)
+    if obj.get("status") == "success":
+        print("OLLAMA_PULL_PROGRESS: 100", flush=True)
+'
+
+echo "Model pull complete: $MODEL"
+
+echo "Loading model into memory..."
+
+# See bin/ollama-chat: `ollama pull` only downloads weights, it doesn't load
+# the model into GPU memory until the first real inference request. Forcing
+# that here means the launcher's "waiting for code model to start" status
+# covers the slow part, not the user's first completion request in the IDE.
+curl -s -X POST "http://127.0.0.1:$OLLAMA_PORT/api/generate" \
+    -d "{\"model\":\"$MODEL\",\"prompt\":\"\",\"keep_alive\":-1}" > /dev/null
+
+echo "Model loaded."
+
+# "localhost", not $HOSTNAME - launcher.py's tunnel setup only rewrites the
+# *port* in this URL, relying on the hostname already being "localhost", the
+# same convention Jupyter/RStudio/ollama-chat use (see jobs.py:386-392).
+echo "CODE_MODEL_URL: http://localhost:$OLLAMA_PORT/"
+
+wait "$OLLAMA_PID"
