@@ -23,6 +23,7 @@ This module provide job user interface functionality.
 """
 
 import os
+import json
 import getpass
 import subprocess
 from datetime import datetime
@@ -39,6 +40,8 @@ from . import conda_utils as cu
 from . import ui_notebook_job_prop_win as ui
 from . import ui_rstudio_job_prop_win as rstudio_ui
 from . import ui_ollama_job_prop_win as ollama_ui
+from . import ui_codemodel_job_prop_win as codemodel_ui
+from . import ui_codemodel_info_win as codemodel_info_ui
 
 class ProcessThread(QtCore.QThread):
     """Job submission thread"""
@@ -594,5 +597,135 @@ class OllamaJobPropWindow(QtWidgets.QDialog, ollama_ui.Ui_ollama_prop_form):
     @QtCore.pyqtSlot()
     def on_cancel_button_clicked(self):
         """Event method for Cancel button"""
+        self.close()
+
+
+class CodeModelJobPropWindow(QtWidgets.QDialog, codemodel_ui.Ui_codemodel_prop_form):
+    """Code model job settings window"""
+
+    def __init__(self, parent=None):
+        """Code model job settings window constructor"""
+
+        super(QtWidgets.QDialog, self).__init__(parent, QtCore.Qt.Window)
+        self.setupUi(self)
+
+        self.parent = parent
+        self.__model = "qwen2.5-coder:7b"
+        self.__extra_args = ""
+        self.__models_dir = ""
+        self.__popular_models = []
+
+        self.set_data()
+
+    def set_data(self):
+        """Assign values to controls"""
+        self.model_combo.setCurrentText(self.__model)
+        self.models_dir_edit.setText(self.__models_dir)
+        self.extra_args_edit.setText(self.__extra_args)
+
+    def get_data(self):
+        """Get values from controls"""
+        self.__model = self.model_combo.currentText().strip()
+        self.__models_dir = self.models_dir_edit.text().strip()
+        self.__extra_args = self.extra_args_edit.text().strip()
+
+    @property
+    def model(self):
+        return self.__model
+
+    @model.setter
+    def model(self, value):
+        self.__model = value
+        self.set_data()
+
+    @property
+    def popular_models(self):
+        return self.__popular_models
+
+    @popular_models.setter
+    def popular_models(self, values):
+        """Populate the model drop-down; the combo box stays editable so
+        any other Ollama model tag can still be typed in."""
+        self.__popular_models = list(values)
+        self.model_combo.clear()
+        self.model_combo.addItems(self.__popular_models)
+        self.set_data()
+
+    @property
+    def models_dir(self):
+        return self.__models_dir
+
+    @models_dir.setter
+    def models_dir(self, value):
+        self.__models_dir = value
+        self.set_data()
+
+    @property
+    def extra_args(self):
+        return self.__extra_args
+
+    @extra_args.setter
+    def extra_args(self, value):
+        self.__extra_args = value
+        self.set_data()
+
+    @QtCore.pyqtSlot()
+    def on_ok_button_clicked(self):
+        """Event method for OK button"""
+        self.get_data()
+        self.close()
+
+    @QtCore.pyqtSlot()
+    def on_browse_models_dir_button_clicked(self):
+        """Browse for a model cache directory"""
+        start_dir = self.models_dir_edit.text().strip() or os.path.expanduser("~")
+        selected_dir = QtWidgets.QFileDialog.getExistingDirectory(
+            self, "Select model cache directory", start_dir)
+        if selected_dir:
+            self.models_dir_edit.setText(selected_dir)
+
+    @QtCore.pyqtSlot()
+    def on_cancel_button_clicked(self):
+        """Event method for Cancel button"""
+        self.close()
+
+
+class CodeModelInfoWindow(QtWidgets.QDialog, codemodel_info_ui.Ui_codemodel_info_form):
+    """Non-modal window showing a running code model job's tunneled endpoint
+    and a ready-to-paste VS Code Continue extension config snippet.
+
+    Left open (show(), not exec()) so the user can keep it visible for
+    reference while copying the snippet into VS Code."""
+
+    def __init__(self, parent=None):
+        super(QtWidgets.QDialog, self).__init__(parent, QtCore.Qt.Window)
+        self.setupUi(self)
+
+    def set_endpoint(self, url, model):
+        """Fill in the endpoint URL, model name, and Continue config snippet."""
+
+        self.endpoint_edit.setText(url)
+        self.model_edit.setText(model)
+
+        snippet = {
+            "models": [
+                {
+                    "title": "HPC Ollama (%s)" % model,
+                    "provider": "ollama",
+                    "model": model,
+                    "apiBase": url,
+                }
+            ]
+        }
+        self.snippet_edit.setPlainText(json.dumps(snippet, indent=2))
+
+    @QtCore.pyqtSlot()
+    def on_copy_button_clicked(self):
+        """Copy the Continue config snippet to the clipboard"""
+        QtWidgets.QApplication.clipboard().setText(self.snippet_edit.toPlainText())
+
+    @QtCore.pyqtSlot()
+    def on_close_button_clicked(self):
+        """Event method for Close button"""
         self.close()
 

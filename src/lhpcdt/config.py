@@ -157,6 +157,11 @@ class GfxConfig(object):
         self.ollama_models_dir = "$HOME/.lhpc/ollama-models"
         self.ollama_popular_models = ["llama3.1:8b", "qwen2.5:7b", "gemma2:9b", "mistral:7b", "phi3:mini"]
 
+        self.codemodel_module = "ollama/0.32.14"
+        self.codemodel_model = "qwen2.5-coder:7b"
+        self.codemodel_models_dir = "$HOME/.lhpc/ollama-models"
+        self.codemodel_popular_models = ["qwen2.5-coder:7b", "qwen2.5-coder:14b", "codellama:13b", "deepseek-coder-v2:16b", "starcoder2:15b"]
+
         self.part_groups = {}
         self.part_groups_defaults = {}
 
@@ -320,6 +325,16 @@ class GfxConfig(object):
         print("ollama_models_dir = %s" % self.ollama_models_dir)
         print("ollama_popular_models = %s" % ", ".join(self.ollama_popular_models))
 
+        print("")
+        print("Code model settings")
+        print("--------------------")
+        print("")
+
+        print("codemodel_module = %s" % self.codemodel_module)
+        print("codemodel_model = %s" % self.codemodel_model)
+        print("codemodel_models_dir = %s" % self.codemodel_models_dir)
+        print("codemodel_popular_models = %s" % ", ".join(self.codemodel_popular_models))
+
     def _config_get(self, config, section, option, default_value=""):
         """Safe config retrieval"""
 
@@ -450,6 +465,17 @@ class GfxConfig(object):
             if config.has_option("ollama", "ollama_popular_models"):
                 self.ollama_popular_models = [
                     m.strip() for m in config.get("ollama", "ollama_popular_models").split(",") if m.strip() != ""]
+
+            self.codemodel_module = self._config_get(
+                config, "codemodel", "codemodel_module", self.codemodel_module)
+            self.codemodel_model = self._config_get(
+                config, "codemodel", "codemodel_model", self.codemodel_model)
+            self.codemodel_models_dir = self._config_get(
+                config, "codemodel", "codemodel_models_dir", self.codemodel_models_dir)
+
+            if config.has_option("codemodel", "codemodel_popular_models"):
+                self.codemodel_popular_models = [
+                    m.strip() for m in config.get("codemodel", "codemodel_popular_models").split(",") if m.strip() != ""]
 
             self.jupyter_use_localhost = self._config_getboolean(config, "jupyter", "jupyter_use_localhost", False)
 

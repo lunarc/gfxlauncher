@@ -23,7 +23,7 @@ This module implements the main user interface of the application
 launcher.
 """
 
-import os, sys, time, glob, getpass, shutil
+import os, sys, time, glob, getpass, shutil, tempfile, html, json
 
 try:
     import grp
@@ -31,6 +31,7 @@ except:
     pass
 
 from datetime import datetime
+from pathlib import Path
 
 from PyQt5 import Qt, QtCore, QtGui, QtWidgets, uic
 
@@ -535,6 +536,12 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         self.ollama_extra_args = ""
         self.pull_progress_bar = None
 
+        self.codemodel_module = self.config.codemodel_module
+        self.codemodel_model = self.config.codemodel_model
+        self.codemodel_models_dir = self.config.codemodel_models_dir
+        self.codemodel_extra_args = ""
+        self.codemodel_info_window = None
+
         self.processing_started_at = 0.0
         self.processing_timeout_warned = False
 
@@ -544,6 +551,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         self.group = ""
         self.silent = False
         self.browser_command = self.config.browser_command
+        self._browser_redirect_file = None
 
         self.default_memory = self.config.default_memory
         self.default_exclusive = self.config.default_exclusive
@@ -610,6 +618,21 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
             self.ollama_models_dir = self.args.ollama_models_dir
         else:
             self.ollama_models_dir = self.config.ollama_models_dir
+
+        if self.args.codemodel_module!="":
+            self.codemodel_module = self.args.codemodel_module
+        else:
+            self.codemodel_module = self.config.codemodel_module
+
+        if self.args.codemodel_model!="":
+            self.codemodel_model = self.args.codemodel_model
+        else:
+            self.codemodel_model = self.config.codemodel_model
+
+        if self.args.codemodel_models_dir!="":
+            self.codemodel_models_dir = self.args.codemodel_models_dir
+        else:
+            self.codemodel_models_dir = self.config.codemodel_models_dir
 
         self.autostart = self.args.autostart
         self.locked = self.args.locked
@@ -707,7 +730,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         if self.job_type == "":
             self.launcherTabs.removeTab(2)
 
-        if self.job_type not in ("notebook", "jupyterlab", "rstudio", "ollama"):
+        if self.job_type not in ("notebook", "jupyterlab", "rstudio", "ollama", "codemodel"):
             self.show_job_settings_button.setVisible(False)
 
         self.update_model_info_label()
@@ -837,6 +860,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
 
         if self.job_type == "ollama":
             self.model_info_label.setText("Model: %s" % self.ollama_model)
+        elif self.job_type == "codemodel":
+            self.model_info_label.setText("Model: %s" % self.codemodel_model)
         else:
             self.model_info_label.setText("")
 
@@ -882,6 +907,13 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         if self.rdp is not None:
             self.rdp.terminate()
 
+        if self._browser_redirect_file is not None:
+            try:
+                os.remove(self._browser_redirect_file)
+            except FileNotFoundError:
+                pass
+            self._browser_redirect_file = None
+
         event.accept()
 
     def _make_job(self):
@@ -918,6 +950,12 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
                 model=self.ollama_model,
                 models_dir=self.ollama_models_dir,
                 extra_args=self.ollama_extra_args)
+        elif self.job_type == "codemodel":
+            return jobs.CodeModelJob(
+                codemodel_module=self.codemodel_module,
+                model=self.codemodel_model,
+                models_dir=self.codemodel_models_dir,
+                extra_args=self.codemodel_extra_args)
         elif self.job_type == "vm":
             return jobs.VMJob()
         return None
@@ -960,9 +998,10 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
             self.job.on_notebook_url_found = self.on_notebook_url_found
             if self.extraControlsLayout.count() == 0:
                 self.reconnect_nb_button = QtWidgets.QPushButton('Reconnect to notebook', self)
-                self.reconnect_nb_button.setMinimumSize(200, 25)
+                self.reconnect_nb_button.setFixedSize(self.show_job_settings_button.size())
                 self.reconnect_nb_button.setEnabled(True)
                 self.reconnect_nb_button.clicked.connect(self.on_reconnect_notebook)
+                self.extraControlsLayout.addStretch(1)
                 self.extraControlsLayout.addWidget(self.reconnect_nb_button)
             self.launcherTabs.setCurrentIndex(2)
 
@@ -971,9 +1010,10 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
             self.job.on_notebook_url_found = self.on_notebook_url_found
             if self.extraControlsLayout.count() == 0:
                 self.reconnect_nb_button = QtWidgets.QPushButton('Reconnect to Lab', self)
-                self.reconnect_nb_button.setMinimumSize(200, 25)
+                self.reconnect_nb_button.setFixedSize(self.show_job_settings_button.size())
                 self.reconnect_nb_button.setEnabled(True)
                 self.reconnect_nb_button.clicked.connect(self.on_reconnect_notebook)
+                self.extraControlsLayout.addStretch(1)
                 self.extraControlsLayout.addWidget(self.reconnect_nb_button)
             self.launcherTabs.setCurrentIndex(2)
 
@@ -982,9 +1022,10 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
             self.job.on_notebook_url_found = self.on_notebook_url_found
             if self.extraControlsLayout.count() == 0:
                 self.reconnect_nb_button = QtWidgets.QPushButton('Reconnect to RStudio', self)
-                self.reconnect_nb_button.setMinimumSize(200, 25)
+                self.reconnect_nb_button.setFixedSize(self.show_job_settings_button.size())
                 self.reconnect_nb_button.setEnabled(True)
                 self.reconnect_nb_button.clicked.connect(self.on_reconnect_notebook)
+                self.extraControlsLayout.addStretch(1)
                 self.extraControlsLayout.addWidget(self.reconnect_nb_button)
             self.launcherTabs.setCurrentIndex(2)
 
@@ -1006,7 +1047,25 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
                 self.extraControlsLayout.addWidget(self.pull_progress_bar, 1)
 
                 self.reconnect_nb_button = QtWidgets.QPushButton('Reconnect to Chat', self)
-                self.reconnect_nb_button.setMinimumSize(200, 25)
+                self.reconnect_nb_button.setFixedSize(self.show_job_settings_button.size())
+                self.reconnect_nb_button.setEnabled(True)
+                self.reconnect_nb_button.clicked.connect(self.on_reconnect_notebook)
+                self.extraControlsLayout.addWidget(self.reconnect_nb_button)
+            self.launcherTabs.setCurrentIndex(2)
+
+        elif self.job_type == "codemodel":
+            self.only_submit = True
+            self.job.on_notebook_url_found = self.on_notebook_url_found
+            self.job.on_pull_progress = self.on_pull_progress
+            if self.extraControlsLayout.count() == 0:
+                self.pull_progress_bar = QtWidgets.QProgressBar(self)
+                self.pull_progress_bar.setRange(0, 100)
+                self.pull_progress_bar.setFormat("Downloading model: %p%")
+                self.pull_progress_bar.setMinimumWidth(220)
+                self.extraControlsLayout.addWidget(self.pull_progress_bar, 1)
+
+                self.reconnect_nb_button = QtWidgets.QPushButton('Show VS Code connection info', self)
+                self.reconnect_nb_button.setFixedSize(self.show_job_settings_button.size())
                 self.reconnect_nb_button.setEnabled(True)
                 self.reconnect_nb_button.clicked.connect(self.on_reconnect_notebook)
                 self.extraControlsLayout.addWidget(self.reconnect_nb_button)
@@ -1034,13 +1093,68 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
 
         self.startButton.setEnabled(False)
 
+    def _write_browser_redirect(self, url):
+        """Write a local HTML redirect page for url and return its path.
+
+        Secrets such as a Jupyter ?token=... must never end up as a browser
+        process argument: argv is visible to any other user on a shared
+        login node via `ps`/`/proc`. Instead we hand the browser a private,
+        token-free local file that redirects to the real url client-side -
+        the same trick Jupyter itself uses for its own auto-opened browser
+        (jpserver-<pid>-open.html).
+        """
+
+        redirect_dir = os.path.join(os.path.expanduser("~"), ".lhpc", "browser")
+        os.makedirs(redirect_dir, mode=0o700, exist_ok=True)
+        os.chmod(redirect_dir, 0o700)
+
+        # Best-effort sweep of stale files a prior crashed session left
+        # behind (closeEvent normally removes the one it created).
+        stale_cutoff = time.time() - 86400
+        for stale_path in glob.glob(os.path.join(redirect_dir, "*.html")):
+            try:
+                if os.path.getmtime(stale_path) < stale_cutoff:
+                    os.remove(stale_path)
+            except FileNotFoundError:
+                pass
+
+        if self._browser_redirect_file is not None:
+            try:
+                os.remove(self._browser_redirect_file)
+            except FileNotFoundError:
+                pass
+            self._browser_redirect_file = None
+
+        fd, path = tempfile.mkstemp(suffix=".html", dir=redirect_dir)
+
+        safe_url = html.escape(url, quote=True)
+        js_url = json.dumps(url).replace("</", "<\\/")
+
+        with os.fdopen(fd, "w") as f:
+            f.write(
+                "<!DOCTYPE html>\n"
+                "<html><head><meta charset=\"utf-8\">\n"
+                "<meta http-equiv=\"refresh\" content=\"0;url=%s\">\n"
+                "<script>location.replace(%s);</script>\n"
+                "</head><body>\n"
+                "<p>Redirecting... if nothing happens, click "
+                "<a href=\"%s\">here</a>.</p>\n"
+                "</body></html>\n"
+                % (safe_url, js_url, safe_url)
+            )
+
+        self._browser_redirect_file = path
+
+        return path
+
     def launch_browser(self, url):
         """Open a configured browser for the url."""
 
         browser_path = shutil.which(self.browser_command)
 
         if browser_path is not None:
-            Popen([browser_path, url])
+            redirect_path = self._write_browser_redirect(url)
+            Popen([browser_path, Path(redirect_path).as_uri()])
             return True
         else:
             return False
@@ -1109,7 +1223,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
 
         self.reset_status_panel()
 
-        if self.job_type == "ollama" and self.pull_progress_bar is not None:
+        if self.job_type in ("ollama", "codemodel") and self.pull_progress_bar is not None:
             # Just hiding it isn't enough: a hidden widget contributes zero
             # size to its QHBoxLayout, so its stretch=1 slot (jobs.py's
             # addWidget(self.pull_progress_bar, 1) call) would vanish along
@@ -1141,15 +1255,31 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
             fixed_url = url.replace(f":{remote_port}", f":{self.ssh_tunnel.local_port}", 1)
             self.job.notebook_url = fixed_url
 
-            if not self.launch_browser(self.job.notebook_url):
+            if self.job_type == "codemodel":
+                self.show_codemodel_info(self.job.notebook_url)
+            elif not self.launch_browser(self.job.notebook_url):
                 QtWidgets.QMessageBox.information(
                     self, self.title, "A suitable browser couldn't be found. The notebook instance can be found at:\n\n%s" % self.job.notebook_url )
         else:
-            if not self.launch_browser(url):
+            if self.job_type == "codemodel":
+                self.show_codemodel_info(url)
+            elif not self.launch_browser(url):
                 QtWidgets.QMessageBox.information(
                     self, self.title, "A suitable browser couldn't be found. The notebook instance can be found at:\n\n%s" % url )
 
         self.enable_extras_panel()
+
+    def show_codemodel_info(self, url):
+        """Show (or refresh) the non-modal dialog with the code model's
+        tunneled endpoint and a ready-to-paste Continue config snippet."""
+
+        if self.codemodel_info_window is None:
+            self.codemodel_info_window = job_ui.CodeModelInfoWindow(self)
+
+        self.codemodel_info_window.set_endpoint(url, self.codemodel_model)
+        self.codemodel_info_window.show()
+        self.codemodel_info_window.raise_()
+        self.codemodel_info_window.activateWindow()
 
     def on_vm_available(self, hostname):
         """Start an RDP session to host"""
@@ -1284,7 +1414,9 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         """Reopen connection to notebook."""
 
         if self.job != None:
-            if not self.launch_browser(self.job.notebook_url):
+            if self.job_type == "codemodel":
+                self.show_codemodel_info(self.job.notebook_url)
+            elif not self.launch_browser(self.job.notebook_url):
                 QtWidgets.QMessageBox.information(
                     self, self.title, "A suitable browser couldn't be found. The notebook instance can be found at:\n\n%s" % self.job.notebook_url )
 
@@ -1466,6 +1598,24 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
             self.ollama_model = self.job_ui_window.model
             self.ollama_models_dir = self.job_ui_window.models_dir
             self.ollama_extra_args = self.job_ui_window.extra_args
+            self.update_model_info_label()
+            return
+
+        if self.job_type == "codemodel":
+            self.job_ui_window = job_ui.CodeModelJobPropWindow(self)
+            self.job_ui_window.popular_models = self.config.codemodel_popular_models
+            self.job_ui_window.model = self.codemodel_model
+            self.job_ui_window.models_dir = os.path.expandvars(self.codemodel_models_dir)
+            self.job_ui_window.extra_args = self.codemodel_extra_args
+
+            self.job_ui_window.setGeometry(self.x(
+            )+self.width(), self.y(), self.job_ui_window.width(), self.job_ui_window.height())
+
+            self.job_ui_window.exec()
+
+            self.codemodel_model = self.job_ui_window.model
+            self.codemodel_models_dir = self.job_ui_window.models_dir
+            self.codemodel_extra_args = self.job_ui_window.extra_args
             self.update_model_info_label()
             return
 

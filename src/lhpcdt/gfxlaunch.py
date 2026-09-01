@@ -33,7 +33,7 @@ This is free software, and you are welcome to redistribute it
 under certain conditions; see LICENSE for details.
 """
 gfxlaunch_copyright_short = """LUNARC HPC Desktop On-Demand - %s"""
-gfxlaunch_version = "0.9.30"
+gfxlaunch_version = "0.9.31"
 
 # --- Fix search path for tool
 
@@ -128,6 +128,15 @@ def main():
 
     parser.add_argument("--ollama-models-dir", dest="ollama_models_dir", action="store",
                         default="", help="Specify the directory Ollama caches downloaded models in.")
+
+    parser.add_argument("--codemodel-module", dest="codemodel_module", action="store",
+                        default="", help="Specify module to load for code model jobs.")
+
+    parser.add_argument("--codemodel-model", dest="codemodel_model", action="store",
+                        default="", help="Specify the Ollama model tag to pull and serve for code model jobs.")
+
+    parser.add_argument("--codemodel-models-dir", dest="codemodel_models_dir", action="store",
+                        default="", help="Specify the directory the code model job caches downloaded models in.")
 
     parser.add_argument("--autostart", dest="autostart",
                         action="store_true", default=False)

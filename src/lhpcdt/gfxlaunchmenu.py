@@ -29,7 +29,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from lhpcdt import config
 from lhpcdt.gfxmenu import load_script_database
 
-gfxlaunchmenu_version = "0.9.20"
+gfxlaunchmenu_version = "0.9.31"
 
 
 def script_title(script):
