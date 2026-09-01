@@ -43,7 +43,8 @@ The following attributes are supported by **gfxmenu**:
 +------------------------+-------------------------------------------------------------------+
 | ##LDT part             | Default partition used when submitting the job                    |
 +------------------------+-------------------------------------------------------------------+
-| ##LDT job              | Job type. Currently one of vm, notebook and jupyterlab            |
+| ##LDT job              | Job type. Currently one of vm, notebook, jupyterlab, rstudio      |
+|                        | and ollama                                                        |
 +------------------------+-------------------------------------------------------------------+
 | ##LDT group            | Partition group to display in user interface (--group)            |
 +------------------------+-------------------------------------------------------------------+
@@ -67,6 +68,18 @@ A script for a Jupyter Lab session is shown below:
     ##LDT part = "lu"
     ##LDT job = "jupyterlab"
 
+An Ollama chat session is set up the same way, using a GPU partition group since Ollama needs a GPU to serve models efficiently:
+
+.. code-block:: bash
+
+    #!/bin/sh
+
+    ##LDT category = "Development"
+    ##LDT title = "AI Chat (Ollama)"
+    ##LDT part = "gpu"
+    ##LDT job = "ollama"
+    ##LDT group = "gpu"
+
 .. note::
 
     The **gfxmenu** the no_launcher attribute is used to create a direct launch of the script, bypassing the backend. This is useful for applications that do not require a backend job to be started. However, as the gnome shell is launched early it is not certain that module commands are available. The start scripts needs to set the paths to the applications manually.
@@ -83,6 +96,23 @@ The **gfxmenu** uses the directories in the /etc/gfxlauncher.conf configuration 
     Written by Jonas Lindemann (jonas.lindemann@lunarc.lu.se)
     Copyright (C) 2018-2023 LUNARC, Lund University
     Using configuration file : /sw/pkg/ondemand-dt/etc/gfxlauncher.conf
+
+Interactive launch menu
+-----------------------
+
+The same run scripts can also be used to build an interactive launcher menu directly on screen. The **gfxlaunchmenu** command reads the same metadata as **gfxmenu** and presents the applications grouped by their ``##LDT category`` tags.
+
+.. code-block:: bash
+
+    $ gfxlaunchmenu
+
+For installations that already call **gfxmenu**, the interactive menu can also be opened with:
+
+.. code-block:: bash
+
+    $ gfxmenu --interactive
+
+The interactive menu shows the generated launch command for the selected application and starts the same command that would otherwise be written into the generated desktop entry.
 
 Adding menus to shared desktop setup
 ------------------------------------

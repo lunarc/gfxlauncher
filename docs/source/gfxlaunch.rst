@@ -45,6 +45,18 @@ The command line switches of **gfxlaunch** is described in the table below:
 +---------------------------------+---------------------------------------------------+
 | --group GROUP                   | Display only partitions in the GROUP group.       |
 +---------------------------------+---------------------------------------------------+
+| --notebook-module MODULE        | Module to load for Jupyter Notebook jobs.         |
++---------------------------------+---------------------------------------------------+
+| --jupyterlab-module MODULE      | Module to load for Jupyter Lab jobs.              |
++---------------------------------+---------------------------------------------------+
+| --rstudio-module MODULE         | Module to load for RStudio Server jobs.           |
++---------------------------------+---------------------------------------------------+
+| --ollama-module MODULE          | Module to load for Ollama chat jobs.              |
++---------------------------------+---------------------------------------------------+
+| --ollama-model MODEL            | Ollama model tag to pull and serve.               |
++---------------------------------+---------------------------------------------------+
+| --ollama-models-dir DIR         | Directory Ollama caches downloaded models in.     |
++---------------------------------+---------------------------------------------------+
 
 Running standard X11 application (No graphics)
 ----------------------------------------------
@@ -124,6 +136,26 @@ A Jupyter Lab session is launched in a similar way except for using the switch *
 .. code-block:: bash
 
     gfxlaunch --title "Jupyter Lab" --partition lvis --account lvis-test --only-submit --job=jupyterlab
+
+Running RStudio Server
+-----------------------
+
+RStudio Server is launched the same way as Jupyter, using **--job=rstudio**. Unlike Jupyter, RStudio Server always connects through an SSH tunnel regardless of the **jupyter_use_localhost** setting, since it has no login of its own to fall back on.
+
+.. code-block:: bash
+
+    gfxlaunch --title "RStudio Server" --partition lvis --account lvis-test --only-submit --job=rstudio
+
+Running an Ollama chat session
+--------------------------------
+
+GfxLauncher can also launch a local LLM chat session: an `Ollama <https://ollama.com>`_ backend serving a downloaded model, with `Open WebUI <https://openwebui.com>`_ as the browser-based chat frontend. As with Jupyter and RStudio, GfxLauncher submits a job, waits for the chat interface's URL to appear in the job output, and opens a browser to it through an SSH tunnel - the tunnel is the only access control, since Open WebUI's own login is disabled.
+
+.. code-block:: bash
+
+    gfxlaunch --title "AI Chat" --partition gpua40 --account lvis-test --only-submit --job=ollama
+
+The **--job=ollama** switch selects the job type; **--ollama-model** overrides which model tag gets pulled and served (see the **[ollama]** section of :doc:`configuration` for the site-wide default and the pre-populated list of models offered in the settings dialog). If the selected model hasn't been downloaded before, the first launch takes noticeably longer while it downloads - a progress bar in the launcher tracks this. Later launches of the same model, by any user if a shared cache directory is configured, start immediately.
 
 Running Windows based desktop applications
 ------------------------------------------

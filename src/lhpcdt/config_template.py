@@ -65,6 +65,8 @@ group_all = lu48,lu32,gpua100,gpua40
 group_cpuintel = lu32
 group_cpuamd = lu48
 group_cpuall = lu48, lu32
+group_ollama = gpua40, gpua40i
+group_codemodel = gpua40, gpua40i
 
 group_ondemand_tasks = 4
 group_ondemand_memory = -1
@@ -72,6 +74,8 @@ group_ondemand_exclusive = no
 
 group_mathem_tasks = 4
 group_cpuall_tasks = 1
+group_ollama_exclusive = yes
+group_codemodel_exclusive = yes
 
 default_tasks = 1
 default_memory = 5300
@@ -92,6 +96,24 @@ vglconnect_template = %s/vglconnect %s %s/%s
 [jupyter]
 notebook_module = Anaconda3
 jupyterlab_module = Anaconda3
+#conda_source_env = /path/to/conda.sh
+#conda_use_env = myenv
+#jupyter_start_timeout = 180
+
+[rstudio]
+rstudio_module = rserver/4.4.2
+
+[ollama]
+ollama_module = ollama/0.32.14
+ollama_model = llama3.1:8b
+ollama_models_dir = $HOME/.lhpc/ollama-models
+ollama_popular_models = llama3.1:8b, qwen2.5:7b, gemma2:9b, mistral:7b, phi3:mini
+
+[codemodel]
+codemodel_module = ollama/0.32.14
+codemodel_model = qwen2.5-coder:7b
+codemodel_models_dir = $HOME/.lhpc/ollama-models
+codemodel_popular_models = qwen2.5-coder:7b, qwen2.5-coder:14b, codellama:13b, deepseek-coder-v2:16b, starcoder2:15b
 
 [xfreerdp]
 xfreerdp_path = /sw/pkg/freerdp/2.0.0-rc4/bin

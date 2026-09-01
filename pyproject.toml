@@ -17,6 +17,7 @@ license = {text = "GPL-3.0"}
 gfxlaunch = "lhpcdt.gfxlaunch:main"
 gfxusage = "lhpcdt.gfxusage:main"
 gfxmenu = "lhpcdt.gfxmenu:main"
+gfxlaunchmenu = "lhpcdt.gfxlaunchmenu:main"
 gfxnodes = "lhpcdt.gfxnodes:main"
 gfxconfig = "lhpcdt.gfxconfig:main"
 nblaunch = "lhpcdt.nblaunch:main"

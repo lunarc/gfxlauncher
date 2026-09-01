@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>notebook_prop_form</class>
- <widget class="QDialog" name="notebook_prop_form">
+ <class>rstudio_prop_form</class>
+ <widget class="QDialog" name="rstudio_prop_form">
   <property name="windowModality">
    <enum>Qt::ApplicationModal</enum>
   </property>
@@ -14,7 +14,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Notebook job properties</string>
+   <string>RStudio job properties</string>
   </property>
   <property name="modal">
    <bool>true</bool>
@@ -53,7 +53,7 @@
         <item row="0" column="0">
          <widget class="QLabel" name="conda_module_label">
           <property name="text">
-           <string>Python modules</string>
+           <string>R modules</string>
           </property>
           <property name="alignment">
            <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
@@ -124,7 +124,7 @@
         <item row="10" column="0">
          <widget class="QLabel" name="extra_args_label">
           <property name="text">
-           <string>Extra Jupyter arguments</string>
+           <string>Extra RStudio arguments</string>
           </property>
          </widget>
         </item>

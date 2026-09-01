@@ -1,6 +1,5 @@
 PyQt5
 sphinx-copybutton
-sphinx-markdown-tables
-sphinx-material
-sphinx-rtd-theme
+sphinx-design
+shibuya
 

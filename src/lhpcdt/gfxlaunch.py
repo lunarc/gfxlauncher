@@ -27,13 +27,13 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 # --- Version information
 
 gfxlaunch_copyright = """LUNARC HPC Desktop On-Demand - Version %s
-Copyright (C) 2017-2025 LUNARC, Lund University
+Copyright (C) 2017-2026 LUNARC, Lund University
 This program comes with ABSOLUTELY NO WARRANTY; for details see LICENSE.
 This is free software, and you are welcome to redistribute it
 under certain conditions; see LICENSE for details.
 """
 gfxlaunch_copyright_short = """LUNARC HPC Desktop On-Demand - %s"""
-gfxlaunch_version = "0.9.20"
+gfxlaunch_version = "0.9.31"
 
 # --- Fix search path for tool
 
@@ -117,6 +117,27 @@ def main():
     parser.add_argument("--notebook-module", dest="notebook_module", action="store",
                         default="", help="Specify module to load for Jupyter Notebook jobs.")
 
+    parser.add_argument("--rstudio-module", dest="rstudio_module", action="store",
+                        default="", help="Specify module to load for RStudio Server jobs.")
+
+    parser.add_argument("--ollama-module", dest="ollama_module", action="store",
+                        default="", help="Specify module to load for Ollama chat jobs.")
+
+    parser.add_argument("--ollama-model", dest="ollama_model", action="store",
+                        default="", help="Specify the Ollama model tag to pull and serve.")
+
+    parser.add_argument("--ollama-models-dir", dest="ollama_models_dir", action="store",
+                        default="", help="Specify the directory Ollama caches downloaded models in.")
+
+    parser.add_argument("--codemodel-module", dest="codemodel_module", action="store",
+                        default="", help="Specify module to load for code model jobs.")
+
+    parser.add_argument("--codemodel-model", dest="codemodel_model", action="store",
+                        default="", help="Specify the Ollama model tag to pull and serve for code model jobs.")
+
+    parser.add_argument("--codemodel-models-dir", dest="codemodel_models_dir", action="store",
+                        default="", help="Specify the directory the code model job caches downloaded models in.")
+
     parser.add_argument("--autostart", dest="autostart",
                         action="store_true", default=False)
 
@@ -166,7 +187,7 @@ def main():
 
     # Redirect standard output
 
-    redirect = False
+    redirect = True
 
     # Create Queue and redirect sys.stdout to this queue
 

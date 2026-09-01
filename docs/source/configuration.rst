@@ -66,6 +66,15 @@ An example configuration file is shown below:
     notebook_module = Anaconda3
     jupyterlab_module = Anaconda3
 
+    [rstudio]
+    rstudio_module = rserver/4.4.2
+
+    [ollama]
+    ollama_module = ollama/0.32.14
+    ollama_model = llama3.1:8b
+    ollama_models_dir = $HOME/.lhpc/ollama-models
+    ollama_popular_models = llama3.1:8b, qwen2.5:7b, gemma2:9b, mistral:7b, phi3:mini
+
     [xfreerdp]
     xfreerdp_path = /sw/pkg/freerdp/2.0.0-rc4/bin
     xfreerdp_cmdline = %s /v:%s /u:$USER /d:ad.lunarc /sec:tls /cert-ignore /audio-mode:1 /gfx +gfx-progressive -bitmap-cache -offscreen-cache -glyph-cache +clipboard /size:1280x1024 /dynamic-resolution /t:"LUNARC HPC Desktop Windows 10 (NVIDA V100)"
@@ -193,4 +202,47 @@ Jupyter related section - [jupyter]
 |                       | and connect using a ssh tunnel to the notbook. If set to no gfxlaunch will  |
 |                       | connect directly to to the notebook running on the node.                    |
 +-----------------------+-----------------------------------------------------------------------------+
+
+RStudio related section - [rstudio]
+------------------------------------
+
++------------------------+-------------------------------------------------------------------------------+
+| Variable               | Description                                                                   |
++------------------------+-------------------------------------------------------------------------------+
+| rstudio_module         | Module loaded for RStudio Server jobs.                                        |
++------------------------+-------------------------------------------------------------------------------+
+
+RStudio Server always runs tunnel-only regardless of the site-wide
+**jupyter_use_localhost** setting - see
+``containers/rstudio-server/README.md`` in the source repository for why.
+
+Ollama chat related section - [ollama]
+----------------------------------------
+
++------------------------+-------------------------------------------------------------------------------+
+| Variable               | Description                                                                   |
++------------------------+-------------------------------------------------------------------------------+
+| ollama_module          | Module loaded for Ollama chat jobs, providing ``ollama`` and the              |
+|                        | ``ollama-chat`` wrapper script on ``PATH``.                                   |
++------------------------+-------------------------------------------------------------------------------+
+| ollama_model           | Default model tag pre-filled in the job settings dialog                       |
+|                        | (for example ``llama3.1:8b``).                                                |
++------------------------+-------------------------------------------------------------------------------+
+| ollama_models_dir      | Directory Ollama caches downloaded models in. May contain a literal           |
+|                        | ``$HOME``, which is expanded per-user at job runtime rather than by           |
+|                        | gfxlaunch itself - the default, ``$HOME/.lhpc/ollama-models``, needs no       |
+|                        | site-wide directory to be pre-created. Point it at a real shared,             |
+|                        | group-writable location instead if different users' launches should           |
+|                        | reuse each other's already-downloaded models.                                 |
++------------------------+-------------------------------------------------------------------------------+
+| ollama_popular_models  | Comma-separated list of model tags populating the drop-down in the job        |
+|                        | settings dialog. The field stays editable, so users can still type any        |
+|                        | other Ollama model tag not in this list.                                      |
++------------------------+-------------------------------------------------------------------------------+
+
+Like RStudio, Ollama chat jobs always run tunnel-only and disable Open
+WebUI's own login screen (``WEBUI_AUTH=False``) - the SSH tunnel
+gfxlaunch sets up is the only access control. See
+``containers/ollama-chat/README.md`` in the source repository for the
+full deployment notes.
 

@@ -20,14 +20,14 @@ sys.path.insert(0, os.path.abspath('../..'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'GFX Launcher - An application launcher framework for Slurm'
-copyright = '2017-2024, Jonas Lindemann'
+project = 'GFX Launcher'
+copyright = '2017-2026, Jonas Lindemann'
 author = 'Jonas Lindemann'
 
 # The short X.Y version
 version = '0.9'
 # The full version, including alpha/beta/rc tags
-release = '0.9.13'
+release = '0.9.3'
 
 
 # -- General configuration ---------------------------------------------------
@@ -47,8 +47,8 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.todo",
     "sphinx.ext.mathjax",
-    "sphinx_markdown_tables",
     "sphinx_copybutton",
+    "sphinx_design",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -84,65 +84,29 @@ pygments_style = None
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'sphinx_material'
+html_theme = 'shibuya'
 
-html_static_path = ['_static']
-html_css_files = ['custom.css']
-
-# Material theme options (see theme.conf for more information)
 html_theme_options = {
+    'accent_color': 'blue',
 
-    # Set the name of the project to appear in the navigation.
-    'nav_title': 'GFX Launcher Toolkit',
+    'github_url': 'https://github.com/lunarc/gfxlauncher',
 
-    # Set you GA account ID to enable tracking
-    #'google_analytics_account': 'UA-XXXXX',
-
-    # Specify a base_url used to generate sitemap.xml. If not
-    # specified, then no sitemap will be built.
-    #'base_url': 'https://project.github.io/project',
-
-    # Set the color and the accent color
-    'color_primary': 'dark-blue',
-    'color_accent': 'light-blue',
-
-    # Set the repo location to get a badge with stats
-    'repo_url': 'https://github.com/lunarc/gfxlauncher',
-    'repo_name': 'GfxLauncher',
-
-    # Visible levels of the global TOC; -1 means unlimited
-    'globaltoc_depth': 1,
-    # If False, expand all TOC entries
-    'globaltoc_collapse': False,
-    # If True, show hidden TOC entries
-    'globaltoc_includehidden': True,
-    "logo_icon": "&#xe913;",
+    'nav_links': [
+        {'title': 'Quickstart', 'url': 'quickstart'},
+        {'title': 'Reference', 'url': 'gfxlaunch'},
+        {'title': 'GitHub', 'url': 'https://github.com/lunarc/gfxlauncher'},
+    ],
 }
 
-html_sidebars = {
-    "**": ["logo-text.html", "globaltoc.html", "localtoc.html", "searchbox.html"]
-}
-
-# Theme options are theme-specific and customize the look and feel of a theme
-# further.  For a list of options available for each theme, see the
-# documentation.
-#
-# html_theme_options = {}
+# Only the landing page (index.rst) opts into the wide hero layout via its
+# own ":layout: landing" field; every other page keeps the default docs
+# layout with sidebar navigation.
 
 # Add any paths that contain custom static files (such as style sheets) here,
-# relative to this directory. They are copied after the builtin static files,
-# so a file named "default.css" will overwrite the builtin "default.css".
-#html_static_path = ['_static']
+# relative to this directory.
+html_static_path = ['_static']
 
-# Custom sidebar templates, must be a dictionary that maps document names
-# to template names.
-#
-# The default sidebars (for documents that don't match any pattern) are
-# defined by theme itself.  Builtin themes are using these templates by
-# default: ``['localtoc.html', 'relations.html', 'sourcelink.html',
-# 'searchbox.html']``.
-#
-# html_sidebars = {}
+html_css_files = ['custom.css']
 
 
 # -- Options for HTMLHelp output ---------------------------------------------

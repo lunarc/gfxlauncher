@@ -1,0 +1,85 @@
+# NOT what's deployed - see README.md. The live rserver/4.4.2 module
+# pulls docker://rocker/rstudio:4.4.2 directly instead of building this.
+# Kept as an option for a custom image later (extra R packages, baked-in
+# site binds, etc.).
+
+BootStrap: docker
+From: ubuntu:22.04
+
+%environment
+  LC_ALL=en_US.UTF-8
+  LANG=en_US.UTF-8
+  export R_VERSION=4.5.0
+  export RSTUDIO_SERVER_VER=2025.05.0-496
+
+%labels
+  AUTHOR replace-with-site-admin-email
+  HPC_CENTER LUNARC Lund University
+
+%post
+  R_VERSION=4.5.0
+  RSTUDIO_SERVER_VER=2025.05.0-496
+
+  apt-get -y update
+  DEBIAN_FRONTEND=noninteractive apt-get -y install tzdata
+  dpkg-reconfigure --frontend noninteractive tzdata
+  apt-get -y install \
+    wget \
+    htop \
+    libcurl4-openssl-dev \
+    libssl-dev \
+    libgeos-dev \
+    libgdal-dev \
+    libproj-dev \
+    libxml2-dev \
+    libudunits2-dev \
+    libsodium-dev \
+    pandoc \
+    openjdk-8-jdk \
+    openjdk-8-jre \
+    cargo \
+    libcairo2-dev \
+    libfreetype6-dev \
+    libclang-dev \
+    software-properties-common \
+    language-pack-en-base
+
+  apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 51716619E084DAB9
+
+  OSNAME=$(. /etc/os-release; echo "$ID")
+  OSVERS=$(lsb_release -cs)
+  add-apt-repository "deb http://cran.rstudio.com/bin/linux/$OSNAME $OSVERS-cran40/"
+
+  apt-get -y update
+  apt-get -y install r-base
+
+  # Server package instead of the Electron desktop app used by the
+  # existing rstudio-desktop_ubuntu.def. apt resolves the .deb's own
+  # dependencies (libssl, libclang, etc. already installed above).
+  wget https://download2.rstudio.org/server/jammy/amd64/rstudio-server-$RSTUDIO_SERVER_VER-amd64.deb
+  apt-get -y install ./rstudio-server-$RSTUDIO_SERVER_VER-amd64.deb
+  rm -f ./rstudio-server-$RSTUDIO_SERVER_VER-amd64.deb
+
+  mkdir -p /projects /lunarc /sw
+
+%apprun R
+   exec R "${@}"
+
+%apprun Rscript
+   exec Rscript "${@}"
+
+%apprun rserver
+   exec /usr/lib/rstudio-server/bin/rserver "${@}"
+
+%runscript
+  exec "${@}"
+
+%help
+ RStudio Server $RSTUDIO_SERVER_VER
+ R version $R_VERSION
+
+ Single-user, no-auth instance launched per SLURM job by gfxlauncher's
+ RStudio job type (see src/lhpcdt/jobs.py:RStudioJob). Not started
+ directly - use the bin/rserver wrapper installed alongside this image,
+ which supplies the writable state directories rserver needs and is
+ what the Lmod module puts on PATH.

@@ -1,7 +1,7 @@
 #!/bin/env python
 #
 # LUNARC HPC Desktop On-Demand graphical launch tool
-# Copyright (C) 2017-2025 LUNARC, Lund University
+# Copyright (C) 2017-2026 LUNARC, Lund University
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@ This module implements the main user interface of the application
 launcher.
 """
 
-import os, sys, time, glob, getpass, shutil
+import os, sys, time, glob, getpass, shutil, tempfile, html, json
 
 try:
     import grp
@@ -31,6 +31,7 @@ except:
     pass
 
 from datetime import datetime
+from pathlib import Path
 
 from PyQt5 import Qt, QtCore, QtGui, QtWidgets, uic
 
@@ -82,6 +83,8 @@ class SubmitThread(QtCore.QThread):
     NO_ERROR = 0
     SUBMIT_FAILED = 1
 
+    status_update = QtCore.pyqtSignal(str)
+
     def __init__(self, job, cmd="xterm", opengl=False, vglrun=True, vgl_path=""):
         QtCore.QThread.__init__(self)
 
@@ -115,6 +118,12 @@ class SubmitThread(QtCore.QThread):
             print("Session %d submitted." % self.job.id)
 
         print("Waiting for session to start...")
+
+        start_time = self.slurm.query_start_time(self.job)
+        if start_time:
+            self.status_update.emit(f"Job queued — estimated start: {start_time}")
+        else:
+            self.status_update.emit("Job queued — waiting for resources...")
 
         self.slurm.wait_for_start(self.job)
         self.slurm.job_status(self.job)
@@ -511,8 +520,30 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         self.notebook_module = self.config.notebook_module
         self.jupyterlab_module = self.config.jupyterlab_module
         self.jupyter_use_localhost = self.config.jupyter_use_localhost
-        self.use_conda_env = False
-        self.conda_env = ""
+        self.conda_env = self.config.conda_use_env
+        self.use_conda_env = self.conda_env != ""
+        self.jupyter_working_dir = ""
+        self.jupyter_extra_args = ""
+        self.jupyter_start_timeout = self.config.jupyter_start_timeout
+
+        self.rstudio_module = self.config.rstudio_module
+        self.rstudio_working_dir = ""
+        self.rstudio_extra_args = ""
+
+        self.ollama_module = self.config.ollama_module
+        self.ollama_model = self.config.ollama_model
+        self.ollama_models_dir = self.config.ollama_models_dir
+        self.ollama_extra_args = ""
+        self.pull_progress_bar = None
+
+        self.codemodel_module = self.config.codemodel_module
+        self.codemodel_model = self.config.codemodel_model
+        self.codemodel_models_dir = self.config.codemodel_models_dir
+        self.codemodel_extra_args = ""
+        self.codemodel_info_window = None
+
+        self.processing_started_at = 0.0
+        self.processing_timeout_warned = False
 
         self.ssh_tunnel = None
         self.autostart = False
@@ -520,6 +551,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         self.group = ""
         self.silent = False
         self.browser_command = self.config.browser_command
+        self._browser_redirect_file = None
 
         self.default_memory = self.config.default_memory
         self.default_exclusive = self.config.default_exclusive
@@ -567,6 +599,41 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         else:
             self.jupyterlab_module = self.config.jupyterlab_module
 
+        if self.args.rstudio_module!="":
+            self.rstudio_module = self.args.rstudio_module
+        else:
+            self.rstudio_module = self.config.rstudio_module
+
+        if self.args.ollama_module!="":
+            self.ollama_module = self.args.ollama_module
+        else:
+            self.ollama_module = self.config.ollama_module
+
+        if self.args.ollama_model!="":
+            self.ollama_model = self.args.ollama_model
+        else:
+            self.ollama_model = self.config.ollama_model
+
+        if self.args.ollama_models_dir!="":
+            self.ollama_models_dir = self.args.ollama_models_dir
+        else:
+            self.ollama_models_dir = self.config.ollama_models_dir
+
+        if self.args.codemodel_module!="":
+            self.codemodel_module = self.args.codemodel_module
+        else:
+            self.codemodel_module = self.config.codemodel_module
+
+        if self.args.codemodel_model!="":
+            self.codemodel_model = self.args.codemodel_model
+        else:
+            self.codemodel_model = self.config.codemodel_model
+
+        if self.args.codemodel_models_dir!="":
+            self.codemodel_models_dir = self.args.codemodel_models_dir
+        else:
+            self.codemodel_models_dir = self.config.codemodel_models_dir
+
         self.autostart = self.args.autostart
         self.locked = self.args.locked
         self.group = self.args.group
@@ -575,7 +642,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         if self.silent:
             self.autostart = True
 
-    def update_status_panel(self, text):
+    def on_update_status_panel(self, text):
         self.status_output.setText(text)
 
     def reset_status_panel(self):
@@ -663,8 +730,10 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         if self.job_type == "":
             self.launcherTabs.removeTab(2)
 
-        if self.job_type != "notebook" and self.job_type!="jupyterlab":
+        if self.job_type not in ("notebook", "jupyterlab", "rstudio", "ollama", "codemodel"):
             self.show_job_settings_button.setVisible(False)
+
+        self.update_model_info_label()
 
         self.slurm.query_partitions(exclude_set=self.part_exclude_set)
 
@@ -746,7 +815,6 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
 
         # Update walltime combo box
 
-        self.wallTimeEdit.setEditText(str(self.time))
 
         self.wallTimeEdit.clear()
 
@@ -756,6 +824,9 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         else:
             for walltime in self.config.walltime_limits["default"]:
                 self.wallTimeEdit.addItem(walltime)
+
+        print("Updating walltime: ", self.time)
+        self.wallTimeEdit.setEditText(str(self.time))
 
         # self.projectEdit.setText(str(self.account))
 
@@ -783,8 +854,18 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
 
         self.node_usage_label.setText(plain_text_usage)
 
+    def update_model_info_label(self):
+        """Show which model an Ollama chat job will use, since it's
+        otherwise only visible after opening the job settings dialog."""
 
-    def enable_extras_panel(self): 
+        if self.job_type == "ollama":
+            self.model_info_label.setText("Model: %s" % self.ollama_model)
+        elif self.job_type == "codemodel":
+            self.model_info_label.setText("Model: %s" % self.codemodel_model)
+        else:
+            self.model_info_label.setText("")
+
+    def enable_extras_panel(self):
         """Clear user interface components in extras panel"""
 
         self.extraControlsLayout.setEnabled(True)
@@ -807,129 +888,265 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
     def closeEvent(self, event):
         """Handle window close event"""
 
+        if self.running:
+            reply = QtWidgets.QMessageBox.question(
+                self, self.title,
+                "Closing will stop your running session and any unsaved work will be lost.\n\nAre you sure?",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                QtWidgets.QMessageBox.No)
+            if reply != QtWidgets.QMessageBox.Yes:
+                event.ignore()
+                return
+
         if self.job is not None:
             self.slurm.cancel_job(self.job)
 
-        if self.rdp != None:
+        if self.ssh_tunnel is not None:
+            self.ssh_tunnel.terminate()
+
+        if self.rdp is not None:
             self.rdp.terminate()
 
-        event.accept()  # let the window close
+        if self._browser_redirect_file is not None:
+            try:
+                os.remove(self._browser_redirect_file)
+            except FileNotFoundError:
+                pass
+            self._browser_redirect_file = None
 
-    def submit_job(self):
-        """Submit placeholder job"""
+        event.accept()
 
-        self.update_properties()
-
-        self.disable_extras_panel()
-
-        # Note - This should be modularised
+    def _make_job(self):
+        """Create and return the appropriate job object for the current job_type, or None on error."""
 
         if self.job_type == "":
+            return jobs.PlaceHolderJob()
+        elif self.job_type == "notebook":
+            return jobs.JupyterNotebookJob(
+                notebook_module=self.notebook_module,
+                use_localhost=self.jupyter_use_localhost,
+                conda_env=self.conda_env if self.use_conda_env else "",
+                conda_source_env=self.config.conda_source_env,
+                working_dir=self.jupyter_working_dir,
+                extra_args=self.jupyter_extra_args)
+        elif self.job_type == "jupyterlab":
+            return jobs.JupyterLabJob(
+                jupyterlab_module=self.jupyterlab_module,
+                use_localhost=self.jupyter_use_localhost,
+                conda_env=self.conda_env if self.use_conda_env else "",
+                conda_source_env=self.config.conda_source_env,
+                working_dir=self.jupyter_working_dir,
+                extra_args=self.jupyter_extra_args)
+        elif self.job_type == "rstudio":
+            return jobs.RStudioJob(
+                rstudio_module=self.rstudio_module,
+                conda_env=self.conda_env if self.use_conda_env else "",
+                conda_source_env=self.config.conda_source_env,
+                working_dir=self.rstudio_working_dir,
+                extra_args=self.rstudio_extra_args)
+        elif self.job_type == "ollama":
+            return jobs.OllamaChatJob(
+                ollama_module=self.ollama_module,
+                model=self.ollama_model,
+                models_dir=self.ollama_models_dir,
+                extra_args=self.ollama_extra_args)
+        elif self.job_type == "codemodel":
+            return jobs.CodeModelJob(
+                codemodel_module=self.codemodel_module,
+                model=self.codemodel_model,
+                models_dir=self.codemodel_models_dir,
+                extra_args=self.codemodel_extra_args)
+        elif self.job_type == "vm":
+            return jobs.VMJob()
+        return None
 
-            # Create a standard placeholder job
+    def _configure_job(self, job):
+        """Apply current UI settings to a job object."""
 
-            self.job = jobs.PlaceHolderJob()
+        job.name = self.job_name
+        job.account = str(self.projectCombo.currentText())
+        job.partition = str(self.selected_part)
+        job.time = str(self.time)
+        job.output = self.user_config.job_output_file_path
+        job.reservation = self.reservation
+        if self.job_type != "vm":
+            job.memory = int(self.memory)
+            job.nodeCount = int(self.count)
+            job.exclusive = self.exclusive
+            job.tasksPerNode = int(self.tasks_per_node)
+        if self.selected_feature != "":
+            job.add_constraint(self.selected_feature)
+        job.update()
 
+    def submit_job(self):
+        """Submit job"""
+
+        self.update_properties()
+        self.disable_extras_panel()
+
+        self.job = self._make_job()
+
+        if self.job is None:
+            QtWidgets.QMessageBox.about(self, self.title, "Session start failed.")
+            return
+
+        if self.job_type == "":
             self.only_submit = False
 
         elif self.job_type == "notebook":
-
-            # Create a Jupyter notbook job
-
             self.only_submit = True
-
-            self.job = jobs.JupyterNotebookJob(
-                notebook_module=self.notebook_module, use_localhost=self.jupyter_use_localhost, conda_env=self.conda_env)
             self.job.on_notebook_url_found = self.on_notebook_url_found
-
-            # Create extra user interface controls for reconnection
-
             if self.extraControlsLayout.count() == 0:
-                self.reconnect_nb_button = QtWidgets.QPushButton(
-                    'Reconnect to notebook', self)
+                self.reconnect_nb_button = QtWidgets.QPushButton('Reconnect to notebook', self)
+                self.reconnect_nb_button.setFixedSize(self.show_job_settings_button.size())
                 self.reconnect_nb_button.setEnabled(True)
-                self.reconnect_nb_button.clicked.connect(
-                    self.on_reconnect_notebook)
+                self.reconnect_nb_button.clicked.connect(self.on_reconnect_notebook)
+                self.extraControlsLayout.addStretch(1)
                 self.extraControlsLayout.addWidget(self.reconnect_nb_button)
-
             self.launcherTabs.setCurrentIndex(2)
 
         elif self.job_type == "jupyterlab":
-
-            # Create a Jupyter lab job
-
             self.only_submit = True
-
-            self.job = jobs.JupyterLabJob(
-                jupyterlab_module=self.jupyterlab_module, use_localhost=self.jupyter_use_localhost, conda_env=self.conda_env)
             self.job.on_notebook_url_found = self.on_notebook_url_found
-
-            # Create extra user interface controls for reconnection
-
             if self.extraControlsLayout.count() == 0:
-                self.reconnect_nb_button = QtWidgets.QPushButton(
-                    'Reconnect to Lab', self)
+                self.reconnect_nb_button = QtWidgets.QPushButton('Reconnect to Lab', self)
+                self.reconnect_nb_button.setFixedSize(self.show_job_settings_button.size())
                 self.reconnect_nb_button.setEnabled(True)
-                self.reconnect_nb_button.clicked.connect(
-                    self.on_reconnect_notebook)
+                self.reconnect_nb_button.clicked.connect(self.on_reconnect_notebook)
+                self.extraControlsLayout.addStretch(1)
                 self.extraControlsLayout.addWidget(self.reconnect_nb_button)
+            self.launcherTabs.setCurrentIndex(2)
 
+        elif self.job_type == "rstudio":
+            self.only_submit = True
+            self.job.on_notebook_url_found = self.on_notebook_url_found
+            if self.extraControlsLayout.count() == 0:
+                self.reconnect_nb_button = QtWidgets.QPushButton('Reconnect to RStudio', self)
+                self.reconnect_nb_button.setFixedSize(self.show_job_settings_button.size())
+                self.reconnect_nb_button.setEnabled(True)
+                self.reconnect_nb_button.clicked.connect(self.on_reconnect_notebook)
+                self.extraControlsLayout.addStretch(1)
+                self.extraControlsLayout.addWidget(self.reconnect_nb_button)
+            self.launcherTabs.setCurrentIndex(2)
+
+        elif self.job_type == "ollama":
+            self.only_submit = True
+            self.job.on_notebook_url_found = self.on_notebook_url_found
+            self.job.on_pull_progress = self.on_pull_progress
+            self.job.on_account_created = self.on_chat_account_created
+            if self.extraControlsLayout.count() == 0:
+                self.pull_progress_bar = QtWidgets.QProgressBar(self)
+                self.pull_progress_bar.setRange(0, 100)
+                self.pull_progress_bar.setFormat("Downloading model: %p%")
+                # Without a minimum width and a stretch factor, this ends up
+                # squeezed to roughly button-sized by the QHBoxLayout it
+                # shares with reconnect_nb_button below, and the format text
+                # gets clipped. The stretch factor also means this - not the
+                # button - claims any extra space in the row as the window
+                # is resized.
+                self.pull_progress_bar.setMinimumWidth(220)
+                self.extraControlsLayout.addWidget(self.pull_progress_bar, 1)
+
+                self.reconnect_nb_button = QtWidgets.QPushButton('Reconnect to Chat', self)
+                self.reconnect_nb_button.setFixedSize(self.show_job_settings_button.size())
+                self.reconnect_nb_button.setEnabled(True)
+                self.reconnect_nb_button.clicked.connect(self.on_reconnect_notebook)
+                self.extraControlsLayout.addWidget(self.reconnect_nb_button)
+            self.launcherTabs.setCurrentIndex(2)
+
+        elif self.job_type == "codemodel":
+            self.only_submit = True
+            self.job.on_notebook_url_found = self.on_notebook_url_found
+            self.job.on_pull_progress = self.on_pull_progress
+            if self.extraControlsLayout.count() == 0:
+                self.pull_progress_bar = QtWidgets.QProgressBar(self)
+                self.pull_progress_bar.setRange(0, 100)
+                self.pull_progress_bar.setFormat("Downloading model: %p%")
+                self.pull_progress_bar.setMinimumWidth(220)
+                self.extraControlsLayout.addWidget(self.pull_progress_bar, 1)
+
+                self.reconnect_nb_button = QtWidgets.QPushButton('Show VS Code connection info', self)
+                self.reconnect_nb_button.setFixedSize(self.show_job_settings_button.size())
+                self.reconnect_nb_button.setEnabled(True)
+                self.reconnect_nb_button.clicked.connect(self.on_reconnect_notebook)
+                self.extraControlsLayout.addWidget(self.reconnect_nb_button)
             self.launcherTabs.setCurrentIndex(2)
 
         elif self.job_type == "vm":
-
-            # Create a VM job
-
             self.only_submit = True
-
-            self.job = jobs.VMJob()
             self.job.on_vm_available = self.on_vm_available
-
-            # Create extra user interface for reconnection to VM.
-
             if self.extraControlsLayout.count() == 0:
-                self.reconnect_vm_button = QtWidgets.QPushButton(
-                    'Connect to desktop', self)
+                self.reconnect_vm_button = QtWidgets.QPushButton('Connect to desktop', self)
                 self.reconnect_vm_button.setEnabled(False)
                 self.reconnect_vm_button.clicked.connect(self.on_reconnect_vm)
                 self.extraControlsLayout.addStretch(1)
                 self.extraControlsLayout.addWidget(self.reconnect_vm_button)
                 self.extraControlsLayout.addStretch(1)
-
             self.launcherTabs.setCurrentIndex(2)
 
-        else:
-            QtWidgets.QMessageBox.about(
-                self, self.title, "Session start failed.")
-            return
-
-        # Setup job parameters
-
-        self.job.name = self.job_name
-        self.job.account = str(self.projectCombo.currentText())
-        self.job.partition = str(self.selected_part)
-        self.job.time = str(self.time)
-        self.job.output = self.user_config.job_output_file_path
-        self.job.reservation = self.reservation
-        if self.job_type != "vm":
-            self.job.memory = int(self.memory)
-            self.job.nodeCount = int(self.count)
-            self.job.exclusive = self.exclusive
-            self.job.tasksPerNode = int(self.tasks_per_node)
-        if self.selected_feature != "":
-            self.job.add_constraint(self.selected_feature)
-        self.job.update()
-
-        # Create a job submission thread
+        self._configure_job(self.job)
 
         self.submit_thread = SubmitThread(
             self.job, self.cmd, self.vgl, self.vglrun, self.vgl_path)
         self.submit_thread.finished.connect(self.on_submit_finished)
+        self.submit_thread.status_update.connect(self.on_update_status_panel)
         self.submit_thread.start()
 
-        # Make sure we only manage a single job ;)
-
         self.startButton.setEnabled(False)
+
+    def _write_browser_redirect(self, url):
+        """Write a local HTML redirect page for url and return its path.
+
+        Secrets such as a Jupyter ?token=... must never end up as a browser
+        process argument: argv is visible to any other user on a shared
+        login node via `ps`/`/proc`. Instead we hand the browser a private,
+        token-free local file that redirects to the real url client-side -
+        the same trick Jupyter itself uses for its own auto-opened browser
+        (jpserver-<pid>-open.html).
+        """
+
+        redirect_dir = os.path.join(os.path.expanduser("~"), ".lhpc", "browser")
+        os.makedirs(redirect_dir, mode=0o700, exist_ok=True)
+        os.chmod(redirect_dir, 0o700)
+
+        # Best-effort sweep of stale files a prior crashed session left
+        # behind (closeEvent normally removes the one it created).
+        stale_cutoff = time.time() - 86400
+        for stale_path in glob.glob(os.path.join(redirect_dir, "*.html")):
+            try:
+                if os.path.getmtime(stale_path) < stale_cutoff:
+                    os.remove(stale_path)
+            except FileNotFoundError:
+                pass
+
+        if self._browser_redirect_file is not None:
+            try:
+                os.remove(self._browser_redirect_file)
+            except FileNotFoundError:
+                pass
+            self._browser_redirect_file = None
+
+        fd, path = tempfile.mkstemp(suffix=".html", dir=redirect_dir)
+
+        safe_url = html.escape(url, quote=True)
+        js_url = json.dumps(url).replace("</", "<\\/")
+
+        with os.fdopen(fd, "w") as f:
+            f.write(
+                "<!DOCTYPE html>\n"
+                "<html><head><meta charset=\"utf-8\">\n"
+                "<meta http-equiv=\"refresh\" content=\"0;url=%s\">\n"
+                "<script>location.replace(%s);</script>\n"
+                "</head><body>\n"
+                "<p>Redirecting... if nothing happens, click "
+                "<a href=\"%s\">here</a>.</p>\n"
+                "</body></html>\n"
+                % (safe_url, js_url, safe_url)
+            )
+
+        self._browser_redirect_file = path
+
+        return path
 
     def launch_browser(self, url):
         """Open a configured browser for the url."""
@@ -937,7 +1154,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         browser_path = shutil.which(self.browser_command)
 
         if browser_path is not None:
-            Popen("%s %s" % (browser_path, url), shell=True)
+            redirect_path = self._write_browser_redirect(url)
+            Popen([browser_path, Path(redirect_path).as_uri()])
             return True
         else:
             return False
@@ -950,7 +1168,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         self.update_controls()
         self.active_connection = self.submit_thread.active_connection
 
-        # Handle submibssion failure
+        # Handle submission failure
 
         if self.submit_thread.error_status == SubmitThread.SUBMIT_FAILED:
             QtWidgets.QMessageBox.about(
@@ -960,6 +1178,11 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
             self.update_controls()
             self.active_connection = None
             return
+
+        self.on_update_status_panel(f"Running on node: {self.job.nodes}")
+
+        self.processing_started_at = time.time()
+        self.processing_timeout_warned = False
 
         if not self.only_submit:
 
@@ -990,12 +1213,68 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
                 print("Command completed...")
 
 
+    def on_pull_progress(self, percent):
+        """Callback while a chat job's model is downloading."""
+
+        if self.pull_progress_bar is not None:
+            self.pull_progress_bar.setValue(percent)
+
+    def on_chat_account_created(self, email):
+        """Callback fired only the run OllamaChatJob's wrapper script has
+        just provisioned a fresh Open WebUI account (see jobs.py's
+        OllamaChatJob.on_account_created) - never on a run that reused an
+        existing one. Shows the generated password once, before the browser
+        opens to the login screen, since it's only ever written to
+        ~/.lhpc/ollama-chat-credentials and never appears in job output."""
+
+        cred_path = os.path.join(os.path.expanduser("~"), ".lhpc", "ollama-chat-credentials")
+
+        password = None
+        try:
+            with open(cred_path) as f:
+                for line in f:
+                    if line.startswith("password="):
+                        password = line[len("password="):].strip()
+                        break
+        except FileNotFoundError:
+            pass
+
+        if password is None:
+            QtWidgets.QMessageBox.information(
+                self, self.title,
+                "A chat account was created for %s, but its password "
+                "couldn't be read back from %s." % (email, cred_path))
+            return
+
+        QtWidgets.QMessageBox.information(
+            self, self.title,
+            "A chat account has been created for you:\n\n"
+            "Email: %s\nPassword: %s\n\n"
+            "Use these to log in once the chat interface opens. They are "
+            "saved to %s for future reference." % (email, password, cred_path))
+
     def on_notebook_url_found(self, url):
         """Callback when notebook url has been found."""
 
         self.reset_status_panel()
 
-        if self.jupyter_use_localhost:
+        if self.job_type in ("ollama", "codemodel") and self.pull_progress_bar is not None:
+            # Just hiding it isn't enough: a hidden widget contributes zero
+            # size to its QHBoxLayout, so its stretch=1 slot (jobs.py's
+            # addWidget(self.pull_progress_bar, 1) call) would vanish along
+            # with it, and reconnect_nb_button - which was only sitting at
+            # the row's right edge because that stretch was pushing it
+            # there - would snap left instead. Swapping in a plain stretch
+            # of the same weight at the same layout position keeps the
+            # button's position stable regardless of whether the bar was
+            # ever there.
+            index = self.extraControlsLayout.indexOf(self.pull_progress_bar)
+            self.extraControlsLayout.removeWidget(self.pull_progress_bar)
+            self.pull_progress_bar.setParent(None)
+            self.extraControlsLayout.insertStretch(index, 1)
+            self.pull_progress_bar = None
+
+        if self.job.use_localhost:
 
             # Setup a tunnel to notebook server running on localhost on the node.
 
@@ -1007,18 +1286,35 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
 
             # Update the job url to use the localhost port.
 
-            fixed_url = url.replace("8888", str(self.ssh_tunnel.local_port))
+            remote_port = jobs.find_remote_port(url)
+            fixed_url = url.replace(f":{remote_port}", f":{self.ssh_tunnel.local_port}", 1)
             self.job.notebook_url = fixed_url
 
-            if not self.launch_browser(self.job.notebook_url):
+            if self.job_type == "codemodel":
+                self.show_codemodel_info(self.job.notebook_url)
+            elif not self.launch_browser(self.job.notebook_url):
                 QtWidgets.QMessageBox.information(
                     self, self.title, "A suitable browser couldn't be found. The notebook instance can be found at:\n\n%s" % self.job.notebook_url )
         else:
-            if not self.launch_browser(url):
+            if self.job_type == "codemodel":
+                self.show_codemodel_info(url)
+            elif not self.launch_browser(url):
                 QtWidgets.QMessageBox.information(
                     self, self.title, "A suitable browser couldn't be found. The notebook instance can be found at:\n\n%s" % url )
 
         self.enable_extras_panel()
+
+    def show_codemodel_info(self, url):
+        """Show (or refresh) the non-modal dialog with the code model's
+        tunneled endpoint and a ready-to-paste Continue config snippet."""
+
+        if self.codemodel_info_window is None:
+            self.codemodel_info_window = job_ui.CodeModelInfoWindow(self)
+
+        self.codemodel_info_window.set_endpoint(url, self.codemodel_model)
+        self.codemodel_info_window.show()
+        self.codemodel_info_window.raise_()
+        self.codemodel_info_window.activateWindow()
 
     def on_vm_available(self, hostname):
         """Start an RDP session to host"""
@@ -1058,11 +1354,34 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
                 percent = 100 * timeRunning / timeLimit
                 self.usageBar.setValue(int(percent))
 
+                remaining = max(0, timeLimit - timeRunning)
+                h = remaining // 3600
+                m = (remaining % 3600) // 60
+                s = remaining % 60
+                self.usageBar.setFormat(f"{h}:{m:02d}:{s:02d} remaining (%p%)")
+
                 if self.only_submit:
 
                     # Update status panel
 
-                    self.update_status_panel(self.job.processing_description)
+                    still_waiting = self.job.process_output or self.job.update_processing
+
+                    if still_waiting:
+                        elapsed = int(time.time() - self.processing_started_at)
+                        self.on_update_status_panel(
+                            "%s (%ds)" % (self.job.processing_description, elapsed))
+
+                        if elapsed > self.jupyter_start_timeout and not self.processing_timeout_warned:
+                            self.processing_timeout_warned = True
+                            QtWidgets.QMessageBox.warning(
+                                self, self.title,
+                                "%s hasn't responded after %d seconds.\n\n"
+                                "This can happen if the selected module or environment failed to load. "
+                                "Check the status log below for details, or press Cancel to stop the session.\n\n"
+                                "gfxlaunch will keep waiting in the background." % (
+                                    self.job.processing_description.rstrip("."), self.jupyter_start_timeout))
+                    else:
+                        self.on_update_status_panel(self.job.processing_description)
 
                     # Handle job processing, if any
 
@@ -1096,6 +1415,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
                         print("Terminating job...")
 
                         self.usageBar.setValue(0)
+                        self.usageBar.setFormat("Usage %p%")
+                        self.reset_status_panel()
                         self.update_controls()
                         if self.job is not None:
                             self.slurm.cancel_job(self.job)
@@ -1111,6 +1432,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
                 self.running = False
                 self.status_timer.stop()
                 self.usageBar.setValue(0)
+                self.usageBar.setFormat("Usage %p%")
+                self.reset_status_panel()
                 self.update_controls()
                 self.disable_extras_panel()
 
@@ -1126,7 +1449,9 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         """Reopen connection to notebook."""
 
         if self.job != None:
-            if not self.launch_browser(self.job.notebook_url):
+            if self.job_type == "codemodel":
+                self.show_codemodel_info(self.job.notebook_url)
+            elif not self.launch_browser(self.job.notebook_url):
                 QtWidgets.QMessageBox.information(
                     self, self.title, "A suitable browser couldn't be found. The notebook instance can be found at:\n\n%s" % self.job.notebook_url )
 
@@ -1153,50 +1478,10 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
     def on_launcherTabs_currentChanged(self, idx):
         if idx == 1:
             self.update_properties()
-
-            # Note - This should be modularised
-
-            if self.job_type == "":
-
-                # Create a standard placeholder job
-
-                job = jobs.PlaceHolderJob()
-
-            elif self.job_type == "notebook":
-
-                # Create a Jupyter notbook job
-
-                job = jobs.JupyterNotebookJob(notebook_module = self.notebook_module, use_localhost=self.jupyter_use_localhost, conda_env=self.conda_env)
-
-            elif self.job_type == "jupyterlab":
-
-                # Create a Jupyter notbook job
-
-                job = jobs.JupyterLabJob(jupyterlab_module = self.jupyterlab_module, use_localhost=self.jupyter_use_localhost, conda_env=self.conda_env)
-
-            elif self.job_type == "vm":
-
-                # Create a VM job
-
-                job = jobs.VMJob()
-
-            # Setup job parameters
-
-            job.name = self.job_name
-            job.account = str(self.projectCombo.currentText())
-            job.partition = str(self.selected_part)
-            job.reservation = self.reservation
-            job.time = str(self.time)
-            job.output = self.user_config.job_output_file_path
-            if self.job_type != "vm":
-                job.memory = int(self.memory)
-                job.nodeCount = int(self.count)
-                job.exclusive = self.exclusive
-                job.tasksPerNode = int(self.tasks_per_node)
-            if self.selected_feature != "":
-                job.add_constraint(self.selected_feature)
-            job.update()
-
+            job = self._make_job()
+            if job is None:
+                return
+            self._configure_job(job)
             self.batchScriptText.clear()
             self.batchScriptText.insertPlainText(str(job))
 
@@ -1219,12 +1504,6 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
     def on_closeButton_clicked(self):
         """User asked to close window"""
 
-        if self.job is not None:
-            self.slurm.cancel_job(self.job)
-
-        if self.rdp != None:
-            self.rdp.terminate()
-
         if self.ssh_tunnel is not None:
             self.ssh_tunnel.terminate()
 
@@ -1233,6 +1512,15 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
     @QtCore.pyqtSlot()
     def on_cancelButton_clicked(self):
         """Cancel running job"""
+
+        if self.running:
+            reply = QtWidgets.QMessageBox.question(
+                self, self.title,
+                "Stopping the session will close your running application and any unsaved work will be lost.\n\nAre you sure?",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                QtWidgets.QMessageBox.No)
+            if reply != QtWidgets.QMessageBox.Yes:
+                return
 
         if self.job is not None:
             self.slurm.cancel_job(self.job)
@@ -1247,6 +1535,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         self.running = False
         self.job = None
         self.status_timer.stop()
+        self.usageBar.setFormat("Usage %p%")
+        self.reset_status_panel()
         self.update_controls()
 
         self.disable_extras_panel()
@@ -1298,11 +1588,78 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
     @QtCore.pyqtSlot()
     def on_show_job_settings_button_clicked(self):
         """Open help page if set"""
-        
+
+        if self.job_type == "rstudio":
+            self.job_ui_window = job_ui.RStudioJobPropWindow(self)
+            self.job_ui_window.module = self.rstudio_module
+            self.job_ui_window.use_custom_anaconda_env = self.use_conda_env
+            self.job_ui_window.custom_anaconda_env = self.conda_env
+            self.job_ui_window.working_dir = self.rstudio_working_dir
+            self.job_ui_window.extra_args = self.rstudio_extra_args
+
+            self.job_ui_window.setGeometry(self.x(
+            )+self.width(), self.y(), self.job_ui_window.width(), self.job_ui_window.height())
+
+            self.job_ui_window.exec()
+
+            self.rstudio_module = self.job_ui_window.module
+            self.use_conda_env = self.job_ui_window.use_custom_anaconda_env
+            self.conda_env = self.job_ui_window.custom_anaconda_env
+            self.rstudio_working_dir = self.job_ui_window.working_dir
+            self.rstudio_extra_args = self.job_ui_window.extra_args
+
+            print(self.rstudio_module)
+            print(self.use_conda_env)
+            print(self.conda_env)
+            return
+
+        if self.job_type == "ollama":
+            self.job_ui_window = job_ui.OllamaJobPropWindow(self)
+            self.job_ui_window.popular_models = self.config.ollama_popular_models
+            self.job_ui_window.model = self.ollama_model
+            # $HOME (and any other shell vars) in the config/CLI value are
+            # meant to be expanded by bash inside the SLURM job (jobs.py
+            # exports this as a literal job-script line) - expand them here
+            # too just for display, so the field shows a real path rather
+            # than a literal "$HOME/...".
+            self.job_ui_window.models_dir = os.path.expandvars(self.ollama_models_dir)
+            self.job_ui_window.extra_args = self.ollama_extra_args
+
+            self.job_ui_window.setGeometry(self.x(
+            )+self.width(), self.y(), self.job_ui_window.width(), self.job_ui_window.height())
+
+            self.job_ui_window.exec()
+
+            self.ollama_model = self.job_ui_window.model
+            self.ollama_models_dir = self.job_ui_window.models_dir
+            self.ollama_extra_args = self.job_ui_window.extra_args
+            self.update_model_info_label()
+            return
+
+        if self.job_type == "codemodel":
+            self.job_ui_window = job_ui.CodeModelJobPropWindow(self)
+            self.job_ui_window.popular_models = self.config.codemodel_popular_models
+            self.job_ui_window.model = self.codemodel_model
+            self.job_ui_window.models_dir = os.path.expandvars(self.codemodel_models_dir)
+            self.job_ui_window.extra_args = self.codemodel_extra_args
+
+            self.job_ui_window.setGeometry(self.x(
+            )+self.width(), self.y(), self.job_ui_window.width(), self.job_ui_window.height())
+
+            self.job_ui_window.exec()
+
+            self.codemodel_model = self.job_ui_window.model
+            self.codemodel_models_dir = self.job_ui_window.models_dir
+            self.codemodel_extra_args = self.job_ui_window.extra_args
+            self.update_model_info_label()
+            return
+
         self.job_ui_window = job_ui.JupyterNotebookJobPropWindow(self)
         self.job_ui_window.python_module = self.jupyterlab_module
         self.job_ui_window.use_custom_anaconda_env = self.use_conda_env
         self.job_ui_window.custom_anaconda_env = self.conda_env
+        self.job_ui_window.working_dir = self.jupyter_working_dir
+        self.job_ui_window.extra_args = self.jupyter_extra_args
 
         self.job_ui_window.setGeometry(self.x(
         )+self.width(), self.y(), self.job_ui_window.width(), self.job_ui_window.height())
@@ -1313,6 +1670,8 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         self.notebook_module = self.job_ui_window.python_module
         self.use_conda_env = self.job_ui_window.use_custom_anaconda_env
         self.conda_env = self.job_ui_window.custom_anaconda_env
+        self.jupyter_working_dir = self.job_ui_window.working_dir
+        self.jupyter_extra_args = self.job_ui_window.extra_args
 
         print(self.jupyterlab_module)
         print(self.notebook_module)

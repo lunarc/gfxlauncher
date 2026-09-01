@@ -59,7 +59,7 @@ class RunScript:
             cmd_options += " --vgl"
 
         if "part" in self.__variables:
-            cmd_options += "--partition %s" % self.__variables["part"]
+            cmd_options += " --partition %s" % self.__variables["part"]
 
         if "group" in self.__variables:
             cmd_options += " --group %s" % self.__variables["group"]
@@ -156,7 +156,7 @@ class RunScripts:
 
         self.__script_dict = {}
 
-        for script in os.listdir(script_dir):
+        for script in sorted(os.listdir(script_dir)):
             if script.endswith('.sh'):
                 filename = os.path.join(script_dir, script)
 

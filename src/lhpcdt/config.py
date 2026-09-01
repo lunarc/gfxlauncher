@@ -148,6 +148,19 @@ class GfxConfig(object):
         self.jupyter_use_localhost = False
         self.conda_source_env = ""
         self.conda_use_env = ""
+        self.jupyter_start_timeout = 180
+
+        self.rstudio_module = "rserver/4.4.2"
+
+        self.ollama_module = "ollama/0.32.14"
+        self.ollama_model = "llama3.1:8b"
+        self.ollama_models_dir = "$HOME/.lhpc/ollama-models"
+        self.ollama_popular_models = ["llama3.1:8b", "qwen2.5:7b", "gemma2:9b", "mistral:7b", "phi3:mini"]
+
+        self.codemodel_module = "ollama/0.32.14"
+        self.codemodel_model = "qwen2.5-coder:7b"
+        self.codemodel_models_dir = "$HOME/.lhpc/ollama-models"
+        self.codemodel_popular_models = ["qwen2.5-coder:7b", "qwen2.5-coder:14b", "codellama:13b", "deepseek-coder-v2:16b", "starcoder2:15b"]
 
         self.part_groups = {}
         self.part_groups_defaults = {}
@@ -293,6 +306,34 @@ class GfxConfig(object):
         print("jupyter_use_localhost = %s" % self.jupyter_use_localhost)
         print("conda_source_env = %s" % self.conda_source_env)
         print("conda_use_env = %s" % self.conda_use_env)
+        print("jupyter_start_timeout = %s" % self.jupyter_start_timeout)
+
+        print("")
+        print("RStudio settings")
+        print("----------------")
+        print("")
+
+        print("rstudio_module = %s" % self.rstudio_module)
+
+        print("")
+        print("Ollama chat settings")
+        print("---------------------")
+        print("")
+
+        print("ollama_module = %s" % self.ollama_module)
+        print("ollama_model = %s" % self.ollama_model)
+        print("ollama_models_dir = %s" % self.ollama_models_dir)
+        print("ollama_popular_models = %s" % ", ".join(self.ollama_popular_models))
+
+        print("")
+        print("Code model settings")
+        print("--------------------")
+        print("")
+
+        print("codemodel_module = %s" % self.codemodel_module)
+        print("codemodel_model = %s" % self.codemodel_model)
+        print("codemodel_models_dir = %s" % self.codemodel_models_dir)
+        print("codemodel_popular_models = %s" % ", ".join(self.codemodel_popular_models))
 
     def _config_get(self, config, section, option, default_value=""):
         """Safe config retrieval"""
@@ -408,6 +449,33 @@ class GfxConfig(object):
                 config, "jupyter", "conda_source_env")
             self.conda_use_env = self._config_get(
                 config, "jupyter", "conda_use_env")
+            self.jupyter_start_timeout = int(self._config_get(
+                config, "jupyter", "jupyter_start_timeout", str(self.jupyter_start_timeout)))
+
+            self.rstudio_module = self._config_get(
+                config, "rstudio", "rstudio_module", self.rstudio_module)
+
+            self.ollama_module = self._config_get(
+                config, "ollama", "ollama_module", self.ollama_module)
+            self.ollama_model = self._config_get(
+                config, "ollama", "ollama_model", self.ollama_model)
+            self.ollama_models_dir = self._config_get(
+                config, "ollama", "ollama_models_dir", self.ollama_models_dir)
+
+            if config.has_option("ollama", "ollama_popular_models"):
+                self.ollama_popular_models = [
+                    m.strip() for m in config.get("ollama", "ollama_popular_models").split(",") if m.strip() != ""]
+
+            self.codemodel_module = self._config_get(
+                config, "codemodel", "codemodel_module", self.codemodel_module)
+            self.codemodel_model = self._config_get(
+                config, "codemodel", "codemodel_model", self.codemodel_model)
+            self.codemodel_models_dir = self._config_get(
+                config, "codemodel", "codemodel_models_dir", self.codemodel_models_dir)
+
+            if config.has_option("codemodel", "codemodel_popular_models"):
+                self.codemodel_popular_models = [
+                    m.strip() for m in config.get("codemodel", "codemodel_popular_models").split(",") if m.strip() != ""]
 
             self.jupyter_use_localhost = self._config_getboolean(config, "jupyter", "jupyter_use_localhost", False)
 
@@ -531,6 +599,19 @@ class GfxConfig(object):
             if not "default" in self.walltime_max:
                 self.walltime_max["default"] = "48:00:00"   
 
+        except configparser.Error as e:
+            self.print_error(e)
+            return False
+
+        self.custom_menus = {}
+
+        try:
+            menu_options = config.options("menus")
+            for option in menu_options:
+                if option.find("custom_menu_") != -1:
+                    menu_number = int(option.split("_")[2])
+                    menu_filename = self._config_get(config, "menus", option)
+                    self.custom_menus[menu_number] = menu_filename.strip('"')
         except configparser.Error as e:
             self.print_error(e)
             return False

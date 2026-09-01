@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'ui/notebook_job_prop_win.ui'
+# Form implementation generated from reading ui file 'ui/rstudio_job_prop_win.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.9
 #
@@ -11,15 +11,15 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
-class Ui_notebook_prop_form(object):
-    def setupUi(self, notebook_prop_form):
-        notebook_prop_form.setObjectName("notebook_prop_form")
-        notebook_prop_form.setWindowModality(QtCore.Qt.ApplicationModal)
-        notebook_prop_form.resize(428, 326)
-        notebook_prop_form.setModal(True)
-        self.verticalLayout_2 = QtWidgets.QVBoxLayout(notebook_prop_form)
+class Ui_rstudio_prop_form(object):
+    def setupUi(self, rstudio_prop_form):
+        rstudio_prop_form.setObjectName("rstudio_prop_form")
+        rstudio_prop_form.setWindowModality(QtCore.Qt.ApplicationModal)
+        rstudio_prop_form.resize(428, 326)
+        rstudio_prop_form.setModal(True)
+        self.verticalLayout_2 = QtWidgets.QVBoxLayout(rstudio_prop_form)
         self.verticalLayout_2.setObjectName("verticalLayout_2")
-        self.control_frame = QtWidgets.QFrame(notebook_prop_form)
+        self.control_frame = QtWidgets.QFrame(rstudio_prop_form)
         self.control_frame.setFrameShape(QtWidgets.QFrame.NoFrame)
         self.control_frame.setFrameShadow(QtWidgets.QFrame.Raised)
         self.control_frame.setObjectName("control_frame")
@@ -84,16 +84,16 @@ class Ui_notebook_prop_form(object):
         self.horizontalLayout.setObjectName("horizontalLayout")
         spacerItem1 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout.addItem(spacerItem1)
-        self.ok_button = QtWidgets.QPushButton(notebook_prop_form)
+        self.ok_button = QtWidgets.QPushButton(rstudio_prop_form)
         self.ok_button.setObjectName("ok_button")
         self.horizontalLayout.addWidget(self.ok_button)
-        self.cancel_button = QtWidgets.QPushButton(notebook_prop_form)
+        self.cancel_button = QtWidgets.QPushButton(rstudio_prop_form)
         self.cancel_button.setObjectName("cancel_button")
         self.horizontalLayout.addWidget(self.cancel_button)
         spacerItem2 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout.addItem(spacerItem2)
         self.verticalLayout_2.addLayout(self.horizontalLayout)
-        self.env_status_text = QtWidgets.QLabel(notebook_prop_form)
+        self.env_status_text = QtWidgets.QLabel(rstudio_prop_form)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Minimum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -108,18 +108,18 @@ class Ui_notebook_prop_form(object):
         self.env_status_text.setObjectName("env_status_text")
         self.verticalLayout_2.addWidget(self.env_status_text)
 
-        self.retranslateUi(notebook_prop_form)
-        QtCore.QMetaObject.connectSlotsByName(notebook_prop_form)
+        self.retranslateUi(rstudio_prop_form)
+        QtCore.QMetaObject.connectSlotsByName(rstudio_prop_form)
 
-    def retranslateUi(self, notebook_prop_form):
+    def retranslateUi(self, rstudio_prop_form):
         _translate = QtCore.QCoreApplication.translate
-        notebook_prop_form.setWindowTitle(_translate("notebook_prop_form", "Notebook job properties"))
-        self.conda_module_label.setText(_translate("notebook_prop_form", "Python modules"))
-        self.conda_env_label.setText(_translate("notebook_prop_form", "Conda environment"))
-        self.label_3.setText(_translate("notebook_prop_form", "Use custom conda env"))
-        self.browse_modules_button.setText(_translate("notebook_prop_form", "Select modules"))
-        self.working_dir_label.setText(_translate("notebook_prop_form", "Working directory"))
-        self.browse_dir_button.setText(_translate("notebook_prop_form", "Browse..."))
-        self.extra_args_label.setText(_translate("notebook_prop_form", "Extra Jupyter arguments"))
-        self.ok_button.setText(_translate("notebook_prop_form", "OK"))
-        self.cancel_button.setText(_translate("notebook_prop_form", "Cancel"))
+        rstudio_prop_form.setWindowTitle(_translate("rstudio_prop_form", "RStudio job properties"))
+        self.conda_module_label.setText(_translate("rstudio_prop_form", "R modules"))
+        self.conda_env_label.setText(_translate("rstudio_prop_form", "Conda environment"))
+        self.label_3.setText(_translate("rstudio_prop_form", "Use custom conda env"))
+        self.browse_modules_button.setText(_translate("rstudio_prop_form", "Select modules"))
+        self.working_dir_label.setText(_translate("rstudio_prop_form", "Working directory"))
+        self.browse_dir_button.setText(_translate("rstudio_prop_form", "Browse..."))
+        self.extra_args_label.setText(_translate("rstudio_prop_form", "Extra RStudio arguments"))
+        self.ok_button.setText(_translate("rstudio_prop_form", "OK"))
+        self.cancel_button.setText(_translate("rstudio_prop_form", "Cancel"))

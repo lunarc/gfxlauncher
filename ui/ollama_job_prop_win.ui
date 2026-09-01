@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>notebook_prop_form</class>
- <widget class="QDialog" name="notebook_prop_form">
+ <class>ollama_prop_form</class>
+ <widget class="QDialog" name="ollama_prop_form">
   <property name="windowModality">
    <enum>Qt::ApplicationModal</enum>
   </property>
@@ -10,11 +10,11 @@
     <x>0</x>
     <y>0</y>
     <width>428</width>
-    <height>326</height>
+    <height>260</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Notebook job properties</string>
+   <string>Chat job properties</string>
   </property>
   <property name="modal">
    <bool>true</bool>
@@ -43,77 +43,37 @@
       </property>
       <item>
        <layout class="QGridLayout" name="gridLayout">
-        <item row="3" column="1">
-         <widget class="QCheckBox" name="use_custom_env_check">
-          <property name="text">
-           <string/>
-          </property>
-         </widget>
-        </item>
         <item row="0" column="0">
-         <widget class="QLabel" name="conda_module_label">
+         <widget class="QLabel" name="model_label">
           <property name="text">
-           <string>Python modules</string>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
-          </property>
-         </widget>
-        </item>
-        <item row="8" column="0">
-         <widget class="QLabel" name="conda_env_label">
-          <property name="text">
-           <string>Conda environment</string>
-          </property>
-         </widget>
-        </item>
-        <item row="3" column="0">
-         <widget class="QLabel" name="label_3">
-          <property name="text">
-           <string>Use custom conda env</string>
-          </property>
-         </widget>
-        </item>
-        <item row="8" column="1">
-         <widget class="QComboBox" name="conda_env_list"/>
-        </item>
-        <item row="1" column="1">
-         <widget class="QPushButton" name="browse_modules_button">
-          <property name="text">
-           <string>Select modules</string>
+           <string>Ollama model</string>
           </property>
          </widget>
         </item>
         <item row="0" column="1">
-         <widget class="QPlainTextEdit" name="conda_module_text">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
+         <widget class="QComboBox" name="model_combo">
+          <property name="editable">
+           <bool>true</bool>
           </property>
-          <property name="sizeAdjustPolicy">
-           <enum>QAbstractScrollArea::AdjustToContents</enum>
-          </property>
-          <property name="plainText">
-           <string/>
+          <property name="toolTip">
+           <string>Pick a popular model, or type any other Ollama model tag</string>
           </property>
          </widget>
         </item>
-        <item row="9" column="0">
-         <widget class="QLabel" name="working_dir_label">
+        <item row="1" column="0">
+         <widget class="QLabel" name="models_dir_label">
           <property name="text">
-           <string>Working directory</string>
+           <string>Model cache directory</string>
           </property>
          </widget>
         </item>
-        <item row="9" column="1">
-         <layout class="QHBoxLayout" name="working_dir_layout">
+        <item row="1" column="1">
+         <layout class="QHBoxLayout" name="models_dir_layout">
           <item>
-           <widget class="QLineEdit" name="working_dir_edit"/>
+           <widget class="QLineEdit" name="models_dir_edit"/>
           </item>
           <item>
-           <widget class="QPushButton" name="browse_dir_button">
+           <widget class="QPushButton" name="browse_models_dir_button">
             <property name="text">
              <string>Browse...</string>
             </property>
@@ -121,14 +81,24 @@
           </item>
          </layout>
         </item>
-        <item row="10" column="0">
-         <widget class="QLabel" name="extra_args_label">
+        <item row="2" column="0" colspan="2">
+         <widget class="QLabel" name="models_dir_note_label">
           <property name="text">
-           <string>Extra Jupyter arguments</string>
+           <string>Must be persistent storage - scratch or other temporary locations get purged, forcing the model to re-download on every launch.</string>
+          </property>
+          <property name="wordWrap">
+           <bool>true</bool>
           </property>
          </widget>
         </item>
-        <item row="10" column="1">
+        <item row="3" column="0">
+         <widget class="QLabel" name="extra_args_label">
+          <property name="text">
+           <string>Extra Open WebUI arguments</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
          <widget class="QLineEdit" name="extra_args_edit"/>
         </item>
        </layout>
@@ -192,46 +162,6 @@
       </spacer>
      </item>
     </layout>
-   </item>
-   <item>
-    <widget class="QLabel" name="env_status_text">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="minimumSize">
-      <size>
-       <width>26</width>
-       <height>0</height>
-      </size>
-     </property>
-     <property name="maximumSize">
-      <size>
-       <width>16777215</width>
-       <height>26</height>
-      </size>
-     </property>
-     <property name="baseSize">
-      <size>
-       <width>0</width>
-       <height>26</height>
-      </size>
-     </property>
-     <property name="frameShape">
-      <enum>QFrame::Panel</enum>
-     </property>
-     <property name="frameShadow">
-      <enum>QFrame::Sunken</enum>
-     </property>
-     <property name="text">
-      <string/>
-     </property>
-     <property name="margin">
-      <number>4</number>
-     </property>
-    </widget>
    </item>
   </layout>
  </widget>
