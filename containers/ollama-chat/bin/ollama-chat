@@ -11,15 +11,21 @@
 # still runs as an unprivileged Apptainer/Singularity container, following
 # the same bind-mount pattern as containers/rstudio-server/bin/rserver.
 #
-# Both services are bound to 127.0.0.1 only, and Open WebUI's own auth is
-# disabled (WEBUI_AUTH=False) - gfxlauncher's SSH tunnel is the only access
-# gate, the same trust model RStudioJob uses (see
-# containers/rstudio-server/README.md's "Security: always tunnel-only"
-# section). Getting the bind address wrong here is the exact mistake that
-# was found and fixed for RStudio's --www-address - Open WebUI's own
-# default (HOST=0.0.0.0) is if anything worse, since WEBUI_AUTH=False means
-# an unauthenticated chat UI would be reachable from anywhere that can
-# route to the compute node.
+# Both services are bound to 127.0.0.1 only. Unlike RStudioJob's trust
+# model (SSH tunnel as the only gate), Open WebUI's own login is enabled
+# (WEBUI_AUTH=True): this script creates the single per-user account itself
+# via Open WebUI's signup API the instant its port opens - before printing
+# OLLAMA_CHAT_URL, i.e. before gfxlauncher can open a browser or set up the
+# tunnel - and then sets ENABLE_SIGNUP=False so no one else can ever sign up
+# for the rest of the job's life. This closes (to a few milliseconds, not
+# provably to zero - see containers/ollama-chat/README.md) the window where
+# another user's job sharing this compute node's loopback could otherwise
+# grab the admin account before the real user ever sees a browser. The SSH
+# tunnel is still a second layer restricting who can even reach the login
+# screen. Getting the bind address wrong here is the exact mistake that was
+# found and fixed for RStudio's --www-address - Open WebUI's own default
+# (HOST=0.0.0.0) is if anything worse, since it would make the login screen
+# itself reachable from anywhere that can route to the compute node.
 #
 # Invoked by OllamaChatJob (src/lhpcdt/jobs.py) as:
 #   ollama-chat --ollama-port=<port> --webui-port=<port> --model "<tag>" [extra open-webui args]
@@ -51,7 +57,12 @@ if [[ -z "$OLLAMA_PORT" || -z "$WEBUI_PORT" || -z "$MODEL" ]]; then
 fi
 
 WORKDIR=$(mktemp -d "${TMPDIR:-/tmp}/ollama-chat.XXXXXX")
-mkdir -p -m 700 "$WORKDIR/webui-data"
+
+# Persistent, per-user account/chat-history storage - deliberately outside
+# $WORKDIR (which cleanup() below rm -rf's on exit) so a signed-up account
+# survives across job runs instead of forcing a fresh signup every launch.
+WEBUI_DATA_DIR="$HOME/.lhpc/ollama-chat-webui-data"
+mkdir -p -m 700 "$WEBUI_DATA_DIR"
 
 # OLLAMA_MODELS_DIR is exported by OllamaChatJob from etc/gfxlauncher.conf's
 # [ollama] ollama_models_dir - defaults to "$HOME/.lhpc/ollama-models" (a
@@ -169,9 +180,10 @@ curl -s -X POST "http://127.0.0.1:$OLLAMA_PORT/api/generate" \
 echo "Model loaded."
 
 # Open WebUI's rootfs is read-only (bind-mounted writable data dir, same
-# reasoning as bin/rserver's /var/lib bind), its own auth is disabled
-# (SSH tunnel is the real gate), and HOST is pinned to loopback - see file
-# header for why that last one is not optional.
+# reasoning as bin/rserver's /var/lib bind), its own auth is enabled
+# (WEBUI_AUTH=True, see below for how the account itself gets provisioned),
+# and HOST is pinned to loopback - see file header for why that last one is
+# not optional.
 #
 # There's no "open-webui" binary on PATH inside this image - confirmed
 # against the actual deployed .sif, `singularity exec` bypasses whatever
@@ -183,9 +195,10 @@ echo "Model loaded."
 # `--workers 1` rather than adding to it - so EXTRA_ARGS here means raw
 # uvicorn flags, not "open-webui"-style ones.
 singularity exec \
-    --bind "$WORKDIR/webui-data:/app/backend/data" \
+    --bind "$WEBUI_DATA_DIR:/app/backend/data" \
     --env OLLAMA_BASE_URL="http://127.0.0.1:$OLLAMA_PORT" \
-    --env WEBUI_AUTH=False \
+    --env WEBUI_AUTH=True \
+    --env ENABLE_SIGNUP=False \
     --env HOST=127.0.0.1 \
     --env PORT="$WEBUI_PORT" \
     --env WEBUI_SECRET_KEY="$(openssl rand -hex 32)" \
@@ -197,6 +210,47 @@ WEBUI_PID=$!
 
 echo "Waiting for Open WebUI on 127.0.0.1:$WEBUI_PORT..."
 wait_for_port "$WEBUI_PORT" "$WEBUI_PID" "$WORKDIR/webui.log" "Open WebUI" 300
+
+# Provision the single per-user account ourselves, right now, before
+# printing OLLAMA_CHAT_URL below - that marker is what lets gfxlauncher open
+# a browser or set up the SSH tunnel, so anything done before it happens
+# while the port is reachable by nothing but this job's own processes (and,
+# on a non-exclusive node allocation, whatever else happens to share this
+# node's loopback - see file header). Confirmed against Open WebUI's actual
+# signup endpoint (backend/open_webui/routers/auths.py): the very first
+# signup on a fresh instance always succeeds regardless of ENABLE_SIGNUP
+# (HTTP 200, it bootstraps the admin), a later duplicate-email attempt
+# returns HTTP 400, and there's no rate limit or invite gate on it at all -
+# so whoever calls this first, wins the account. CRED_FILE only ever gets
+# written on an actual fresh HTTP 200 here, so an account left over from an
+# earlier run (whose credentials file was since deleted) is never silently
+# re-provisioned or clobbered - see README's note on that.
+CRED_FILE="$HOME/.lhpc/ollama-chat-credentials"
+CHAT_EMAIL="${USER}@gfxlauncher.local"
+
+if [[ ! -f "$CRED_FILE" ]]; then
+    CHAT_PASSWORD=$(openssl rand -base64 24)
+
+    # json.dumps rather than raw string interpolation, so nothing in
+    # $USER/$CHAT_PASSWORD can break out of the JSON payload - same
+    # "shell out to a small inline python3 snippet for anything JSON"
+    # convention this file already uses for /api/pull progress above.
+    SIGNUP_PAYLOAD=$(python3 -c '
+import json, os, sys
+print(json.dumps({"name": os.environ["USER"], "email": sys.argv[1], "password": sys.argv[2]}))
+' "$CHAT_EMAIL" "$CHAT_PASSWORD")
+
+    SIGNUP_HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+        "http://127.0.0.1:$WEBUI_PORT/api/v1/auths/signup" \
+        -H "Content-Type: application/json" -d "$SIGNUP_PAYLOAD")
+
+    if [[ "$SIGNUP_HTTP_CODE" == "200" ]]; then
+        (umask 077; printf 'email=%s\npassword=%s\n' "$CHAT_EMAIL" "$CHAT_PASSWORD" > "$CRED_FILE")
+        echo "OLLAMA_CHAT_ACCOUNT_CREATED: $CHAT_EMAIL"
+    else
+        echo "Open WebUI signup returned HTTP $SIGNUP_HTTP_CODE (account may already exist from a prior run whose credentials file was removed) - not overwriting credentials." >&2
+    fi
+fi
 
 # "localhost", not $HOSTNAME - launcher.py's tunnel setup only rewrites the
 # *port* in this URL, relying on the hostname already being "localhost",

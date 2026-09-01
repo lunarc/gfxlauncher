@@ -1033,6 +1033,7 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
             self.only_submit = True
             self.job.on_notebook_url_found = self.on_notebook_url_found
             self.job.on_pull_progress = self.on_pull_progress
+            self.job.on_account_created = self.on_chat_account_created
             if self.extraControlsLayout.count() == 0:
                 self.pull_progress_bar = QtWidgets.QProgressBar(self)
                 self.pull_progress_bar.setRange(0, 100)
@@ -1217,6 +1218,40 @@ class GfxLaunchWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
 
         if self.pull_progress_bar is not None:
             self.pull_progress_bar.setValue(percent)
+
+    def on_chat_account_created(self, email):
+        """Callback fired only the run OllamaChatJob's wrapper script has
+        just provisioned a fresh Open WebUI account (see jobs.py's
+        OllamaChatJob.on_account_created) - never on a run that reused an
+        existing one. Shows the generated password once, before the browser
+        opens to the login screen, since it's only ever written to
+        ~/.lhpc/ollama-chat-credentials and never appears in job output."""
+
+        cred_path = os.path.join(os.path.expanduser("~"), ".lhpc", "ollama-chat-credentials")
+
+        password = None
+        try:
+            with open(cred_path) as f:
+                for line in f:
+                    if line.startswith("password="):
+                        password = line[len("password="):].strip()
+                        break
+        except FileNotFoundError:
+            pass
+
+        if password is None:
+            QtWidgets.QMessageBox.information(
+                self, self.title,
+                "A chat account was created for %s, but its password "
+                "couldn't be read back from %s." % (email, cred_path))
+            return
+
+        QtWidgets.QMessageBox.information(
+            self, self.title,
+            "A chat account has been created for you:\n\n"
+            "Email: %s\nPassword: %s\n\n"
+            "Use these to log in once the chat interface opens. They are "
+            "saved to %s for future reference." % (email, password, cred_path))
 
     def on_notebook_url_found(self, url):
         """Callback when notebook url has been found."""

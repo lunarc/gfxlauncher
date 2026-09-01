@@ -426,9 +426,15 @@ class OllamaChatJob(Job):
                  models_dir="", extra_args=""):
         Job.__init__(self, account, partition, time)
 
-        # Tunnel-only, unconditionally - same rationale as RStudioJob
-        # above: Open WebUI also runs with its own auth disabled
-        # (WEBUI_AUTH=False), so the SSH tunnel is the only access gate.
+        # Tunnel-only, unconditionally, as a second layer on top of Open
+        # WebUI's own login (WEBUI_AUTH=True): containers/ollama-chat/bin/
+        # ollama-chat provisions the single per-user account itself via
+        # Open WebUI's signup API the instant its port opens - before this
+        # job ever prints a URL for gfxlauncher to act on - then disables
+        # further signups for the rest of the job's life. See that script's
+        # header and containers/ollama-chat/README.md for the full
+        # rationale, including the residual race this can shrink but not
+        # provably eliminate on a non-exclusive node allocation.
         self.use_localhost = True
         self.notebook_url = ""
         self.process_output = True
@@ -469,6 +475,12 @@ class OllamaChatJob(Job):
         """Event method called as the model download progresses (0-100)"""
         print("Model download: %d%%" % percent)
 
+    def on_account_created(self, email):
+        """Event method called when the job has just provisioned a fresh
+        Open WebUI account (never called on a run that reused an existing
+        one - see containers/ollama-chat/bin/ollama-chat)."""
+        print("Chat account created: %s" % email)
+
     def do_process_output(self, output_lines):
         """Process job output"""
 
@@ -484,6 +496,9 @@ class OllamaChatJob(Job):
                     if pct != self.pull_progress:
                         self.pull_progress = pct
                         self.on_pull_progress(pct)
+                elif line.find("OLLAMA_CHAT_ACCOUNT_CREATED:") != -1:
+                    email = line.split("OLLAMA_CHAT_ACCOUNT_CREATED:")[1].strip()
+                    self.on_account_created(email)
                 elif line.find("OLLAMA_CHAT_URL:") != -1:
                     url = line[line.find("http:"):].strip()
                     port = find_remote_port(url)

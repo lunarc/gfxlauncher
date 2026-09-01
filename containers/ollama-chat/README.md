@@ -23,22 +23,59 @@ Image lives at `/sw/pkg/open-webui/open-webui_main.sif`.
 
 Exercised end-to-end via `tests/run_test_ollama.sh` and confirmed
 working: model pulls with visible progress, model loads and answers chat
-messages through the browser, all without authentication prompts.
+messages through the browser, behind a real per-user login.
 
-## Security: always tunnel-only, never on the node's real interface
+## Security: server-provisioned login, plus tunnel-only as a second layer
 
-Same trust model as `RStudioJob` (see `containers/rstudio-server/README.md`'s
-"Security: always tunnel-only" section, including the incident that
-motivated it there): `OllamaChatJob` sets `use_localhost = True`
-unconditionally, and both `ollama serve` and Open WebUI are bound to
-`127.0.0.1` only - never `$HOSTNAME`. Open WebUI's own auth is disabled
-(`WEBUI_AUTH=False`, confirmed to actually skip the login/signup screen
-entirely rather than just relaxing it), so the SSH tunnel gfxlauncher sets
-up is the *only* access gate. Open WebUI's own default bind address is
-`0.0.0.0` (every interface) - getting `HOST=127.0.0.1` wrong here would be
-strictly worse than the RStudio `--www-address` incident, since there'd be
-no credential at all standing between an unauthenticated chat UI and
-anyone who can route to the compute node.
+Unlike `RStudioJob` (see `containers/rstudio-server/README.md`'s "Security:
+always tunnel-only" section) where the SSH tunnel is the *only* access
+gate, Open WebUI's own login is enabled here (`WEBUI_AUTH=True`). The
+account itself is **not** created by a human clicking through Open WebUI's
+signup screen - `bin/ollama-chat` calls Open WebUI's signup API itself the
+instant its port opens, before printing `OLLAMA_CHAT_URL` (the marker that
+lets gfxlauncher open a browser or set up the tunnel at all), then sets
+`ENABLE_SIGNUP=False` so no further accounts can ever be created for the
+rest of the job's life.
+
+This matters because Open WebUI's signup endpoint has no rate limit or
+invite gate, and its very first signup on a fresh instance always succeeds
+and becomes the admin, regardless of `ENABLE_SIGNUP` (confirmed by reading
+`backend/open_webui/routers/auths.py` in the deployed image's source) - so
+without this, whoever's browser reaches the login screen *first* gets the
+account, not necessarily the user who started the job. Doing the signup
+server-side, synchronously, before the URL is ever surfaced closes that
+race down to low milliseconds. It can't reach provable zero on a
+**non-exclusive** node allocation: another user's job sharing the same
+compute node's loopback could in principle race the same signup call before
+this script's own call lands. Users who need to close that fully should
+request an exclusive node allocation (gfxlauncher's existing generic
+"Exclusive" option - nothing new added here for it). Both `ollama serve`
+and Open WebUI are still bound to `127.0.0.1` only - never `$HOSTNAME` -
+and `OllamaChatJob` still sets `use_localhost = True` unconditionally, so
+the SSH tunnel remains a second layer restricting who can even reach the
+login screen. Getting `HOST=127.0.0.1` wrong here would be strictly worse
+than the RStudio `--www-address` incident, since it would make the login
+screen itself reachable from anywhere that can route to the compute node.
+
+The account persists across job runs: its data lives at
+`$HOME/.lhpc/ollama-chat-webui-data` (mode `0700`), and the generated
+password is saved to `$HOME/.lhpc/ollama-chat-credentials` (mode `0600`) -
+gfxlauncher reads that file to show the password once, the run the account
+is actually created (see `on_chat_account_created` in `launcher.py`). Two
+things worth knowing:
+
+- **Deleting `ollama-chat-credentials` does not reset the Open WebUI
+  account's actual password** - it only makes gfxlauncher forget it. The
+  next run's signup attempt will just get HTTP 400 (email already taken)
+  and silently skip re-provisioning; no popup will appear, and you're back
+  to needing to know the original password (or resetting it from inside
+  Open WebUI itself, if reachable).
+- **Concurrent `ollama-chat` jobs as the same user now share one
+  persistent SQLite-backed data directory** instead of each getting fresh
+  scratch space - this can produce intermittent "database is locked"
+  errors under concurrent writes from two simultaneous Open WebUI backend
+  processes. Not a new risk class, just newly reachable now that the
+  directory persists across runs instead of being wiped every time.
 
 ## How it works
 
@@ -82,7 +119,15 @@ anyone who can route to the compute node.
    failure doesn't trip `set -e`; without it, a bad image path or wrong
    entrypoint fails completely silently, which is exactly what happened
    during initial testing (see "Known issues" below).
-6. Prints `OLLAMA_CHAT_URL: http://localhost:$WEBUI_PORT/` - `localhost`,
+6. The moment Open WebUI's port is up, and only if
+   `$HOME/.lhpc/ollama-chat-credentials` doesn't already exist, calls
+   `POST /api/v1/auths/signup` itself with a freshly generated password to
+   provision the single per-user account, saves the credentials, and
+   prints `OLLAMA_CHAT_ACCOUNT_CREATED: <email>` - which
+   `OllamaChatJob.do_process_output` turns into the one-time credentials
+   popup in the launcher. See "Security" above for why this has to happen
+   here rather than via the browser's signup screen.
+7. Prints `OLLAMA_CHAT_URL: http://localhost:$WEBUI_PORT/` - `localhost`,
    not `$HOSTNAME`, matching the Jupyter/RStudio convention
    `jobs.py:386-392` explains (the tunnel rewrite relies on it).
 
