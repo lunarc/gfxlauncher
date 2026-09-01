@@ -87,6 +87,8 @@ The general section contain common settings for all tools provided by the GFX La
 
 The **help_url** variable is used to provide a link to the documentation for the users. The **browser_command** variable is used to specify the command to start the browser when the user clicks the help button in the launcher.
 
+Whenever gfxlaunch opens **browser_command** on a URL that carries a login secret (for example a Jupyter session's ``?token=...``), it does not pass that URL on the browser's command line - command-line arguments are visible to any other local user via ``ps``/``/proc``. Instead it writes a small private redirect page (mode ``0600``, under ``~/.lhpc/browser``) that forwards the browser to the real URL, and opens that local file instead. This is transparent to the user; it only matters if you're auditing what a launched browser process's argv looks like.
+
 Slurm section - [slurm]
 -----------------------
 
@@ -240,9 +242,24 @@ Ollama chat related section - [ollama]
 |                        | other Ollama model tag not in this list.                                      |
 +------------------------+-------------------------------------------------------------------------------+
 
-Like RStudio, Ollama chat jobs always run tunnel-only and disable Open
-WebUI's own login screen (``WEBUI_AUTH=False``) - the SSH tunnel
-gfxlaunch sets up is the only access control. See
-``containers/ollama-chat/README.md`` in the source repository for the
-full deployment notes.
+Like RStudio, Ollama chat jobs always run tunnel-only, but unlike RStudio
+Open WebUI's own login is enabled (``WEBUI_AUTH=True``). The account itself
+is provisioned by the job on first launch, not signed up through the
+browser: the job calls Open WebUI's signup API the instant its port opens
+- before gfxlauncher can open a browser or set up the tunnel - and then
+permanently disables further signups for that job. This closes (to a few
+milliseconds, not provably to zero on a non-exclusive node allocation) a
+real race where whoever's browser reached a self-service signup screen
+first would get the account, not necessarily the user who started the job.
+
+The generated password is shown once, in a message box, the first time an
+account is created for a user, and saved to
+``~/.lhpc/ollama-chat-credentials`` (mode ``0600``) for later reference;
+the account and chat history persist across job runs in
+``~/.lhpc/ollama-chat-webui-data`` (mode ``0700``). The SSH tunnel
+gfxlaunch sets up remains a second layer restricting who can even reach
+the login screen. See ``containers/ollama-chat/README.md`` in the source
+repository for the full deployment notes, including the residual race
+window and the SQLite-concurrency caveat for users who run more than one
+chat job at once.
 

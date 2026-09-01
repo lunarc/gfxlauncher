@@ -123,6 +123,8 @@ Running Jupyter Notebooks and Jupyter Labs
 
 Jupyter Notebook and Jupyter Lab session are local web servers that acts as the applications main user interface. GfxLauncher starts these kind of applications by sending a normal job to the Slurm queue. It then waits for the URL of the started web server to appear in the job output and launches a browser session to this URL. The user interface displays a special button to reconnect to the job if the users closes the browser session by mistake.
 
+That URL includes Jupyter's own login token, so gfxlaunch never passes it directly on the browser's command line - doing so would leave it readable by any other local user via ``ps``. Instead it opens a small private local redirect page that forwards the browser to the real URL; see **browser_command** in :doc:`configuration` for details.
+
 To launch a Jupyter Notebook session the following switches for the **gfxlaunch** command.
 
 .. code-block:: bash
@@ -149,7 +151,9 @@ RStudio Server is launched the same way as Jupyter, using **--job=rstudio**. Unl
 Running an Ollama chat session
 --------------------------------
 
-GfxLauncher can also launch a local LLM chat session: an `Ollama <https://ollama.com>`_ backend serving a downloaded model, with `Open WebUI <https://openwebui.com>`_ as the browser-based chat frontend. As with Jupyter and RStudio, GfxLauncher submits a job, waits for the chat interface's URL to appear in the job output, and opens a browser to it through an SSH tunnel - the tunnel is the only access control, since Open WebUI's own login is disabled.
+GfxLauncher can also launch a local LLM chat session: an `Ollama <https://ollama.com>`_ backend serving a downloaded model, with `Open WebUI <https://openwebui.com>`_ as the browser-based chat frontend. As with Jupyter and RStudio, GfxLauncher submits a job, waits for the chat interface's URL to appear in the job output, and opens a browser to it through an SSH tunnel.
+
+Unlike Jupyter and RStudio, this chat interface has its own login screen, with an account the job provisions for the user automatically on first launch - the generated password is shown once in a message box before the browser opens, and saved to ``~/.lhpc/ollama-chat-credentials`` for later reference. The SSH tunnel remains a second layer on top of that login. See the **[ollama]** section of :doc:`configuration` for details.
 
 .. code-block:: bash
 

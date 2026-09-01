@@ -44,6 +44,8 @@ Notebook job launching
 
 Starting a job running a Jupyter Notebook or JypterLab session is very similar to conventional job submission. A job is submitted to Slurm that starts up the notebook web server. GfxLauncher then waits for the job to start and monitors the job output for the URL to the started Jupyter web server. It then starts a browser session to this URL. If the user by mistake closes the browser window there is a special button in the user interface for reconnecting to the running Jupyter server. The figure below describes this process:
 
+The Jupyter URL carries a login token as a query parameter. Passing that URL straight to the browser process would leave the token readable by any other local user inspecting that process's command line (``ps``, ``/proc/<pid>/cmdline``), which matters on a shared login node. To avoid that, GfxLauncher writes the URL into a small, private (mode ``0600``) local HTML page under ``~/.lhpc/browser`` that redirects the browser to it, and launches the browser on that local file instead - the same technique Jupyter itself uses internally when it opens a browser on your behalf.
+
 .. image:: images/notebook_launch.png
   :width: 100%
   :alt: Alternative text
